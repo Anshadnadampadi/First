@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Login</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #50C878;
+            --bg-dark: #0A1A14;
+            --royal: #0B6E4F;
+            --mint: #D1F2EB;
+            --evergreen-darker: #050D0A;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bg-glow-top,
+        .bg-glow-bottom {
+            position: fixed;
+            width: 40%;
+            height: 40%;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+        }
+
+        .bg-glow-top {
+            top: -10%;
+            left: -10%;
+            background: rgba(11, 110, 79, 0.3);
+        }
+
+        .bg-glow-bottom {
+            bottom: -10%;
+            right: -10%;
+            background: rgba(80, 200, 120, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(10, 26, 20, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(80, 200, 120, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .4);
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-box {
+            width: 70px;
+            height: 70px;
+            background: var(--primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(80, 200, 120, 0.4);
+        }
+
+        .custom-input {
+            background: linear-gradient(145deg, #449477, #5e917e);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 14px 16px 14px 45px;
+            color: white;
+        }
+
+        .custom-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .custom-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(80, 200, 120, 0.3);
+            outline: none;
+        }
+
+        .input-icon {
+            position: absolute;
+            top: 65%;
+            left: 15px;
+            transform: translateY(-50%);
+            color: rgba(113, 210, 137, 0.9);
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 65%;
+            right: 15px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: rgba(80, 200, 120, 0.8);
+        }
+
+        .btn-emerald {
+            background: var(--primary);
+            color: black;
+            font-weight: 700;
+            padding: 16px;
+            border-radius: 14px;
+            border: none;
+            transition: .3s;
+        }
+
+        .btn-emerald:hover {
+            background: #45b66c;
+            box-shadow: 0 6px 25px rgba(80, 200, 120, .4);
+        }
+
+        .error-text {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        input.is-invalid {
+            border: 1px solid #ff6b6b;
+        }
+
+        .footer-links a {
+            color: rgba(209, 242, 235, 0.4);
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div class="bg-glow-top"></div>
+    <div class="bg-glow-bottom"></div>
+
+
+    <main class="w-100" style="max-width:450px;">
+
+
+        <div class="text-center mb-5">
+
+            <div class="logo-box mx-auto mb-3">
+                <span class="material-icons-outlined text-dark fs-3">shield</span>
+            </div>
+
+            <h2 class="fw-bold text-light">Admin Portal</h2>
+
+            <small class="text-secondary">Starzo E-commerce Management</small>
+
+        </div>
+
+
+
+        <div class="glass-card">
+
+
+            <form id="adminLoginForm" action="/admin/login" method="POST" novalidate>
+
+
+
+                <div class="mb-4 position-relative">
+
+                    <label class="form-label text-light small">Admin Email</label>
+
+                    <span class="material-icons-outlined input-icon">person</span>
+
+                    <input type="email" id="email" name="email" class="form-control custom-input"
+                        placeholder="Enter admin email">
+
+                    <div id="emailError" class="error-text"></div>
+
+                </div>
+
+
+
+                <div class="mb-4 position-relative">
+
+                    <div class="d-flex justify-content-between">
+
+                        <label class="form-label text-light small">Password</label>
+
+                        <a href="#" class="small text-success text-decoration-none">Forgot Password</a>
+
+                    </div>
+
+                    <span class="material-icons-outlined input-icon">lock</span>
+
+                    <input type="password" name="password" id="password" class="form-control custom-input pe-5"
+                        placeholder="••••••••">
+
+                    <span class="material-icons-outlined password-toggle" id="togglePassword">visibility</span>
+
+                    <div id="passwordError" class="error-text"></div>
+
+                </div>
+
+
+
+                <div class="form-check mb-4">
+
+                    <input class="form-check-input" type="checkbox">
+
+                    <label class="form-check-label text-secondary small">
+                        Trust this device for 30 days
+                    </label>
+
+                </div>
+
+
+
+                <button type="submit"
+                    class="btn btn-emerald w-100 d-flex align-items-center justify-content-center gap-2">
+
+                    <span class="material-icons-outlined">verified_user</span>
+
+                    Secure Login
+
+                </button>
+
+            </form>
+
+
+
+            <div class="text-center mt-4 pt-4 border-top border-secondary">
+
+                <small class="text-secondary text-uppercase" style="letter-spacing:3px;font-size:10px;">
+                    Protected by 256-bit encryption
+                </small>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="footer-links text-center mt-4 small">
+
+            <a href="#">Help Center</a>
+
+            <span class="mx-2">•</span>
+
+            <a href="#">Privacy Policy</a>
+
+            <span class="mx-2">•</span>
+
+            <a href="#">Terms of Service</a>
+
+        </div>
+
+    </main>
+
+
+
+    <script>
+
+        const form = document.getElementById("adminLoginForm");
+
+        const email = document.getElementById("email");
+        const password = document.getElementById("password");
+
+        const emailError = document.getElementById("emailError");
+        const passwordError = document.getElementById("passwordError");
+
+
+        /* REGEX PATTERNS */
+
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
+
+        const passwordRegex =
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+
+
+        /* EMAIL VALIDATION */
+
+        email.addEventListener("input", () => {
+
+            const value = email.value.trim();
+
+            if (value === "") {
+                emailError.textContent = "Email is required";
+                return;
+            }
+
+            if (!emailRegex.test(value)) {
+                emailError.textContent = "Enter a valid email (example: admin@starzo.com)";
+            } else {
+                emailError.textContent = "";
+            }
+
+        });
+
+
+
+        /* PASSWORD VALIDATION */
+
+        password.addEventListener("input", () => {
+
+            const value = password.value;
+
+            if (value === "") {
+                passwordError.textContent = "Password is required";
+                return;
+            }
+
+            if (!passwordRegex.test(value)) {
+                passwordError.textContent =
+                    "Password must contain 8+ characters, uppercase, lowercase, number and special character";
+            } else {
+                passwordError.textContent = "";
+            }
+
+        });
+
+
+
+        /* FORM SUBMIT VALIDATION */
+
+        form.addEventListener("submit", (e) => {
+
+            let valid = true;
+
+            const emailValue = email.value.trim();
+            const passwordValue = password.value;
+
+
+
+            if (!emailRegex.test(emailValue)) {
+
+                emailError.textContent =
+                    "Enter a valid email address";
+
+                valid = false;
+
+            }
+
+
+
+            if (!passwordRegex.test(passwordValue)) {
+
+                passwordError.textContent =
+                    "Password must contain uppercase, lowercase, number and special character";
+
+                valid = false;
+
+            }
+
+
+
+            if (!valid) {
+                e.preventDefault();
+            }
+
+        });
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const togglePassword = document.getElementById("togglePassword");
+            const password = document.getElementById("password");
+
+            togglePassword.addEventListener("click", function () {
+
+                if (password.type === "password") {
+                    password.type = "text";
+                    togglePassword.textContent = "visibility_off";
+                } else {
+                    password.type = "password";
+                    togglePassword.textContent = "visibility";
+                }
+
+            });
+
+        });
+
+
+
+    </script>
+
+
+</body>
+
+</html>

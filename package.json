@@ -1,0 +1,41 @@
+{
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "connect-mongo": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.1",
+    "mongoose": "^9.2.2",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "zod": "^4.3.6"
+  },
+  "name": "starzo1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anshadnadampadi/StarzoMobiles.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Anshadnadampadi/StarzoMobiles/issues"
+  },
+  "homepage": "https://github.com/Anshadnadampadi/StarzoMobiles#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

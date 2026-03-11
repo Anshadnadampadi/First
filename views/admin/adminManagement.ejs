@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>  
+
+    <style>
+        :root {
+            --primary-color: #177240;
+            --primary-hover: #30a325;
+            --bg-color: #0f2a16;
+            --card-bg: #1e3b22;
+            --text-main: #f8fafc;
+            --text-muted: #94b89f;
+            --border-color: #36673e;
+        }
+
+        body {
+            background: var(--bg-color);
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--text-main);
+        }
+
+        .sidebar {
+            height: 100vh;
+            background: var(--card-bg);
+            color: white;
+            position: fixed;
+            width: 250px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+        }
+
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            padding: 25px;
+        }
+
+        .search-input {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: none;
+        }
+
+        .table {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--text-main);
+        }
+
+        .table thead th {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .table td {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            object-fit: cover;
+        }
+
+        .text-muted-custom {
+            color: var(--text-muted) !important;
+        }
+
+        .btn-action {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+
+        .btn-block {
+            background: rgba(255, 193, 7, 0.15);
+            color: #fcd34d;
+        }
+
+        .btn-block:hover {
+            background: #ffc107;
+            color: black;
+        }
+
+        .btn-delete {
+            background: rgba(220, 53, 69, 0.15);
+            color: #f87171;
+        }
+
+        .btn-delete:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-active {
+            background: rgba(50, 185, 16, 0.15);
+            color: #34d399;
+        }
+
+        .badge-blocked {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .pagination .page-link {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1050;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .search-input {
+                width: 100% !important;
+            }
+
+            .form-select.search-input {
+                width: 100% !important;
+            }
+
+            .d-flex.align-items-center.gap-2.mb-4 {
+                flex-direction: column;
+                align-items: stretch !important;
+            }
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="sidebar d-flex flex-column p-3">
+
+        <h4 class="mb-5 mt-2 text-center fw-bold">
+            Admin<span style="color:var(--primary-color)">Panel</span>
+        </h4>
+
+        <ul class="nav nav-pills flex-column mb-auto">
+
+            <li class="nav-item mb-2">
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-users me-3"></i>Users
+                </a>
+            </li>
+
+            <li class="nav-item mb-2">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-chart-line me-3"></i>Analytics
+                </a>
+            </li>
+
+            <li class="nav-item mb-2">
+                <a href="/admin/dashboard" class="nav-link">
+                    <i class="fas fa-cog me-3"></i>Dashboard
+                </a>
+            </li>
+
+            <li class="nav-item mb-2">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog me-3"></i>Settings
+                </a>
+            </li>
+
+        </ul>
+
+        <a href="/admin/logout" class="btn btn-outline-secondary w-100 mt-auto border-0 text-start ps-3">
+            <i class="fas fa-sign-out-alt me-3"></i>Logout
+        </a>
+
+    </div>
+
+
+    <div class="main-content">
+
+        <h2 class="fw-bold mb-1">
+            <button class="mobile-nav-toggle d-md-none btn btn-link p-0 me-2"
+                onclick="document.querySelector('.sidebar').classList.toggle('open')"
+                style="font-size:24px; color:var(--text-muted);"><i class="fas fa-bars"
+                    style="color:white"></i></button>
+            User Management
+        </h2>
+        <p class="text-muted-custom mb-4">Manage system users</p>
+
+
+        <div class="table-container">
+
+
+            <form class="d-flex align-items-center gap-2 mb-4" method="get">
+
+                <input type="text" name="search" class="form-control rounded-pill search-input"
+                    placeholder="Search users..." value="<%= search || '' %>" style="width:220px">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="limit" value="<%= limit %>">
+
+                <select name="status" class="form-select search-input" style="width:160px">
+
+                    <option value="">All Users</option>
+
+                    <option value="active" <%=status==='active' ? 'selected' : '' %>>
+                        Active
+                    </option>
+
+                    <option value="blocked" <%=status==='blocked' ? 'selected' : '' %>>
+                        Blocked
+                    </option>
+
+                </select>
+
+                <button class="btn btn-success rounded-pill px-3"> Filter
+                    <i class="fas fa-search"></i>
+                </button>
+                <% if (search && search.trim().length> 0) { %>
+                    <a href="<%= clearSearchUrl %>" class="btn btn-outline-light rounded-pill px-3">Clear</a>
+                    <% } %>
+
+            </form>
+
+
+
+            <table class="table align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    <% if(currUser.length<=0){ %>
+
+                        <tr>
+                            <td colspan="4">No users found</td>
+                        </tr>
+
+                        <% } else { %>
+
+                            <% currUser.forEach(user=>{ %>
+                                <% const isUserBlocked=user.status===0 || user.isBlocked===true; %>
+
+                                    <tr>
+
+                                        <td>
+
+                                            <div class="d-flex align-items-center">
+                                                <% if (user && (user.profileImage || user.avatar)) { %>
+
+                                                    <img src="<%= user.profileImage || user.avatar %>" alt="User"
+                                                        class="avatar" title="My Profile" />
+
+                                                    <% } else { %>
+
+                                                        <div class="avatar-letter">
+                                                            <%= user && user.name ? user.name.charAt(0).toUpperCase()
+                                                                : 'U' %>
+                                                        </div>
+
+                                                        <% } %>
+                                                            <div>
+
+                                                                <div class="fw-bold">
+                                                                    <%=user.name%>
+                                                                </div>
+
+                                                                <div class="text-muted-custom small">ID: <%=user._id%>
+                                                                </div>
+
+                                                            </div>
+
+                                            </div>
+
+                                        </td>
+
+                                        <td class="text-muted-custom">
+                                            <%=user.email%>
+                                        </td>
+
+                                        <% if(!isUserBlocked){ %>
+
+                                            <td>
+                                                <span class="badge badge-active px-3 py-2 rounded-pill">
+                                                    Active
+                                                </span>
+                                            </td>
+
+                                            <% } else { %>
+
+                                                <td>
+                                                    <span class="badge badge-blocked px-3 py-2 rounded-pill">
+                                                        Blocked
+                                                    </span>
+                                                </td>
+
+                                                <% } %>
+
+
+                                                    <td class="text-end">
+
+                                                        <div class="d-flex justify-content-end gap-2">
+
+                                                            <% if(!isUserBlocked){ %>
+
+                                                                <form action="/admin/block/<%=user._id%>" method="post"
+                                                                    class="blockForm">
+
+                                                                    <button class="btn-action btn-block">
+                                                                        <i class="fas fa-ban"></i>
+                                                                    </button>
+
+                                                                </form>
+
+                                                                <% } else { %>
+
+                                                                    <form action="/admin/unblock/<%=user._id%>"
+                                                                        method="post" class="unblockForm">
+
+                                                                        <button class="btn-action btn-block">
+                                                                            <i class="fas fa-unlock"></i>
+                                                                        </button>
+
+                                                                    </form>
+
+                                                                    <% } %>
+
+
+                                                                        <form action="/admin/delete/<%=user._id%>"
+                                                                            method="post" class="deleteForm">
+
+                                                                            <button class="btn-action btn-delete">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+
+                                                                        </form>
+
+                                                        </div>
+
+                                                    </td>
+
+                                    </tr>
+
+                                    <% }) %>
+
+                                        <% } %>
+
+                </tbody>
+
+            </table>
+
+            <% if (typeof totalPages !=='undefined' && totalPages> 1) { %>
+                <nav aria-label="Users pagination" class="mt-4">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                            <a class="page-link"
+                                href="?search=<%= encodeURIComponent(search || '') %>&status=<%= encodeURIComponent(status || '') %>&page=<%= page - 1 %>&limit=<%= limit %>">
+                                Previous
+                            </a>
+                        </li>
+
+                        <% for(let i=1; i <=totalPages; i++) { %>
+                            <li class="page-item <%= page === i ? 'active' : '' %>">
+                                <a class="page-link"
+                                    href="?search=<%= encodeURIComponent(search || '') %>&status=<%= encodeURIComponent(status || '') %>&page=<%= i %>&limit=<%= limit %>">
+                                    <%= i %>
+                                </a>
+                            </li>
+                            <% } %>
+
+                                <li class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+                                    <a class="page-link"
+                                        href="?search=<%= encodeURIComponent(search || '') %>&status=<%= encodeURIComponent(status || '') %>&page=<%= page + 1 %>&limit=<%= limit %>">
+                                        Next
+                                    </a>
+                                </li>
+                    </ul>
+                </nav>
+                <% } %>
+
+        </div>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    <script>
+
+        document.querySelectorAll(".blockForm").forEach(form => {
+            form.addEventListener("submit", function (e) {
+
+                e.preventDefault()
+
+                Swal.fire({
+                    title: "Block this user?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit()
+                    }
+                })
+
+            })
+        })
+
+
+        document.querySelectorAll(".unblockForm").forEach(form => {
+            form.addEventListener("submit", function (e) {
+
+                e.preventDefault()
+
+                Swal.fire({
+                    title: "Unblock this user?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit()
+                    }
+                })
+
+            })
+        })
+
+
+        document.querySelectorAll(".deleteForm").forEach(form => {
+            form.addEventListener("submit", function (e) {
+
+                e.preventDefault()
+
+                Swal.fire({
+                    title: "Delete this user?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit()
+                    }
+                })
+
+            })
+        })
+    
+
+
+
+
+
+    </script>
+
+</body>
+
+</html>
