@@ -1,5 +1,5 @@
 // controllers/wishlistController.js
-
+import Cart from "../../models/cart/Cart.js"
 import * as wishlistService from "../../services/user/wishlistService.js";
 import User from "../../models/user/User.js";
 
