@@ -88,3 +88,22 @@ export const removeCartItem = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message || "Something went wrong" });
     }
 };
+
+export const clearCart = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        await cartService.clearCart(req.session.user);
+
+        return res.status(200).json({ 
+            success: true, 
+            message: "Cart cleared successfully" 
+        });
+
+    } catch (error) {
+        console.error("Clear Cart Error:", error);
+        return res.status(500).json({ success: false, message: error.message || "Something went wrong" });
+    }
+};
