@@ -195,9 +195,19 @@ export const updateVariant = async (req, res) => {
 export const deleteVariant = async (req, res) => {
     try {
         await adminProductServices.deleteVariant(req.params.id, req.params.index);
-        res.json({ success: true, message: "Variant deleted successfully" });
+        res.json({ success: true, message: "Variant unlisted successfully" });
     } catch (error) {
         console.error("Delete Variant Error:", error);
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+
+export const restoreVariant = async (req, res) => {
+    try {
+        await adminProductServices.restoreVariant(req.params.id, req.params.index);
+        res.json({ success: true, message: "Variant listed successfully" });
+    } catch (error) {
+        console.error("Restore Variant Error:", error);
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
     }
 };

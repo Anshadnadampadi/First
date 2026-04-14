@@ -1053,14 +1053,16 @@
             return v;
           };
 
-          // Normalize variants to prevent duplication and mismatch issues
+          // Normalize variants (Keep all, including unlisted, to keep them visible in UI)
           if (product && product.variants) {
-            product.variants = product.variants.map(v => ({
-              ...v,
-              color: (v.color || "").trim(),
-              storage: normalizeUnit(v.storage),
-              ram: normalizeUnit(v.ram)
-            }));
+            product.variants = product.variants
+              .filter(v => v) // only keep non-null
+              .map(v => ({
+                ...v,
+                color: (v.color || "").trim(),
+                storage: normalizeUnit(v.storage),
+                ram: normalizeUnit(v.ram)
+              }));
           }
 
           // Case-insensitive unique options extraction
@@ -1633,41 +1635,45 @@
 
       const match = serverVariants.find(v => v.storage === selectedStorage && v.color === selectedColor && (!selectedRam || v.ram === selectedRam));
 
-      // Disable unavailable pills/swatches — cascading filter approach
-      // Storage: enabled if ANY variant exists with selected color + this storage (regardless of RAM)
+      // Storage: active if ANY variant exists with selected color + this storage (regardless of RAM)
       document.querySelectorAll('#storagePills .variant-pill').forEach(pill => {
         const s = pill.textContent.trim();
-        const exists = serverVariants.find(v => v.color === selectedColor && v.storage === s);
+        const exists = serverVariants.find(v => v.color === selectedColor && v.storage === s && !v.isDeleted);
+        const existsDeleted = serverVariants.find(v => v.color === selectedColor && v.storage === s);
         if (!exists) {
           pill.classList.add('disabled');
-          pill.title = 'Not available in this color';
+          pill.title = existsDeleted ? 'Unlisted' : 'Not available in this color';
         } else {
           pill.classList.remove('disabled');
           pill.title = '';
         }
       });
-
-      // RAM: enabled if ANY variant exists with selected color + selected storage + this RAM
+ 
+      // RAM: active if ANY variant exists with selected color + selected storage + this RAM
       document.querySelectorAll('#ramPills .variant-pill').forEach(pill => {
         const r = pill.textContent.trim();
-        const exists = serverVariants.find(v => v.color === selectedColor && v.storage === selectedStorage && v.ram === r);
+        const exists = serverVariants.find(v => v.color === selectedColor && v.storage === selectedStorage && v.ram === r && !v.isDeleted);
+        const existsDeleted = serverVariants.find(v => v.color === selectedColor && v.storage === selectedStorage && v.ram === r);
         if (!exists) {
           pill.classList.add('disabled');
-          pill.title = 'Not available in this combination';
+          pill.title = existsDeleted ? 'Unlisted' : 'Not available in this combination';
         } else {
           pill.classList.remove('disabled');
           pill.title = '';
         }
       });
-
-      // Color swatches: enabled if ANY variant exists with this color + selected storage (regardless of RAM)
+ 
+      // Color swatches: active if ANY variant exists with this color + selected storage (regardless of RAM)
       document.querySelectorAll('.color-swatch').forEach(swatch => {
         const c = swatch.getAttribute('title');
-        const exists = serverVariants.find(v => v.color === c && v.storage === selectedStorage);
+        const exists = serverVariants.find(v => v.color === c && v.storage === selectedStorage && !v.isDeleted);
+        const existsDeleted = serverVariants.find(v => v.color === c && v.storage === selectedStorage);
         if (!exists) {
           swatch.style.opacity = '0.3';
+          swatch.title = existsDeleted ? `${c} (Unlisted)` : c;
         } else {
           swatch.style.opacity = '1';
+          swatch.title = c;
         }
       });
 
@@ -1689,7 +1695,7 @@
           ...document.querySelectorAll('.btn-secondary[onclick="buyNow()"]') // buy now (using click handler)
         ];
 
-        if (match.stock > 0) {
+        if (match.stock > 0 && !match.isDeleted) {
           if (badge) {
             badge.innerHTML = `● IN STOCK`;
             badge.style.color = 'var(--success)';
@@ -1702,14 +1708,14 @@
           });
         } else {
           if (badge) {
-            badge.innerHTML = `● OUT OF STOCK`;
+            badge.innerHTML = match.isDeleted ? `● UNAVAILABLE` : `● OUT OF STOCK`;
             badge.style.color = 'var(--danger)';
           }
           actionBtns.forEach(btn => {
             btn.disabled = true;
             btn.style.opacity = '0.5';
             btn.style.cursor = 'not-allowed';
-            if (btn.classList.contains('btn-primary')) btn.innerHTML = 'Out of Stock';
+            if (btn.classList.contains('btn-primary')) btn.innerHTML = match.isDeleted ? 'Unavailable' : 'Out of Stock';
           });
         }
 

@@ -13,10 +13,10 @@ export const getCheckout = async (req, res) => {
             return res.redirect("/cart?msg=Your cart is empty&icon=warning");
         }
 
-        // Final Stock Validation
-        const hasStockIssues = cart.items.some(i => i.isOutOfStock || i.insufficientStock);
-        if (hasStockIssues) {
-            return res.redirect("/cart?msg=Some items in your cart are out of stock. Please resolve to continue.&icon=error");
+        // Final Validation (Stock & Listing status)
+        const hasIssues = cart.items.some(i => i.isOutOfStock || i.insufficientStock || i.isUnavailable);
+        if (hasIssues) {
+            return res.redirect("/cart?msg=Some items in your cart are no longer available. Please resolve to continue.&icon=error");
         }
 
         const user = await User.findById(req.session.user).populate("addresses").lean();
@@ -54,6 +54,11 @@ export const placeOrder = async (req, res) => {
         const cart = await cartService.getCartData(userId);
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({ success: false, message: 'Cart is empty.' });
+        }
+
+        // Final sanity check for unlisted/blocked items
+        if (cart.items.some(i => i.isUnavailable)) {
+            return res.status(400).json({ success: false, message: 'Some items in your cart are unavailable. Please remove them to proceed.' });
         }
 
         const user = await User.findById(userId).populate("addresses");

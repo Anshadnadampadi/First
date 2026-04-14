@@ -30,7 +30,7 @@ export const getProductListing = async ({ searchQuery, categoryFilter, brandFilt
     // convert all to ObjectId
     categories = categories.map(id => new mongoose.Types.ObjectId(id));
 
-    filter.category = { $in: categories }; // ✅ supports multiple
+    filter.category = { $in: categories }; //  supports multiple
 }
 
     if (brandFilter) {
@@ -103,6 +103,12 @@ export const getProductListing = async ({ searchQuery, categoryFilter, brandFilt
         commonCache.set(CACHE_KEYS.PUBLIC_BRANDS, brands);
     }
 
+    // Filter out products where ALL variants are soft-deleted (no purchasable options left)
+    const activeProducts = products.filter(product => {
+        if (!product.variants || product.variants.length === 0) return true;
+        return product.variants.some(v => !v.isDeleted);
+    });
+
     const totalPages = Math.ceil(total / limit);
 
     let pagination = "";
@@ -110,10 +116,8 @@ export const getProductListing = async ({ searchQuery, categoryFilter, brandFilt
         pagination += `<button class="pagination-link" data-page="${i}">${i}</button>`;
     }
 
-    console.log(products)
-
     return {
-        products,
+        products: activeProducts,
         total,
         totalPages,
         categories,
@@ -129,6 +133,14 @@ export const getProductDetails = async (id) => {
         throw new Error("Product unavailable");
     }
 
+    // If product has variants but all are soft-deleted, treat it as unavailable
+    if (product.variants?.length > 0) {
+        const hasActiveVariant = product.variants.some(v => !v.isDeleted);
+        if (!hasActiveVariant) {
+            throw new Error("Product unavailable");
+        }
+    }
+
     const recommendedProducts = await Product.find({
         category: product.category?._id || product.category,
         _id: { $ne: product._id },
@@ -136,9 +148,15 @@ export const getProductDetails = async (id) => {
         isBlocked: false
     }).populate('category').limit(4).lean();
 
+    // Filter recommended: also exclude products with all-deleted variants
+    const activeRecommended = recommendedProducts.filter(p => {
+        if (!p.variants || p.variants.length === 0) return true;
+        return p.variants.some(v => !v.isDeleted);
+    });
+
     return {
         product,
-        recommendedProducts
+        recommendedProducts: activeRecommended
     };
 };
 

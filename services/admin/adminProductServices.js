@@ -117,9 +117,15 @@ export const getProductById = async (id) => {
  */
 const syncProductStats = (product) => {
     if (product.variants && product.variants.length > 0) {
-        const firstVariant = product.variants[0];
-        product.price = firstVariant.price;
-        product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+        // Only consider active (non-deleted) variants for stock/price calculations
+        const activeVariants = product.variants.filter(v => !v.isDeleted);
+        if (activeVariants.length > 0) {
+            product.price = activeVariants[0].price;
+            product.stock = activeVariants.reduce((sum, v) => sum + v.stock, 0);
+        } else {
+            // All variants deleted — zero out the product
+            product.stock = 0;
+        }
     }
     return product;
 };
@@ -164,6 +170,12 @@ export const updateVariant = async (productId, index, variantData, files) => {
     }
 
     const variant = product.variants[index];
+
+    // Prevent editing a soft-deleted variant
+    if (variant.isDeleted) {
+        throw new Error("Cannot edit a deleted variant. Please restore it first.");
+    }
+
     if (files && files.length > 0) {
         const newImages = files.map(file => `/uploads/products/${file.filename}`);
         variant.images.push(...newImages);
@@ -181,37 +193,74 @@ export const updateVariant = async (productId, index, variantData, files) => {
 
 export const deleteVariant = async (productId, index) => {
     const product = await Product.findById(productId);
-    if (!product || !product.variants[index]) {
-        throw new Error("Product or Variant not found");
-    }
 
-    if (product.variants[index].images) {
-        product.variants[index].images.forEach(img => {
-            const imgPath = path.join(process.cwd(), img);
-            if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-        });
-    }
-
-    product.variants.splice(index, 1);
-    syncProductStats(product);
-    return await product.save();
-};
-
-export const deleteVariantAsset = async (productId, index, imgIndex) => {
-    const product = await Product.findById(productId);
     if (!product || !product.variants[index]) {
         throw new Error("Product or Variant not found");
     }
 
     const variant = product.variants[index];
+
+    // prevent double delete
+    if (variant.isDeleted) {
+        throw new Error("Variant already unlisted");
+    }
+
+    // SOFT DELETE (unlist)
+    variant.isDeleted = true;
+    variant.deletedAt = new Date();
+
+    syncProductStats(product);
+
+    return await product.save();
+};
+
+export const restoreVariant = async (productId, index) => {
+    const product = await Product.findById(productId);
+
+    if (!product || !product.variants[index]) {
+        throw new Error("Product or Variant not found");
+    }
+
+    const variant = product.variants[index];
+
+    // Can only restore if currently deleted
+    if (!variant.isDeleted) {
+        throw new Error("Variant is already listed");
+    }
+
+    // RESTORE (re-list)
+    variant.isDeleted = false;
+    variant.deletedAt = null;
+
+    syncProductStats(product);
+
+    return await product.save();
+};
+
+export const deleteVariantAsset = async (productId, index, imgIndex) => {
+    const product = await Product.findById(productId);
+
+    if (!product || !product.variants[index]) {
+        throw new Error("Product or Variant not found");
+    }
+
+    const variant = product.variants[index];
+
+    if (!variant.images || !variant.images[imgIndex]) {
+        throw new Error("Image not found");
+    }
+
     const imgPath = variant.images[imgIndex];
-    if (imgPath) {
-        const fullPath = path.join(process.cwd(), imgPath);
-        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    const fullPath = path.join(process.cwd(), imgPath);
+
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
     }
 
     variant.images.splice(imgIndex, 1);
+
     syncProductStats(product);
+
     return await product.save();
 };
 

@@ -68,7 +68,8 @@ export const getProductDetailsPage = async (req, res) => {
             await userProductService.getProductDetails(req.params.id);
 
         // ✅ ADD THIS (IMPORTANT)
-        const defaultVariant = product?.variants?.[0] || null;
+        // Pick first active variant as default
+        const defaultVariant = product?.variants?.find(v => !v.isDeleted) || null;
 
         const defaultImage =
             defaultVariant?.images?.[0] || "/images/placeholder.jpg";

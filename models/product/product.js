@@ -49,33 +49,42 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+ variants: [
+    {
+        color: {
+            type: String,
+            required: true
+        },
+        storage: {
+            type: String,
+            required: true
+        },
+        ram: {
+            type: String,
+            required: true
+        },
+        price: {
+            type: Number,
+            required: true,
+            min: 0
+        },
+        stock: {
+            type: Number,
+            default: 0
+        },
+        images: [String],
 
-    variants: [
-        {
-            color: {
-                type: String,
-                required: true
-            },
-            storage: {
-                type: String,
-                required: true
-            },
-            ram: {
-                type: String,
-                required: true
-            },
-            price: {
-                type: Number,
-                required: true,
-                min: 0
-            },
-            stock: {
-                type: Number,
-                default: 0
-            },
-            images: [String]
+        
+        isDeleted: {
+            type: Boolean,
+            default: false
+        },
+        deletedAt: {
+            type: Date,
+            default: null
         }
-    ]
-
+    }
+]
+ 
 }, { timestamps: true })
 export default mongoose.models.Product || mongoose.model("Product", productSchema);

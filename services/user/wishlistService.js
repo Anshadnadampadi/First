@@ -2,7 +2,7 @@ import Wishlist from "../../models/wishlist/wishlist.js";
 import Cart from "../../models/cart/Cart.js";
 import Product from "../../models/product/Product.js";
 import * as cartService from "./cartService.js";
-import { isSameVariant, findMatchingVariant, getVariantDisplayString } from "../../utils/productHelpers.js";
+import { isSameVariant, findMatchingVariant, getVariantDisplayString, normalize } from "../../utils/productHelpers.js";
 
 /**
  * Fetch user's wishlist with populated product and variant details
@@ -16,24 +16,50 @@ export const getWishlist = async (userId) => {
 
     if (!wishlist || !wishlist.items?.length) return [];
 
-    return wishlist.items.map(item => {
+    const processedItems = wishlist.items.map(item => {
         const product = item.productId;
         if (!product) return null;
 
+        // Skip products that are completely blocked or unlisted by admin (at product level)
+        if (product.isBlocked || !product.isListed) return null;
+
         const currentVariant = item.variant;
         
-        // Find the best matching variant from product data for accurate price/stock/image
-        const matchedVariant = findMatchingVariant(product.variants, currentVariant) || product.variants?.[0];
+        // Match the specific variant stored in wishlist
+        const specificVariant = findMatchingVariant(product.variants, currentVariant);
+        const isVariantDeleted = !!(specificVariant && specificVariant.isDeleted);
+
+        // If product has variants, use the specific saved variant's data. 
+        // We do NOT fallback to other variants as per user request.
+        const displayVariant = specificVariant || product.variants?.[0];
+
+        // Create a unique key for deduplication
+        const uniqueKey = `${product._id}_${normalize(currentVariant?.color)}_${normalize(currentVariant?.storage)}_${normalize(currentVariant?.ram)}`;
 
         return {
+            _dedupeKey: uniqueKey,
             ...product.toObject(),
-            variant: currentVariant, // Store the selected variant object
+            variant: currentVariant,
             variantDisplay: getVariantDisplayString(currentVariant),
-            price: matchedVariant?.price || product.price,
-            stock: matchedVariant?.stock || product.stock,
-            image: matchedVariant?.images?.[0] || product.image || "/images/placeholder.jpg"
+            price: displayVariant?.price || product.price,
+            stock: displayVariant?.stock || product.stock,
+            image: displayVariant?.images?.[0] || product.image || "/images/placeholder.jpg",
+            isVariantUnavailable: isVariantDeleted || !specificVariant // True if deleted OR not found in current product data
         };
     }).filter(Boolean);
+
+    // Deduplicate by uniqueKey
+    const uniqueItems = [];
+    const seen = new Set();
+    for (const item of processedItems) {
+        if (!seen.has(item._dedupeKey)) {
+            seen.add(item._dedupeKey);
+            delete item._dedupeKey;
+            uniqueItems.push(item);
+        }
+    }
+
+    return uniqueItems;
 };
 
 /**
@@ -48,13 +74,30 @@ const isItemInWishlist = (wishlistItems, productId, variant) => {
 
 export const toggleWishlist = async (userId, productId, variant = {}) => {
     let wishlist = await Wishlist.findOne({ userId });
+    const product = await Product.findById(productId);
+
+    if (!product) throw new Error("Product not found");
 
     // Ensure variant is in object format
-    const targetVariant = {
+    let targetVariant = {
         color: variant?.color || "",
         storage: variant?.storage || "",
         ram: variant?.ram || ""
     };
+
+    // If product has variants but the request is 'blank' (e.g. from catalog page), 
+    // pick the default active variant to prevent duplicates and ensure data integrity.
+    const isBlank = !targetVariant.color && !targetVariant.storage && !targetVariant.ram;
+    if (isBlank && product.variants?.length > 0) {
+        const defaultV = product.variants.find(v => !v.isDeleted) || product.variants[0];
+        if (defaultV) {
+            targetVariant = {
+                color: defaultV.color || "",
+                storage: defaultV.storage || "",
+                ram: defaultV.ram || ""
+            };
+        }
+    }
 
     if (!wishlist) {
         wishlist = new Wishlist({
@@ -62,7 +105,7 @@ export const toggleWishlist = async (userId, productId, variant = {}) => {
             items: [{ productId, variant: targetVariant }]
         });
         await wishlist.save();
-        return { count: 1, added: true };
+        return { count: 1, added: true, message: "Added to wishlist" };
     }
 
     const index = wishlist.items.findIndex(item => 
@@ -71,25 +114,45 @@ export const toggleWishlist = async (userId, productId, variant = {}) => {
     );
 
     let added = false;
+    let message = "";
+
     if (index > -1) {
         wishlist.items.splice(index, 1);
+        message = "Removed from wishlist";
     } else {
         wishlist.items.push({ productId, variant: targetVariant });
         added = true;
+        message = "Added to wishlist";
     }
 
     await wishlist.save();
-    return { count: wishlist.items.length, added };
+    return { count: wishlist.items.length, added, message };
 };
 
 export const addToWishlist = async (userId, productId, variant = {}) => {
     let wishlist = await Wishlist.findOne({ userId });
+    const product = await Product.findById(productId);
 
-    const targetVariant = {
+    if (!product) throw new Error("Product not found");
+
+    let targetVariant = {
         color: variant?.color || "",
         storage: variant?.storage || "",
         ram: variant?.ram || ""
     };
+
+    // Auto-fill variant if blank and variants exist
+    const isBlank = !targetVariant.color && !targetVariant.storage && !targetVariant.ram;
+    if (isBlank && product.variants?.length > 0) {
+        const defaultV = product.variants.find(v => !v.isDeleted) || product.variants[0];
+        if (defaultV) {
+            targetVariant = {
+                color: defaultV.color || "",
+                storage: defaultV.storage || "",
+                ram: defaultV.ram || ""
+            };
+        }
+    }
 
     if (!wishlist) {
         wishlist = new Wishlist({
@@ -123,17 +186,20 @@ export const removeFromWishlist = async (userId, productId, variant = {}) => {
 export const moveToCart = async (userId, productId, variant) => {
     const product = await Product.findById(productId);
     if (!product) throw new Error("Product not found or unavailable");
+    if (product.isBlocked || !product.isListed) throw new Error("Product is currently unavailable");
 
-    // Validate that the variant actually exists for this product
-    const matchedVariant = findMatchingVariant(product.variants, variant);
-    if (product.variants?.length > 0 && !matchedVariant) {
-        throw new Error("The selected variant is no longer available");
+    // Validate that the variant actually exists and is not soft-deleted
+    if (product.variants?.length > 0) {
+        const matchedVariant = findMatchingVariant(product.variants, variant);
+        if (!matchedVariant || matchedVariant.isDeleted) {
+            throw new Error("The selected variant is no longer available");
+        }
     }
 
     // Add to cart
     await cartService.addItemToCart(userId, { 
         productId, 
-        variant: variant, // Pass the object, addItemToCart will handle it
+        variant: variant,
         qty: 1 
     });
 

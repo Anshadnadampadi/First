@@ -1,6 +1,235 @@
 <%- contentFor('body') %>
 
-<div class="space-y-10" x-data="variantManager()">
+<style>
+    /* ── Variant status badges ── */
+    .badge-listed {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        background: rgba(34, 197, 94, 0.08);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .badge-unlisted {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .badge-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .badge-listed .badge-dot { background: #22c55e; }
+    .badge-unlisted .badge-dot { background: #ef4444; }
+    /* pulse only for listed */
+    .badge-listed .badge-dot {
+        animation: dot-pulse 2s cubic-bezier(.4,0,.6,1) infinite;
+    }
+    @keyframes dot-pulse {
+        0%,100%{ opacity:1; } 50%{ opacity:.4; }
+    }
+
+    /* ── Action buttons ── */
+    .btn-list {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; padding: 4px 10px;
+        border: 1px solid rgba(34,197,94,0.3);
+        color: rgba(34,197,94,0.7);
+        background: transparent;
+        transition: all .2s;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .btn-list:hover {
+        background: rgba(34,197,94,0.1);
+        border-color: #22c55e;
+        color: #22c55e;
+    }
+    .btn-unlist {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; padding: 4px 10px;
+        border: 1px solid rgba(239,68,68,0.3);
+        color: rgba(239,68,68,0.7);
+        background: transparent;
+        transition: all .2s;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .btn-unlist:hover {
+        background: rgba(239,68,68,0.1);
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+    .btn-edit-variant {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; padding: 4px 10px;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.3);
+        background: transparent;
+        transition: all .2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .btn-edit-variant:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.2);
+        color: #fff;
+    }
+    .row-unlisted { opacity: 0.45; }
+    .row-unlisted:hover { opacity: 0.7; }
+
+    /* ── Count pills in header ── */
+    .count-listed {
+        padding: 3px 10px;
+        background: rgba(34,197,94,0.08);
+        border: 1px solid rgba(34,197,94,0.2);
+        color: rgba(34,197,94,0.8);
+        font-size: 9px; font-weight: 700;
+        letter-spacing: 0.15em; text-transform: uppercase;
+    }
+    .count-unlisted {
+        padding: 3px 10px;
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.2);
+        color: rgba(239,68,68,0.8);
+        font-size: 9px; font-weight: 700;
+        letter-spacing: 0.15em; text-transform: uppercase;
+    }
+    .count-total {
+        padding: 3px 10px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.3);
+        font-size: 9px; font-weight: 700;
+        letter-spacing: 0.15em; text-transform: uppercase;
+    }
+
+    /* ── Modal ── */
+    .vmodal-overlay {
+        position: fixed; inset: 0; z-index: 9000;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
+        opacity: 0; pointer-events: none;
+        transition: opacity .25s ease;
+    }
+    .vmodal-overlay.open {
+        opacity: 1; pointer-events: all;
+    }
+    .vmodal-panel {
+        position: relative;
+        width: 100%; max-width: 420px;
+        background: #0d0d0d;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 40px 80px rgba(0,0,0,0.8);
+        overflow: hidden;
+        transform: scale(0.94) translateY(12px);
+        transition: transform .3s cubic-bezier(.16,1,.3,1);
+    }
+    .vmodal-overlay.open .vmodal-panel {
+        transform: scale(1) translateY(0);
+    }
+    .vmodal-topbar {
+        height: 2px; width: 100%;
+        background: linear-gradient(90deg, transparent, currentColor, transparent);
+    }
+    .vmodal-topbar.danger { color: #ef4444; }
+    .vmodal-topbar.success { color: #22c55e; }
+    .vmodal-icon-ring {
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px;
+    }
+    .vmodal-icon-ring.danger {
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.2);
+        color: #ef4444;
+    }
+    .vmodal-icon-ring.success {
+        background: rgba(34,197,94,0.1);
+        border: 1px solid rgba(34,197,94,0.2);
+        color: #22c55e;
+    }
+    .vmodal-alert {
+        padding: 14px 16px; margin-bottom: 28px;
+        display: flex; gap: 12px; align-items: flex-start;
+        font-size: 11px; line-height: 1.6;
+    }
+    .vmodal-alert.warning {
+        background: rgba(245,158,11,0.05);
+        border: 1px solid rgba(245,158,11,0.15);
+        color: rgba(245,158,11,0.8);
+    }
+    .vmodal-alert.info {
+        background: rgba(34,197,94,0.05);
+        border: 1px solid rgba(34,197,94,0.15);
+        color: rgba(34,197,94,0.8);
+    }
+    .vmodal-variant-info {
+        padding: 14px 16px; margin-bottom: 20px;
+        display: flex; gap: 14px; align-items: center;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .btn-modal-cancel {
+        flex: 1; padding: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.35);
+        font-size: 10px; font-weight: 700;
+        letter-spacing: 0.15em; text-transform: uppercase;
+        background: transparent; cursor: pointer;
+        transition: all .2s;
+    }
+    .btn-modal-cancel:hover {
+        border-color: rgba(255,255,255,0.25);
+        color: #fff;
+    }
+    .btn-modal-confirm-danger {
+        flex: 1; padding: 14px;
+        background: #ef4444; color: #fff;
+        font-size: 10px; font-weight: 700;
+        letter-spacing: 0.15em; text-transform: uppercase;
+        border: none; cursor: pointer;
+        transition: background .2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-modal-confirm-danger:hover { background: #dc2626; }
+    .btn-modal-confirm-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-modal-confirm-success {
+        flex: 1; padding: 14px;
+        background: #22c55e; color: #000;
+        font-size: 10px; font-weight: 700;
+        letter-spacing: 0.15em; text-transform: uppercase;
+        border: none; cursor: pointer;
+        transition: background .2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-modal-confirm-success:hover { background: #16a34a; }
+    .btn-modal-confirm-success:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+
+<div class="space-y-10">
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
@@ -15,15 +244,17 @@
             <p class="text-white/40 text-[10px] tracking-[0.2em] font-bold uppercase">Specifications and Variant Management</p>
         </div>
         <div class="flex gap-4">
-            <a href="/admin/products/add-variant/<%= product._id %>" 
+            <a href="/admin/products/add-variant/<%= product._id %>"
                class="px-8 py-4 bg-white text-black text-[10px] font-bold tracking-widest uppercase hover:bg-accent transition-all btn-press shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                 Add Variant
             </a>
         </div>
     </div>
 
-    <!-- Product Info Overview -->
+    <!-- Product + Variants Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left: Product Info -->
         <div class="lg:col-span-1 bg-black-surface border border-white/5 p-8 space-y-8">
             <div class="aspect-square bg-black border border-white/5 p-4 flex items-center justify-center">
                 <% if (product.images && product.images.length > 0) { %>
@@ -32,13 +263,12 @@
                     <div class="text-[10px] text-white/20 uppercase font-bold tracking-widest">No Primary Image</div>
                 <% } %>
             </div>
-            
+
             <div class="space-y-6">
                 <div>
                     <label class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 block mb-2">Identity</label>
                     <h2 class="text-xl font-bold text-white uppercase"><%= product.name %></h2>
                 </div>
-                
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 block mb-1">Brand</label>
@@ -49,74 +279,159 @@
                         <p class="text-xs text-white uppercase font-bold"><%= product.category.name %></p>
                     </div>
                 </div>
-
                 <div>
                     <label class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 block mb-1">Base Price</label>
-                    <p class="text-lg font-mono text-accent font-bold">₹<%= product.variants?.[0]?.price ? product.variants[0].price.toLocaleString():"N/A" %></p>
+                    <p class="text-lg font-mono text-accent font-bold">
+                        ₹<%= product.variants?.find(v => !v.isDeleted)?.price
+                              ? product.variants.find(v => !v.isDeleted).price.toLocaleString()
+                              : 'N/A' %>
+                    </p>
+                </div>
+
+                <%
+                    const listedCount   = (product.variants || []).filter(v => !v.isDeleted).length;
+                    const unlistedCount = (product.variants || []).filter(v =>  v.isDeleted).length;
+                %>
+                <!-- Variant summary chips -->
+                <div>
+                    <label class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 block mb-3">Variant Summary</label>
+                    <div class="flex flex-wrap gap-2">
+                        <% if (listedCount > 0) { %>
+                            <span class="count-listed"><%= listedCount %> Listed</span>
+                        <% } %>
+                        <% if (unlistedCount > 0) { %>
+                            <span class="count-unlisted"><%= unlistedCount %> Unlisted</span>
+                        <% } %>
+                        <span class="count-total"><%= (product.variants || []).length %> Total</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Variants Table -->
+        <!-- Right: Variants Table -->
         <div class="lg:col-span-2 bg-black-surface border border-white/5 overflow-hidden">
-            <div class="px-8 py-6 border-b border-white/5 flex justify-between items-center">
-                <h3 class="text-xs font-bold text-white uppercase tracking-widest">Active Variants</h3>
-                <span class="px-3 py-1 bg-white/5 text-[9px] font-bold text-white/40 uppercase tracking-widest">
-                    <%= (product.variants && product.variants.length) || 0 %> Total
-                </span>
+            <!-- Table Header -->
+            <div class="px-8 py-5 border-b border-white/5 flex justify-between items-center">
+                <h3 class="text-xs font-bold text-white uppercase tracking-widest">Variant Management</h3>
+                <div class="flex items-center gap-2">
+                    <% if (listedCount > 0) { %>
+                        <span class="count-listed"><%= listedCount %> Listed</span>
+                    <% } %>
+                    <% if (unlistedCount > 0) { %>
+                        <span class="count-unlisted"><%= unlistedCount %> Unlisted</span>
+                    <% } %>
+                    <span class="count-total"><%= (product.variants || []).length %> Total</span>
+                </div>
             </div>
-            
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-white/[0.02] border-b border-white/5">
-                            <th class="px-8 py-4 text-[9px] font-bold tracking-widest uppercase text-white/30">Variant Info</th>
-                            <th class="px-8 py-4 text-[9px] font-bold tracking-widest uppercase text-white/30">Specs</th>
-                            <th class="px-8 py-4 text-[9px] font-bold tracking-widest uppercase text-white/30">Price</th>
-                            <th class="px-8 py-4 text-[9px] font-bold tracking-widest uppercase text-white/30">Stock</th>
-                            <th class="px-8 py-4 text-[9px] font-bold tracking-widest uppercase text-white/30 text-right">Actions</th>
+                            <th class="px-4 py-3 text-[9px] font-bold tracking-widest uppercase text-white/30">Variant</th>
+                            <th class="px-3 py-3 text-[9px] font-bold tracking-widest uppercase text-white/30">Specs</th>
+                            <th class="px-3 py-3 text-[9px] font-bold tracking-widest uppercase text-white/30">Price</th>
+                            <th class="px-3 py-3 text-[9px] font-bold tracking-widest uppercase text-white/30">Stock</th>
+                            <th class="px-3 py-3 text-[9px] font-bold tracking-widest uppercase text-white/30">Status</th>
+                            <th class="px-3 py-3 text-[9px] font-bold tracking-widest uppercase text-white/30 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
                         <% if (product.variants && product.variants.length > 0) { %>
                             <% product.variants.forEach((variant, index) => { %>
-                                <tr class="hover:bg-white/[0.01] transition-colors group">
-                                    <td class="px-8 py-4">
+                                <tr class="transition-colors hover:bg-white/[0.01] <%= variant.isDeleted ? 'row-unlisted' : '' %>">
+                                    <!-- Variant Info -->
+                                    <td class="px-4 py-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 bg-black border border-white/5 p-1">
+                                            <div class="w-8 h-8 bg-black border border-white/5 p-1 flex-shrink-0">
                                                 <% if (variant.images && variant.images.length > 0) { %>
                                                     <img src="<%= variant.images[0] %>" class="w-full h-full object-contain">
                                                 <% } else { %>
-                                                    <div class="w-full h-full flex items-center justify-center text-[8px] text-white/10 uppercase">NO IMG</div>
+                                                    <div class="w-full h-full flex items-center justify-center text-[7px] text-white/10 uppercase">NO IMG</div>
                                                 <% } %>
                                             </div>
-                                            <span class="text-[11px] font-bold text-white uppercase"><%= variant.color %></span>
+                                            <div>
+                                                <span class="text-[11px] font-bold text-white uppercase block" style="white-space:nowrap"><%= variant.color %></span>
+                                                <% if (variant.isDeleted && variant.deletedAt) { %>
+                                                    <span style="font-size:9px; color:rgba(255,255,255,.2); font-family:'JetBrains Mono',monospace; white-space:nowrap;">
+                                                        <%= new Date(variant.deletedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) %>
+                                                    </span>
+                                                <% } %>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td class="px-8 py-4">
-                                        <span class="text-[10px] text-white/40 uppercase font-mono"><%= variant.ram %> / <%= variant.storage %></span>
+
+                                    <!-- Specs -->
+                                    <td class="px-3 py-4" style="white-space:nowrap">
+                                        <span class="text-[10px] text-white/40 uppercase font-mono"><%= variant.ram %>&nbsp;/&nbsp;<%= variant.storage %></span>
                                     </td>
-                                    <td class="px-8 py-4">
+
+                                    <!-- Price -->
+                                    <td class="px-3 py-4" style="white-space:nowrap">
                                         <span class="text-[11px] font-mono text-accent">₹<%= variant.price.toLocaleString() %></span>
                                     </td>
-                                    <td class="px-8 py-4">
+
+                                    <!-- Stock -->
+                                    <td class="px-3 py-4" style="white-space:nowrap">
                                         <span class="text-[11px] font-bold <%= variant.stock < 10 ? 'text-status-danger' : 'text-white/60' %>">
                                             <%= variant.stock %> Units
                                         </span>
                                     </td>
-                                    <td class="px-8 py-4 text-right">
-                                        <div class="flex justify-end gap-3 transition-opacity">
-                                            <a href="/admin/products/variant/edit/<%= product._id %>/<%= index %>" 
-                                               class="text-[10px] text-white/20 hover:text-white uppercase font-bold tracking-widest transition-colors">Edit</a>
-                                            <button @click="deleteVariant('<%= product._id %>', '<%= index %>')" 
-                                                    class="text-[10px] text-white/20 hover:text-status-danger uppercase font-bold tracking-widest transition-colors">Delete</button>
+
+                                    <!-- Status Badge -->
+                                    <td class="px-3 py-4">
+                                        <% if (variant.isDeleted) { %>
+                                            <span class="badge-unlisted">
+                                                <span class="badge-dot"></span>
+                                                Unlisted
+                                            </span>
+                                        <% } else { %>
+                                            <span class="badge-listed">
+                                                <span class="badge-dot"></span>
+                                                Listed
+                                            </span>
+                                        <% } %>
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="px-3 py-4">
+                                        <div class="flex justify-end items-center gap-2">
+                                            <% if (!variant.isDeleted) { %>
+                                                <!-- Edit only when listed -->
+                                                <a href="/admin/products/variant/edit/<%= product._id %>/<%= index %>"
+                                                   class="btn-edit-variant">
+                                                    <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                    Edit
+                                                </a>
+                                                <!-- Unlist -->
+                                                <button class="btn-unlist"
+                                                    onclick="openUnlistModal('<%= product._id %>', '<%= index %>', '<%= variant.color %>', '<%= variant.ram %>', '<%= variant.storage %>')">
+                                                    <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                    </svg>
+                                                    Unlist
+                                                </button>
+                                            <% } else { %>
+                                                <!-- Re-list -->
+                                                <button class="btn-list"
+                                                    onclick="openListModal('<%= product._id %>', '<%= index %>', '<%= variant.color %>', '<%= variant.ram %>', '<%= variant.storage %>')">
+                                                    <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                    List
+                                                </button>
+                                            <% } %>
                                         </div>
                                     </td>
                                 </tr>
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="5" class="px-8 py-12 text-center">
+                                <td colspan="6" class="px-8 py-16 text-center">
                                     <p class="text-[10px] text-white/10 uppercase font-bold tracking-[0.2em]">No variants configured for this product</p>
                                 </td>
                             </tr>
@@ -129,37 +444,216 @@
 </div>
 
 
-    <script>
-    function variantManager() {
-        return {
-            async deleteVariant(productId, index) {
-                const confirmed = await window.confirmAction({
-                    title: 'REMOVE VARIANT.',
-                    message: 'This configuration will be permanently purged from the catalog.',
-                    type: 'danger'
-                });
+<!-- ══════════════════════════════════════ UNLIST MODAL -->
+<div id="unlistModal" class="vmodal-overlay" role="dialog" aria-modal="true">
+    <div class="vmodal-panel">
+        <div class="vmodal-topbar danger"></div>
+        <div style="padding: 32px;">
+            <!-- Icon -->
+            <div class="vmodal-icon-ring danger">
+                <svg width="26" height="26" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+            </div>
 
-                if (confirmed) {
-                    try {
-                        const res = await fetch(`/admin/products/variant/delete/${productId}/${index}`, {
-                            method: 'DELETE'
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { 
-                                detail: { message: data.message || 'Purge Complete', type: 'success' } 
-                            }));
-                            setTimeout(() => window.location.reload(), 1500);
-                        } else {
-                            throw new Error(data.message);
-                        }
-                    } catch (error) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { 
-                            detail: { message: error.message || 'Error deleting variant', type: 'error' } 
-                        }));
-                    }
-                }
-            }
-        };
+            <!-- Title -->
+            <div style="text-align:center; margin-bottom: 24px;">
+                <h2 style="color:#fff; font-size:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;">
+                    Unlist Variant
+                </h2>
+                <p style="color:rgba(255,255,255,.25); font-size:10px; font-weight:700; letter-spacing:.15em; text-transform:uppercase;">
+                    Soft delete — reversible
+                </p>
+            </div>
+
+            <!-- Variant Info -->
+            <div class="vmodal-variant-info">
+                <div style="width:32px; height:32px; border-radius:50%; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <span style="color:#ef4444; font-size:11px; font-weight:900;">V</span>
+                </div>
+                <div>
+                    <p id="unlistVariantColor" style="color:#fff; font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:3px;">—</p>
+                    <p id="unlistVariantSpecs" style="color:rgba(255,255,255,.3); font-size:10px; font-family:'JetBrains Mono',monospace; text-transform:uppercase;">—</p>
+                </div>
+            </div>
+
+            <!-- Warning -->
+            <div class="vmodal-alert warning">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span>
+                    This variant will be <strong style="color:rgba(245,158,11,1)">hidden from the storefront immediately.</strong>
+                    Active cart and wishlist items using this variant will be automatically removed for shoppers.
+                    You can re-list it at any time.
+                </span>
+            </div>
+
+            <!-- Buttons -->
+            <div style="display:flex; gap:10px;">
+                <button class="btn-modal-cancel" onclick="closeModals()">Cancel</button>
+                <button id="confirmUnlistBtn" class="btn-modal-confirm-danger" onclick="confirmUnlist()">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    </svg>
+                    Confirm Unlist
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════ LIST MODAL -->
+<div id="listModal" class="vmodal-overlay" role="dialog" aria-modal="true">
+    <div class="vmodal-panel">
+        <div class="vmodal-topbar success"></div>
+        <div style="padding: 32px;">
+            <!-- Icon -->
+            <div class="vmodal-icon-ring success">
+                <svg width="26" height="26" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <div style="text-align:center; margin-bottom: 24px;">
+                <h2 style="color:#fff; font-size:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;">
+                    Re-List Variant
+                </h2>
+                <p style="color:rgba(255,255,255,.25); font-size:10px; font-weight:700; letter-spacing:.15em; text-transform:uppercase;">
+                    Restore to storefront
+                </p>
+            </div>
+
+            <!-- Variant Info -->
+            <div class="vmodal-variant-info">
+                <div style="width:32px; height:32px; border-radius:50%; background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <span style="color:#22c55e; font-size:11px; font-weight:900;">V</span>
+                </div>
+                <div>
+                    <p id="listVariantColor" style="color:#fff; font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:3px;">—</p>
+                    <p id="listVariantSpecs" style="color:rgba(255,255,255,.3); font-size:10px; font-family:'JetBrains Mono',monospace; text-transform:uppercase;">—</p>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="vmodal-alert info">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>
+                    This variant will be <strong style="color:#22c55e;">immediately visible on the storefront.</strong>
+                    Shoppers will be able to add it to their cart and wishlist right away.
+                </span>
+            </div>
+
+            <!-- Buttons -->
+            <div style="display:flex; gap:10px;">
+                <button class="btn-modal-cancel" onclick="closeModals()">Cancel</button>
+                <button id="confirmListBtn" class="btn-modal-confirm-success" onclick="confirmList()">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Confirm List
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // ── State
+    let _pid = null, _idx = null;
+
+    function openUnlistModal(productId, index, color, ram, storage) {
+        _pid = productId; _idx = index;
+        document.getElementById('unlistVariantColor').textContent = color || 'Unknown';
+        document.getElementById('unlistVariantSpecs').textContent = [ram, storage].filter(Boolean).join(' / ') || '—';
+        openModal('unlistModal');
     }
+
+    function openListModal(productId, index, color, ram, storage) {
+        _pid = productId; _idx = index;
+        document.getElementById('listVariantColor').textContent = color || 'Unknown';
+        document.getElementById('listVariantSpecs').textContent = [ram, storage].filter(Boolean).join(' / ') || '—';
+        openModal('listModal');
+    }
+
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
+        document.addEventListener('keydown', escHandler);
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.vmodal-overlay').forEach(m => m.classList.remove('open'));
+        document.removeEventListener('keydown', escHandler);
+        _pid = null; _idx = null;
+    }
+
+    function escHandler(e) { if (e.key === 'Escape') closeModals(); }
+
+    // Close on backdrop click
+    document.querySelectorAll('.vmodal-overlay').forEach(m => {
+        m.addEventListener('click', function(e) {
+            if (e.target === this) closeModals();
+        });
+    });
+
+    function setLoading(btnId, loading, original) {
+        const btn = document.getElementById(btnId);
+        btn.disabled = loading;
+        if (loading) {
+            btn.innerHTML = `<svg style="animation:spin .8s linear infinite;" width="14" height="14" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".25"/>
+                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" opacity=".75"/>
+            </svg> Processing...`;
+        } else {
+            btn.innerHTML = original;
+        }
+    }
+
+    async function confirmUnlist() {
+        const origHTML = document.getElementById('confirmUnlistBtn').innerHTML;
+        setLoading('confirmUnlistBtn', true);
+        try {
+            const res = await fetch(`/admin/products/variant/delete/${_pid}/${_idx}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                closeModals();
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Variant unlisted', type: 'success' } }));
+                setTimeout(() => window.location.reload(), 1200);
+            } else throw new Error(data.message);
+        } catch(err) {
+            setLoading('confirmUnlistBtn', false, origHTML);
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Error unlisting variant', type: 'error' } }));
+        }
+    }
+
+    async function confirmList() {
+        const origHTML = document.getElementById('confirmListBtn').innerHTML;
+        setLoading('confirmListBtn', true);
+        try {
+            const res = await fetch(`/admin/products/variant/restore/${_pid}/${_idx}`, { method: 'PATCH' });
+            const data = await res.json();
+            if (data.success) {
+                closeModals();
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Variant listed', type: 'success' } }));
+                setTimeout(() => window.location.reload(), 1200);
+            } else throw new Error(data.message);
+        } catch(err) {
+            setLoading('confirmListBtn', false, origHTML);
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: err.message || 'Error listing variant', type: 'error' } }));
+        }
+    }
+
+    /* Spin keyframe for loader */
+    const style = document.createElement('style');
+    style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+    document.head.appendChild(style);
 </script>

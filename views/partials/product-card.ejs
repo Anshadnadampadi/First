@@ -22,6 +22,9 @@
 
   const pStock = typeof product.stock !== 'undefined' ? product.stock : (product.variants?.[0]?.stock || 0);
   const isOutOfStock = pStock <= 0;
+
+  // Flag from wishlist service: true if the saved variant was soft-deleted by admin
+  const isVariantUnavailable = typeof product.isVariantUnavailable !== 'undefined' ? product.isVariantUnavailable : false;
 %>
 
 <div class="bg-black-card group relative overflow-hidden transition-all duration-300 border border-transparent hover:border-white/5 h-full flex flex-col">
@@ -46,7 +49,13 @@
                         onclick="event.stopPropagation(); removeFromWishlistUI('<%= pId %>', '<%= vColor %>', '<%= vStorage %>', '<%= vRam %>', this)">
                         REMOVE
                     </button>
-                    <% if (isOutOfStock) { %>
+                     <% if (isVariantUnavailable) { %>
+                        <button type="button" disabled
+                            class="flex-2 w-full bg-status-danger/20 text-status-danger font-black py-4 text-[10px] tracking-[0.2em] uppercase cursor-not-allowed"
+                            title="This variant is no longer available">
+                            UNAVAILABLE
+                        </button>
+                    <% } else if (isOutOfStock) { %>
                         <button type="button" disabled
                             class="flex-2 w-full bg-white/20 text-white/50 font-black py-4 text-[10px] tracking-[0.2em] uppercase cursor-not-allowed">
                             OUT OF STOCK
@@ -115,6 +124,11 @@
                 <% if (vColor) { %><span class="text-[9px] font-bold tracking-widest uppercase bg-white/10 text-white/80 px-2 py-0.5"><%= vColor %></span><% } %>
                 <% if (vStorage) { %><span class="text-[9px] font-bold tracking-widest uppercase bg-white/10 text-white/80 px-2 py-0.5"><%= vStorage %></span><% } %>
                 <% if (vRam) { %><span class="text-[9px] font-bold tracking-widest uppercase bg-white/10 text-white/80 px-2 py-0.5"><%= vRam %> RAM</span><% } %>
+                <% if (isVariantUnavailable) { %>
+                    <span class="text-[9px] font-bold tracking-widest uppercase bg-status-danger/10 text-status-danger px-2 py-0.5 border border-status-danger/20">
+                        ● UNAVAILABLE
+                    </span>
+                <% } %>
             </div>
         <% } %>
 

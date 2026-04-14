@@ -9,22 +9,29 @@ export const getCartData = async (userId) => {
     let cart = await Cart.findOne({ userId }).populate("items.product").lean();
 
     if (cart && cart.items.length > 0) {
-        // Filter out items with unavailable products
-        cart.items = cart.items.filter(item => {
-            if (!item.product) return false;
-            return item.product.isBlocked !== true && item.product.isListed !== false;
-        });
-
-        // Add dynamic fields like display image and formatted variant string for UI
+        // Flag items as unavailable if product is blocked, unlisted, or variant is deleted
         cart.items = cart.items.map(item => {
-            let displayImage = '/images/placeholder.jpg';
             const product = item.product;
+            if (!product) return { ...item, isUnavailable: true };
+
+            const isProductUnavailable = product.isBlocked || !product.isListed;
+            let isVariantUnavailable = false;
+
+            if (product.variants?.length > 0 && item.variant) {
+                // Check if the specific variant stored in cart is soft-deleted
+                const specificVariant = product.variants.find(v => isSameVariant(v, item.variant));
+                if (!specificVariant || specificVariant.isDeleted) {
+                    isVariantUnavailable = true;
+                }
+            }
+
+            let displayImage = '/images/placeholder.jpg';
             const currentVariant = item.variant;
 
-            // Use first variant image as default
+            // Use first non-deleted variant image as default
             if (product.variants?.length > 0) {
-                const defaultVariant = product.variants[0];
-                if (defaultVariant.images?.length > 0) {
+                const defaultVariant = product.variants.find(v => !v.isDeleted) || product.variants[0];
+                if (defaultVariant?.images?.length > 0) {
                     displayImage = defaultVariant.images[0];
                 }
             }
@@ -40,7 +47,8 @@ export const getCartData = async (userId) => {
             return { 
                 ...item, 
                 variantDisplay: getVariantDisplayString(currentVariant),
-                displayImage 
+                displayImage,
+                isUnavailable: isProductUnavailable || isVariantUnavailable
             };
         });
     } else if (!cart) {
@@ -58,19 +66,22 @@ export const addItemToCart = async (userId, { productId, variant, qty = 1 }) => 
     }
 
     // Standardize input variant to object format
-    // Handle potential legacy string input or missing fields
-    let targetVariant = typeof variant === 'string' ? null : variant; 
-    // If it's a string, we might need a way to parse it, but the goal is to stop using strings.
-    // For now, if it's not an object, we'll try to use the first variant as default.
+    let targetVariant = typeof variant === 'string' ? null : variant;
     
     let price = product.price;
     let stock = product.stock || 0;
+
+    // Active (non-deleted) variants only
+    const activeVariants = (product.variants || []).filter(v => !v.isDeleted);
 
     // Find matching variant from product data to get correct price and stock
     const matchedVariant = findMatchingVariant(product.variants, targetVariant);
     
     if (matchedVariant) {
-        // If we found a match, use its specific data
+        // Explicitly reject soft-deleted variants
+        if (matchedVariant.isDeleted) {
+            throw new Error("The selected variant is no longer available");
+        }
         targetVariant = {
             color: matchedVariant.color || "",
             storage: matchedVariant.storage || "",
@@ -78,9 +89,9 @@ export const addItemToCart = async (userId, { productId, variant, qty = 1 }) => 
         };
         price = matchedVariant.price;
         stock = matchedVariant.stock;
-    } else if (product.variants?.length > 0) {
-        // If no variant provided or matched, but product has variants, use the first one
-        const fallback = product.variants[0];
+    } else if (activeVariants.length > 0) {
+        // If no variant provided or matched, but product has active variants, use the first active one
+        const fallback = activeVariants[0];
         targetVariant = {
             color: fallback.color || "",
             storage: fallback.storage || "",
@@ -88,6 +99,9 @@ export const addItemToCart = async (userId, { productId, variant, qty = 1 }) => 
         };
         price = fallback.price;
         stock = fallback.stock;
+    } else if (product.variants?.length > 0) {
+        // All variants are soft-deleted
+        throw new Error("No available variants for this product");
     } else {
         // For products without variants, use empty variant object
         targetVariant = { color: "", storage: "", ram: "" };
@@ -173,6 +187,10 @@ export const updateItemQty = async (userId, { itemId, change }) => {
 
     if (productVariants?.length > 0) {
         const matched = findMatchingVariant(productVariants, item.variant);
+        if (!matched && item.variant) {
+            // The variant this item was referencing has been soft-deleted
+            throw new Error("This item's variant is no longer available. Please remove it from your cart.");
+        }
         if (matched) {
             stock = matched.stock;
         }
