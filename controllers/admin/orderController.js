@@ -136,63 +136,67 @@ export const updateOrderStatus = async (req, res) => {
         }
 
         order.orderStatus = status;
+        const newlyTerminalItems = [];
         
         // Sync item statuses if they are not terminal (Cancelled/Returned)
         order.items.forEach(item => {
-            if (!['Cancelled', 'Returned'].includes(item.status)) {
+            const oldItemStatus = item.status;
+            if (!['Cancelled', 'Returned'].includes(oldItemStatus)) {
                 // Map global status to item status where applicable
                 const statusMap = {
                     'Confirmed': 'Ordered',
                     'Processing': 'Ordered',
                     'Shipped': 'Shipped',
-                    'Delivered': 'Delivered',
-                    'Return Requested': 'Return Requested',
-                    'Return Approved': 'Return Approved',
-                    'Return Picked': 'Return Approved',
-                    'Returned': 'Returned'
+                    'Delivered': 'Delivered'
                 };
-                if (statusMap[status]) {
+                
+                // Return flow is special: only sync if the item was already part of the return flow
+                if (['Return Requested', 'Return Approved', 'Return Picked', 'Returned'].includes(status)) {
+                    if (status === 'Return Requested' && item.status === 'Delivered') {
+                        item.status = 'Return Requested';
+                    } else if (['Return Approved', 'Return Picked'].includes(status) && item.status === 'Return Requested') {
+                        item.status = 'Return Approved';
+                    } else if (status === 'Returned' && ['Return Approved', 'Return Picked', 'Return Requested'].includes(item.status)) {
+                        item.status = 'Returned';
+                    }
+                } else if (statusMap[status]) {
                     item.status = statusMap[status];
+                }
+
+                // If it just became terminal, track it for refund/stock
+                if (item.status !== oldItemStatus && ['Cancelled', 'Returned'].includes(item.status)) {
+                    newlyTerminalItems.push(item);
                 }
             }
         });
+
+        // Special case: if order is globally Cancelled, and any item is not terminal, cancel them too
+        if (status === 'Cancelled' && oldStatus !== 'Cancelled') {
+            order.items.forEach(item => {
+                if (!['Cancelled', 'Returned'].includes(item.status)) {
+                    item.status = 'Cancelled';
+                    newlyTerminalItems.push(item);
+                }
+            });
+        }
         
         // Auto-update payment status if delivered
         if (status === 'Delivered' && order.paymentMethod === 'CASH ON DELIVERY') {
             order.paymentStatus = 'Paid';
         }
 
-        // Increment stock and process refund if order is cancelled or returned
-        const cancelStatuses = ['Cancelled', 'Returned'];
-        if (cancelStatuses.includes(status) && !cancelStatuses.includes(oldStatus)) {
+        // Handle Refunds and Stock for newly terminal items
+        if (newlyTerminalItems.length > 0) {
             let totalRefund = 0;
-            
-            // Handle Refund if it was a final return OR cancellation of paid order
-            if (status === 'Returned' || (status === 'Cancelled' && order.paymentStatus === 'Paid')) {
-                // For global return/cancel, calculate total refund from all items that haven't been refunded yet
-                order.items.forEach(item => {
-                    if (item.status !== 'Returned' && item.status !== 'Cancelled') {
-                        totalRefund += (item.price * item.qty);
-                    }
-                });
+            const isOnlinePaid = order.paymentStatus === 'Paid';
 
-                if (totalRefund > 0) {
-                    const Wallet = mongoose.model('Wallet');
-                    let wallet = await Wallet.findOne({ user: order.user });
-                    if (!wallet) wallet = new Wallet({ user: order.user, balance: 0, transactions: [] });
-                    
-                    wallet.balance += totalRefund;
-                    wallet.transactions.push({
-                        amount: totalRefund,
-                        type: 'credit',
-                        description: `Refund for ${status} Order #${order.orderId}`
-                    });
-                    await wallet.save();
-                    order.paymentStatus = 'Refunded';
+            for (const item of newlyTerminalItems) {
+                // Calculate refund if applicable (Returned items or Cancelled items that were paid)
+                if (item.status === 'Returned' || (item.status === 'Cancelled' && isOnlinePaid)) {
+                    totalRefund += (item.price * item.qty);
                 }
-            }
 
-            for (const item of order.items) {
+                // Restore Stock
                 const product = await Product.findById(item.product);
                 if (product) {
                     product.stock += item.qty;
@@ -210,6 +214,26 @@ export const updateOrderStatus = async (req, res) => {
                         }
                     }
                     await product.save();
+                }
+            }
+
+            if (totalRefund > 0) {
+                const Wallet = mongoose.model('Wallet');
+                let wallet = await Wallet.findOne({ user: order.user });
+                if (!wallet) wallet = new Wallet({ user: order.user, balance: 0, transactions: [] });
+                
+                wallet.balance += totalRefund;
+                wallet.transactions.push({
+                    amount: totalRefund,
+                    type: 'credit',
+                    description: `Refund for ${newlyTerminalItems.length} item(s) in Order #${order.orderId}`
+                });
+                await wallet.save();
+                
+                // If all items are now terminal, mark payment as Refunded
+                const allTerminal = order.items.every(i => ['Cancelled', 'Returned'].includes(i.status));
+                if (allTerminal) {
+                    order.paymentStatus = 'Refunded';
                 }
             }
         }
@@ -281,10 +305,10 @@ export const updateItemReturnStatus = async (req, res) => {
         if (allItemsReturned) {
             order.orderStatus = 'Returned';
             order.paymentStatus = 'Refunded';
-        } else if (anyItemReturned) {
-            order.orderStatus = 'Partially Returned';
         } else if (order.items.some(i => i.status === 'Return Requested')) {
             order.orderStatus = 'Return Requested';
+        } else if (anyItemReturned) {
+            order.orderStatus = 'Partially Returned';
         } else {
             // If no items are requested or returned anymore (e.g. all rejected), set back to Delivered
             order.orderStatus = 'Delivered';

@@ -4,6 +4,7 @@ import User from "../../models/user/User.js";
 import Order from "../../models/order/order.js";
 import Product from "../../models/product/Product.js";
 import { isSameVariant } from "../../utils/productHelpers.js";
+import { createAdminNotification } from "../../utils/notificationHelper.js";
 
 export const getCheckout = async (req, res) => {
     try {
@@ -153,6 +154,14 @@ export const placeOrder = async (req, res) => {
         });
 
         await newOrder.save();
+
+        // Notify Admin
+        await createAdminNotification({
+            type: 'order_placed',
+            title: 'New Order Received',
+            message: `Order #${newOrder.orderId} has been placed by ${user.name || user.email}. Total: ₹${newOrder.totalAmount.toLocaleString()}`,
+            orderId: newOrder._id
+        });
 
         // Clear cart
         await cartService.clearCart(userId);

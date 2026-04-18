@@ -191,12 +191,106 @@
             <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
                 System <span class="text-accent ml-2">Active</span>
             </div>
-            <div class="flex items-center gap-4">
-                <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
-                    🔔
-                </button>
-                <div class="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-black font-bold text-xs">
-                    A
+            <div class="flex items-center gap-4" x-data="{ 
+                open: false, 
+                notifications: [], 
+                unreadCount: 0,
+                async fetchNotifications() {
+                    try {
+                        const res = await fetch('/admin/api/notifications');
+                        const data = await res.json();
+                        if (data.success) {
+                            this.notifications = data.notifications;
+                            this.unreadCount = data.unreadCount;
+                        }
+                    } catch (err) { console.error('Fetch error:', err); }
+                },
+                async markAsRead(id) {
+                    try {
+                        const res = await fetch(`/admin/api/notifications/${id}/read`, { method: 'PATCH' });
+                        if ((await res.json()).success) {
+                            this.notifications = this.notifications.map(n => n._id === id ? { ...n, isRead: true } : n);
+                            this.unreadCount = Math.max(0, this.unreadCount - 1);
+                        }
+                    } catch (err) { console.error('Mark read error:', err); }
+                },
+                async markAllRead() {
+                    try {
+                        const res = await fetch('/admin/api/notifications/read-all', { method: 'PATCH' });
+                        if ((await res.json()).success) {
+                            this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
+                            this.unreadCount = 0;
+                        }
+                    } catch (err) { console.error('Mark all read error:', err); }
+                },
+                getIcon(type) {
+                    switch(type) {
+                        case 'order_placed': return '🛒';
+                        case 'return_requested': return '🔄';
+                        case 'order_cancelled': return '✕';
+                        default: return '🔔';
+                    }
+                }
+            }" x-init="fetchNotifications(); setInterval(() => fetchNotifications(), 30000)">
+                
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button @click="open = !open" class="w-10 h-10 flex items-center justify-center rounded-sm hover:bg-white/5 transition-all relative group">
+                        <svg class="w-5 h-5 text-white/40 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <template x-if="unreadCount > 0">
+                            <span class="absolute top-2 right-2 w-4 h-4 bg-accent text-[8px] text-black font-black flex items-center justify-center rounded-full border-2 border-black transform translate-x-1/2 -translate-y-1/2 shadow-xl animate-pulse" x-text="unreadCount"></span>
+                        </template>
+                    </button>
+
+                    <!-- Dropdown -->
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 translate-y-4"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="absolute right-0 mt-4 w-80 bg-black-surface border border-white/10 shadow-2xl z-50 overflow-hidden" 
+                         style="display: none;">
+                        
+                        <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center">
+                            <h4 class="text-[10px] font-bold tracking-widest uppercase text-white/40">Notifications</h4>
+                            <button @click="markAllRead()" class="text-[9px] font-bold uppercase text-accent hover:text-white transition-colors">Mark all as read</button>
+                        </div>
+
+                        <div class="max-h-96 overflow-y-auto">
+                            <template x-if="notifications.length === 0">
+                                <div class="px-6 py-10 text-center">
+                                    <p class="text-[10px] text-white/20 uppercase font-bold tracking-widest leading-relaxed">System logs are clear.<br>No recent alerts.</p>
+                                </div>
+                            </template>
+                            
+                            <template x-for="n in notifications" :key="n._id">
+                                <div @click="markAsRead(n._id)" 
+                                     class="px-6 py-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                                     :class="!n.isRead ? 'bg-accent/5' : ''">
+                                    <div class="flex gap-4">
+                                        <div class="w-8 h-8 bg-black border border-white/5 rounded-full flex items-center justify-center text-xs flex-shrink-0" x-text="getIcon(n.type)"></div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex justify-between items-start mb-1">
+                                                <h5 class="text-[10px] font-bold text-white uppercase truncate pr-2" x-text="n.title"></h5>
+                                                <span class="text-[8px] text-white/20 uppercase whitespace-nowrap" x-text="new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })"></span>
+                                            </div>
+                                            <p class="text-[10px] text-white/40 leading-relaxed line-clamp-2" x-text="n.message"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="px-6 py-4 bg-white/[0.02] text-center border-t border-white/5">
+                            <a href="/admin/notifications" class="text-[9px] font-bold uppercase text-white/20 hover:text-white transition-colors tracking-widest">View Entire Protocol</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-black font-bold text-xs uppercase">
+                    <%= typeof admin !== 'undefined' && admin ? admin.email[0] : 'A' %>
                 </div>
             </div>
         </header>

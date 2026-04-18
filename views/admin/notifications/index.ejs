@@ -1,0 +1,61 @@
+<%- contentFor('body') %>
+
+<div class="space-y-10" x-data="{ 
+    notifications: [],
+    async fetchAll() {
+        const res = await fetch('/admin/api/notifications');
+        const data = await res.json();
+        if(data.success) this.notifications = data.notifications;
+    },
+    async markRead(id) {
+        const res = await fetch(`/admin/api/notifications/${id}/read`, { method: 'PATCH' });
+        if((await res.json()).success) {
+            this.notifications = this.notifications.map(n => n._id === id ? { ...n, isRead: true } : n);
+        }
+    }
+}" x-init="fetchAll()">
+    <div class="flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight uppercase text-white mb-2">SYSTEM PROTOCOL.</h1>
+            <p class="text-white/40 text-[10px] tracking-[0.2em] font-bold uppercase">Chronological log of administrative events</p>
+        </div>
+        <button @click="await fetch('/admin/api/notifications/read-all', {method:'PATCH'}); fetchAll();" class="px-6 py-3 bg-white/5 border border-white/10 text-white text-[10px] font-bold tracking-widest uppercase hover:bg-white/10 transition-all">Clear All Alerts</button>
+    </div>
+
+    <div class="bg-black-surface border border-white/5 overflow-hidden">
+        <div class="divide-y divide-white/5">
+            <template x-for="n in notifications" :key="n._id">
+                <div class="p-8 hover:bg-white/[0.01] transition-all flex gap-8 items-start relative group" :class="!n.isRead ? 'border-l-2 border-accent bg-accent/[0.02]' : ''">
+                    <div class="w-12 h-12 bg-black border border-white/5 rounded-full flex items-center justify-center text-xl flex-shrink-0 shadow-2xl">
+                        <template x-if="n.type === 'order_placed'"><span>🛒</span></template>
+                        <template x-if="n.type === 'return_requested'"><span>🔄</span></template>
+                        <template x-if="n.type === 'order_cancelled'"><span>✕</span></template>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="text-white font-bold uppercase tracking-tight text-sm" x-text="n.title"></h3>
+                                <p class="text-[9px] font-bold tracking-widest text-white/20 uppercase" x-text="new Date(n.createdAt).toLocaleString()"></p>
+                            </div>
+                            <template x-if="n.orderId">
+                                <a :href="'/admin/orders/' + n.orderId" class="text-[9px] font-bold uppercase text-accent border border-accent/20 px-3 py-1 hover:bg-accent hover:text-black transition-all">Review Order</a>
+                            </template>
+                        </div>
+                        <p class="text-white/60 text-xs leading-relaxed max-w-3xl font-medium" x-text="n.message"></p>
+                    </div>
+
+                    <template x-if="!n.isRead">
+                        <button @click="markRead(n._id)" class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-8 right-8 text-[9px] font-bold uppercase text-white/20 hover:text-white">Mark as read</button>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="notifications.length === 0">
+                <div class="p-20 text-center">
+                    <p class="text-[10px] text-white/10 uppercase font-bold tracking-[0.3em]">No logged alerts in current cycle</p>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>

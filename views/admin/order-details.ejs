@@ -17,9 +17,23 @@
 
         <!-- Status Update & Return Management -->
         <div class="flex gap-4 items-center">
+            <% 
+                const returnableItems = order.items.filter(i => !['Cancelled', 'Returned'].includes(i.status));
+                const requestedItems = returnableItems.filter(i => i.status === 'Return Requested');
+                const isPartialReturn = requestedItems.length > 0 && requestedItems.length < returnableItems.length;
+                const isFullReturn = requestedItems.length > 0 && requestedItems.length === returnableItems.length;
+            %>
+
             <% if (order.orderStatus === 'Return Requested') { %>
-                <button onclick="updateStatus('Return Approved')" class="bg-status-success text-black font-bold px-8 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-white transition-all">APPROVE RETURN</button>
-                <button onclick="updateStatus('Delivered')" class="bg-status-danger text-white font-bold px-8 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-status-danger/80 transition-all">REJECT RETURN</button>
+                <% if (isFullReturn) { %>
+                    <button onclick="updateStatus('Return Approved')" class="bg-status-success text-black font-bold px-8 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-white transition-all">APPROVE RETURN</button>
+                    <button onclick="updateStatus('Delivered')" class="bg-status-danger text-white font-bold px-8 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-status-danger/80 transition-all">REJECT RETURN</button>
+                <% } else { %>
+                    <div class="bg-status-warning/10 border border-status-warning/20 px-6 py-4 rounded-sm flex flex-col items-end">
+                        <p class="text-[10px] font-bold tracking-[0.2em] uppercase text-status-warning">Partial Return Requested</p>
+                        <p class="text-[8px] text-white/40 mt-1 uppercase tracking-widest">Manage individual items below</p>
+                    </div>
+                <% } %>
             <% } else if (order.orderStatus === 'Return Approved') { %>
                 <button onclick="updateStatus('Return Picked')" class="bg-accent text-black font-bold px-10 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-white transition-all">MARK AS PICKED</button>
             <% } else if (order.orderStatus === 'Return Picked') { %>
@@ -54,13 +68,18 @@
 
         <!-- Left: Order Items/Alerts -->
         <div class="lg:col-span-2 space-y-10">
-            <% if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Return Requested' || order.orderStatus === 'Returned') { %>
+            <% 
+                const hasGlobalReason = (order.orderStatus === 'Cancelled' && order.cancellationReason) || 
+                                       (['Return Requested', 'Returned', 'Return Approved', 'Partially Returned'].includes(order.orderStatus) && order.returnReason);
+            %>
+
+            <% if (hasGlobalReason) { %>
                 <div class="bg-black-surface border border-l-4 <%= order.orderStatus === 'Cancelled' ? 'border-status-danger' : 'border-status-warning' %> p-8">
                     <h4 class="text-white text-[11px] font-bold tracking-widest uppercase mb-4">
                         <%= order.orderStatus %> Details
                     </h4>
                     <p class="text-white/60 text-xs italic leading-relaxed">
-                        "<%= order.returnReason || order.cancellationReason || 'No reason provided.' %>"
+                        "<%= order.returnReason || order.cancellationReason %>"
                     </p>
                 </div>
             <% } %>
@@ -202,23 +221,16 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     async function updateStatus(status) {
         const orderId = '<%= order._id %>';
-        const { isConfirmed } = await Swal.fire({
+        const confirmed = await window.confirmAction({
             title: `Update to ${status}?`,
-            text: `Are you sure you want to change status to: ${status}`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ff6a00',
-            cancelButtonColor: '#1a1a1a',
-            confirmButtonText: 'Confirm',
-            background: '#0a0a0a',
-            color: '#fff'
+            message: `Execution of this operation will transition the order status to: ${status}`,
+            type: 'warning'
         });
 
-        if (isConfirmed) {
+        if (confirmed) {
             try {
                 const response = await fetch('/admin/orders/status', {
                     method: 'PATCH',
@@ -228,25 +240,17 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    await Swal.fire({
-                        title: 'Success!',
-                        text: `Order status changed to ${status}`,
-                        icon: 'success',
-                        background: '#0a0a0a',
-                        color: '#fff'
-                    });
-                    window.location.reload();
+                    window.dispatchEvent(new CustomEvent('show-toast', { 
+                        detail: { message: `Order status synchronized to ${status} successfully.`, type: 'success' } 
+                    }));
+                    setTimeout(() => window.location.reload(), 1500);
                 } else {
                     throw new Error(data.message);
                 }
             } catch (error) {
-                Swal.fire({
-                    title: 'Error',
-                    text: error.message || 'Failed to update status.',
-                    icon: 'error',
-                    background: '#0a0a0a',
-                    color: '#fff'
-                });
+                window.dispatchEvent(new CustomEvent('show-toast', { 
+                    detail: { message: error.message || 'Transmission failed. System unable to update status.', type: 'error' } 
+                }));
             }
         }
     }
@@ -261,21 +265,15 @@
 
     async function updateItemReturn(itemId, status) {
         const orderId = '<%= order._id %>';
-        const action = status === 'Return Approved' ? 'approve' : (status === 'Returned' ? 'process refund for' : 'reject');
+        const action = status === 'Return Approved' ? 'APPROVE' : (status === 'Returned' ? 'PROCESS REFUND FOR' : 'REJECT');
         
-        const { isConfirmed } = await Swal.fire({
-            title: `Are you sure?`,
-            text: `Confirm you want to ${action} this item return request.`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ff6a00',
-            cancelButtonColor: '#1a1a1a',
-            confirmButtonText: 'Yes, Proceed',
-            background: '#0a0a0a',
-            color: '#fff'
+        const confirmed = await window.confirmAction({
+            title: `AUTHORIZE ACTION?`,
+            message: `Confirm you wish to ${action} this specific item return request. This action is logged.`,
+            type: 'question'
         });
 
-        if (isConfirmed) {
+        if (confirmed) {
             try {
                 const response = await fetch('/admin/orders/item-return', {
                     method: 'PATCH',
@@ -285,25 +283,17 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    await Swal.fire({
-                        title: 'Success!',
-                        text: data.message,
-                        icon: 'success',
-                        background: '#0a0a0a',
-                        color: '#fff'
-                    });
-                    window.location.reload();
+                    window.dispatchEvent(new CustomEvent('show-toast', { 
+                        detail: { message: data.message || 'Item return protocol executed successfully.', type: 'success' } 
+                    }));
+                    setTimeout(() => window.location.reload(), 1500);
                 } else {
                     throw new Error(data.message);
                 }
             } catch (error) {
-                Swal.fire({
-                    title: 'Error',
-                    text: error.message || 'Failed to update item return status.',
-                    icon: 'error',
-                    background: '#0a0a0a',
-                    color: '#fff'
-                });
+                window.dispatchEvent(new CustomEvent('show-toast', { 
+                    detail: { message: error.message || 'Protocol failure. Item return status update aborted.', type: 'error' } 
+                }));
             }
         }
     }

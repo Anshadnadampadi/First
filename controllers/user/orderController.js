@@ -3,6 +3,8 @@ import Product from '../../models/product/product.js';
 import Wallet from '../../models/user/Wallet.js';
 import PDFDocument from 'pdfkit';
 import { isSameVariant } from '../../utils/productHelpers.js';
+import { createAdminNotification } from '../../utils/notificationHelper.js';
+import User from '../../models/user/User.js';
 
 export const getUserOrders = async (req, res) => {
     try {
@@ -112,6 +114,15 @@ export const cancelOrder = async (req, res) => {
         }
 
         await order.save();
+
+        // Notify Admin
+        const user = await User.findById(userId);
+        await createAdminNotification({
+            type: 'order_cancelled',
+            title: 'Order Cancelled',
+            message: `Order #${order.orderId} has been cancelled by ${user.name || user.email}. Reason: ${order.cancellationReason}`,
+            orderId: order._id
+        });
 
         // Restore stock
         for (const item of order.items) {
@@ -239,6 +250,15 @@ export const requestReturn = async (req, res) => {
 
         await order.save();
 
+        // Notify Admin
+        const user = await User.findById(userId);
+        await createAdminNotification({
+            type: 'return_requested',
+            title: 'Return Requested',
+            message: `A full return has been requested for Order #${order.orderId} by ${user.name || user.email}. Reason: ${reason}`,
+            orderId: order._id
+        });
+
         res.json({ success: true, message: 'Return request submitted successfully. We will review it shortly.' });
     } catch (error) {
         console.error('Error requesting return:', error);
@@ -275,11 +295,20 @@ export const returnOrderItem = async (req, res) => {
         // If order was 'Delivered', update to 'Return Requested' globally too if needed
         // or keep it 'Delivered' and just show item status. 
         // Better to update global status to 'Return Requested' to alert admin.
-        if (order.orderStatus === 'Delivered') {
+        if (order.orderStatus === 'Delivered' || order.orderStatus === 'Partially Returned') {
             order.orderStatus = 'Return Requested';
         }
 
         await order.save();
+
+        // Notify Admin
+        const user = await User.findById(userId);
+        await createAdminNotification({
+            type: 'return_requested',
+            title: 'Partial Return Requested',
+            message: `User ${user.name || user.email} requested a return for an item in Order #${order.orderId}. Reason: ${reason}`,
+            orderId: order._id
+        });
         res.json({ success: true, message: 'Return request for the item submitted successfully.' });
 
     } catch (error) {
