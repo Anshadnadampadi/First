@@ -1,12 +1,5 @@
 import Order from '../../models/order/order.js';
-import PDFDocument from 'pdfkit';
-import { 
-    getUserOrdersService, 
-    cancelOrderService, 
-    cancelOrderItemService, 
-    requestReturnService, 
-    returnOrderItemService 
-} from '../../services/user/orderService.js';
+import Product from '../../models/product/product.js';
 
 export const getUserOrders = async (req, res) => {
     try {
@@ -70,32 +63,59 @@ export const cancelOrder = async (req, res) => {
     try {
         const { orderId, reason } = req.body;
         const userId = req.session.user;
-        const result = await cancelOrderService(userId, orderId, reason);
 
-        if (!result.success) {
-            return res.status(result.status || 400).json(result);
+        const order = await Order.findOne({ _id: orderId, user: userId });
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        if (['Shipped', 'Delivered', 'Cancelled', 'Returned'].includes(order.orderStatus)) {
+            return res.status(400).json({ success: false, message: `Order cannot be cancelled. Current status: ${order.orderStatus}` });
+        }
+
+        order.orderStatus = 'Cancelled';
+        order.cancellationReason = reason || 'Cancelled by user';
+        
+        // Handle refund if payment was made online
+        if (order.paymentStatus === 'Paid') {
+            // Logic for refunding to wallet or original method would go here
+            // For now, just mark status
+            order.paymentStatus = 'Refunded';
+        }
+
+        await order.save();
+
+        // Restore stock
+        for (const item of order.items) {
+            const product = await Product.findById(item.product);
+            if (product) {
+                // Increment main stock
+                product.stock += item.qty;
+
+                // Handle variant stock if applicable
+                if (item.variant && product.variants && product.variants.length > 0) {
+                    // Item variant can be an object with properties or an ID string
+                    const variantIndex = product.variants.findIndex(v => {
+                        if (typeof item.variant === 'object' && item.variant !== null) {
+                            return v.color === item.variant.color && 
+                                   v.storage === item.variant.storage && 
+                                   v.ram === item.variant.ram;
+                        }
+                        return v._id.toString() === item.variant.toString();
+                    });
+
+                    if (variantIndex > -1) {
+                        product.variants[variantIndex].stock += item.qty;
+                    }
+                }
+                await product.save();
+            }
         }
 
         res.json(result);
     } catch (error) {
         console.error('Error cancelling order:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-};
-
-export const cancelOrderItem = async (req, res) => {
-    try {
-        const { orderId, itemId } = req.body;
-        const userId = req.session.user;
-        const result = await cancelOrderItemService(userId, orderId, itemId);
-
-        if (!result.success) {
-            return res.status(result.status || 400).json(result);
-        }
-
-        res.json(result);
-    } catch (error) {
-        console.error('Error cancelling order item:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
@@ -111,109 +131,21 @@ export const requestReturn = async (req, res) => {
 
         const result = await requestReturnService(userId, orderId, reason);
 
-        if (!result.success) {
-            return res.status(result.status || 400).json(result);
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
         }
+
+        if (order.orderStatus !== 'Delivered') {
+            return res.status(400).json({ success: false, message: 'Only delivered orders can be returned.' });
+        }
+
+        order.orderStatus = 'Return Requested';
+        order.returnReason = reason;
+        await order.save();
 
         res.json(result);
     } catch (error) {
         console.error('Error requesting return:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-};
-
-export const returnOrderItem = async (req, res) => {
-    try {
-        const { orderId, itemId, reason } = req.body;
-        const userId = req.session.user;
-
-        if (!reason || reason.trim().length < 10) {
-            return res.status(400).json({ success: false, message: 'Please provide a detailed reason (min 10 characters).' });
-        }
-
-        const result = await returnOrderItemService(userId, orderId, itemId, reason);
-
-        if (!result.success) {
-            return res.status(result.status || 400).json(result);
-        }
-
-        res.json(result);
-    } catch (error) {
-        console.error('Error returning order item:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-};
-
-export const downloadInvoice = async (req, res) => {
-    try {
-        const orderId = req.params.id;
-        const userId = req.session.user;
-
-        const order = await Order.findOne({ _id: orderId, user: userId }).populate('items.product');
-
-        if (!order) return res.status(404).send('Order not found');
-
-        if ( order.orderStatus !== 'Delivered') {
-            return res.status(400).send('Invoice is only available for delivered orders.');
-        }
-
-        const doc = new PDFDocument({ margin: 50 });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="Invoice-${order.orderId}.pdf"`);
-
-        doc.pipe(res);
-        // Header
-        doc.fillColor('#000000').fontSize(25).font('Helvetica-Bold').text('STARZO MOBILES', { align: 'left' });
-        doc.fontSize(10).font('Helvetica').text('Premium Mobile Experience', { align: 'left' }).moveDown();
-
-        // Invoice Info
-        doc.fontSize(20).text('INVOICE', { align: 'right' });
-        doc.fontSize(10).text(`Order ID: #${order.orderId}`, { align: 'right' });
-        doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`, { align: 'right' }).moveDown();
-
-        // Addresses
-        const addressTop = 160;
-        doc.fontSize(12).font('Helvetica-Bold').text('Billed To:', 50, addressTop);
-        doc.fontSize(10).font('Helvetica')
-           .text(order.shippingAddress.fullName, 50, addressTop + 20)
-           .text(order.shippingAddress.streetAddress, 50, addressTop + 35)
-           .text(`${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.pinCode}`, 50, addressTop + 50);
-
-        doc.fontSize(12).font('Helvetica-Bold').text('Sold By:', 300, addressTop);
-        doc.fontSize(10).font('Helvetica').text('Starzo Mobiles Ltd.', 300, addressTop + 20).text('123 Tech Avenue, Bangalore', 300, addressTop + 35).moveDown(4);
-
-        // Table Header
-        const tableTop = 270;
-        doc.rect(50, tableTop, 500, 25).fill('#f9f9f9').stroke('#eeeeee');
-        doc.fillColor('#333333').fontSize(10).font('Helvetica-Bold');
-        doc.text('Item Description', 60, tableTop + 8);
-        doc.text('Qty', 350, tableTop + 8, { width: 30, align: 'center' });
-        doc.text('Price', 400, tableTop + 8, { width: 60, align: 'right' });
-        doc.text('Total', 480, tableTop + 8, { width: 60, align: 'right' });
-
-        // Content
-        doc.font('Helvetica');
-        let currentY = tableTop + 35;
-        order.items.forEach(item => {
-            const description = `${item.product ? item.product.name : 'Unknown Product'} (${(typeof item.variant === 'object' && item.variant !== null) ? [item.variant.storage, item.variant.color].filter(Boolean).join(' ') : 'Standard'})`;
-            doc.text(description, 60, currentY);
-            doc.text(item.qty.toString(), 350, currentY, { width: 30, align: 'center' });
-            doc.text(`INR ${item.price.toLocaleString()}`, 400, currentY, { width: 60, align: 'right' });
-            doc.text(`INR ${(item.price * item.qty).toLocaleString()}`, 480, currentY, { width: 60, align: 'right' });
-            currentY += 25;
-        });
-
-        // Totals
-        currentY += 10;
-        doc.text('Subtotal:', 350, currentY);
-        doc.text(`INR ${order.subtotal.toLocaleString()}`, 480, currentY, { width: 60, align: 'right' });
-        currentY += 20;
-        doc.text('Grand Total:', 350, currentY);
-        doc.fontSize(14).font('Helvetica-Bold').text(`INR ${order.totalAmount.toLocaleString()}`, 480, currentY, { width: 60, align: 'right' });
-
-        doc.end();
-    } catch (error) {
-        console.error('Invoice Generation Error:', error);
-        res.status(500).send('Internal Server Error');
     }
 };

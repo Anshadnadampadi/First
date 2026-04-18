@@ -341,6 +341,13 @@
                 document.activeElement.blur();
             }
         });
+
+        // Prevent number input value changes on scroll
+        document.addEventListener("wheel", (event) => {
+            if (document.activeElement.type === "number") {
+                document.activeElement.blur();
+            }
+        });
     </script>
 </body>
 </html>

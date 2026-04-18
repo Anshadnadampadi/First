@@ -1,10 +1,9 @@
+import crypto from 'crypto';
 import * as cartService from "../../services/user/cartService.js";
 import User from "../../models/user/User.js";
 import Wallet from "../../models/user/Wallet.js";
 import Order from "../../models/order/order.js";
-import { placeOrderService, verifyPaymentService } from "../../services/user/checkoutService.js";
-import { sendAdminNotification } from "../../utils/notificationHelper.js";
-
+import Product from "../../models/product/Product.js";
 
 export const getCheckout = async (req, res) => {
     try {
@@ -42,33 +41,106 @@ export const getCheckout = async (req, res) => {
     }
 };
 
-
+import crypto from 'crypto';
 
 export const placeOrder = async (req, res) => {
     try {
         const userId = req.session.user;
-        const result = await placeOrderService(userId, req.body);
+        const { addressId, paymentMethod, couponCode } = req.body;
 
-        if (!result.success) {
-            if (result.terminate && req.session) {
-                req.session.destroy();
-                res.clearCookie('userSid', { path: '/' });
+        if (!addressId || !paymentMethod) {
+            return res.status(400).json({ success: false, message: 'Address and Payment Method are required.' });
+        }
+
+        const cart = await cartService.getCartData(userId);
+        if (!cart || cart.items.length === 0) {
+            return res.status(400).json({ success: false, message: 'Cart is empty.' });
+        }
+
+        // Final sanity check for unlisted/blocked items
+        if (cart.items.some(i => i.isUnavailable)) {
+            return res.status(400).json({ success: false, message: 'Some items in your cart are unavailable. Please remove them to proceed.' });
+        }
+
+        const user = await User.findById(userId).populate("addresses");
+        const address = user.addresses.find(a => a._id.toString() === addressId);
+        
+        if (!address) {
+            return res.status(404).json({ success: false, message: 'Address not found or unauthorized.' });
+        }
+
+        let subtotal = cart.subtotal || 0;
+        let tax = Math.floor(subtotal * 0.18); 
+        let shippingFee = subtotal > 500 ? 0 : 50; 
+        
+        let discount = 0;
+        if (couponCode && couponCode.trim().toUpperCase() === 'SYNC10') {
+            discount = Math.floor((subtotal + tax) * 0.10);
+        }
+        
+        let totalAmount = Math.max(0, subtotal + tax + shippingFee - discount);
+
+        const orderId = `ORD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+        // Prepare order items
+        const orderItems = cart.items.map(item => ({
+            product: item.product._id,
+            variant: item.variant,
+            qty: item.qty,
+            price: item.price
+        }));
+
+        // Reduce stock
+        for (const item of cart.items) {
+            const product = await Product.findById(item.product._id);
+            if (product) {
+                if (product.stock >= item.qty) {
+                    product.stock -= item.qty;
+                }
+                if (item.variant && product.variants.length > 0) {
+                    const variantIndex = product.variants.findIndex(v => v._id.toString() === item.variant || v.color === item.variant);
+                    if (variantIndex > -1 && product.variants[variantIndex].stock >= item.qty) {
+                        product.variants[variantIndex].stock -= item.qty;
+                    }
+                }
+                await product.save();
             }
-            return res.status(result.status || 400).json(result);
         }
 
-        // Emit socket notification to admin only for non-online payments
-        // Online payments will trigger this after verification
-        if (result.paymentMethod !== 'ONLINE PAYMENT') {
-            await sendAdminNotification(req.app, {
-                type: 'order_placed',
-                title: 'New Order Placed',
-                message: `Order #${result.orderId} has been placed.`,
-                orderId: result.dbOrderId
-            });
-        }
+        const newOrder = new Order({
+            orderId,
+            user: userId,
+            items: orderItems,
+            shippingAddress: {
+                fullName: address.name,
+                phone: address.phone,
+                streetAddress: `${address.addr1} ${address.addr2 || ''}`.trim(),
+                city: address.city,
+                state: address.state,
+                pinCode: address.zip,
+                country: address.country
+            },
+            subtotal,
+            tax,
+            shippingFee,
+            discount,
+            totalAmount,
+            couponCode,
+            paymentMethod,
+            paymentStatus: paymentMethod === 'CASH ON DELIVERY' ? 'Pending' : 'Paid', 
+            orderStatus: 'Processing'
+        });
 
-        res.status(200).json(result);
+        await newOrder.save();
+
+        // Clear cart
+        await cartService.clearCart(userId);
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Order placed successfully', 
+            orderId: newOrder.orderId 
+        });
 
     } catch (error) {
         console.error('Error placing order:', error);

@@ -38,21 +38,21 @@
                                     <p class="text-text-muted text-xs uppercase tracking-widest">
                                         <%= item.variantDisplay %>
                                     </p>
-                                    <div id="item-badge-<%= item._id %>">
-                                        <% if (item.isUnavailable) { %>
-                                            <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
-                                                ● Unavailable
-                                            </span>
-                                        <% } else if (item.isOutOfStock) { %>
-                                            <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
-                                                ● Out of Stock
-                                            </span>
-                                        <% } else if (item.insufficientStock) { %>
-                                            <span class="inline-block mt-3 px-3 py-1 bg-status-warning/10 border border-status-warning/30 text-status-warning text-[9px] font-black uppercase tracking-[0.2em]">
-                                                ● Only <%= item.availableStock %> Left
-                                            </span>
-                                        <% } %>
-                                    </div>
+
+                                    <% if (item.isUnavailable) { %>
+                                        <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
+                                            ● Unavailable
+                                        </span>
+                                    <% } else if (item.isOutOfStock) { %>
+                                        <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
+                                            ● Out of Stock
+                                        </span>
+                                    <% } else if (item.insufficientStock) { %>
+                                        <span class="inline-block mt-3 px-3 py-1 bg-status-warning/10 border border-status-warning/30 text-status-warning text-[9px] font-black uppercase tracking-[0.2em]">
+                                            ● Only <%= item.availableStock %> Left
+                                        </span>
+                                    <% } %>
+
                                 </div>
 
                                 <!-- Qty & Price -->
@@ -104,28 +104,15 @@
                                             cart.subtotal.toLocaleString() %></span>
                                 </div>
 
-                                <div id="checkout-container" class="pt-4">
-                                    <% const hasIssues = cart.items.some(item => item.isUnavailable || item.isOutOfStock || item.insufficientStock); %>
-                                    
-                                    <div id="cart-issues-container" class="<%= hasIssues ? '' : 'hidden' %> mt-8 p-4 bg-status-danger/5 border border-status-danger/20">
-                                        <p class="text-status-danger text-[10px] font-bold uppercase tracking-wider leading-relaxed text-center">
-                                            Some items in your cart have issues (Unavailable/Out of Stock). Please resolve to proceed.
-                                        </p>
-                                    </div>
-                                    
-                                    <div id="checkout-button-wrapper" class="mt-4">
-                                        <% if (hasIssues) { %>
-                                            <button disabled
-                                                class="w-full bg-white/20 text-white/40 font-bold py-5 text-sm tracking-[0.2em] uppercase cursor-not-allowed block text-center">
-                                                PROCEED TO CHECKOUT
-                                            </button>
-                                        <% } else { %>
-                                            <a href="/checkout"
-                                                class="w-full bg-accent text-black font-bold py-5 text-sm tracking-[0.2em] uppercase hover:bg-white transition-all btn-press block text-center">
-                                                PROCEED TO CHECKOUT
-                                            </a>
-                                        <% } %>
-                                    </div>
+
+                            <% const hasIssues = cart.items.some(item => item.isUnavailable || item.isOutOfStock || item.insufficientStock); %>
+                            
+                            <% if (hasIssues) { %>
+                                <div class="mt-8 p-4 bg-status-danger/5 border border-status-danger/20">
+                                    <p class="text-status-danger text-[10px] font-bold uppercase tracking-wider leading-relaxed text-center">
+                                        Some items in your cart have issues (Unavailable/Out of Stock). Please resolve to proceed.
+                                    </p>
+
                                 </div>
                             </div>
 
@@ -223,12 +210,8 @@
                     document.querySelector('[data-subtotal]').textContent = formattedSubtotal;
                     document.querySelector('[data-cart-total]').textContent = formattedSubtotal;
 
-                    // Update Item Badge
-                    updateItemBadge(itemId, data.itemStatus);
-                    
-                    // Update Checkout Button State
-                    updateCheckoutUI(data.hasIssues);
-                } 
+                } // Quickest way to sync state for now
+
                 else {
                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Error updating quantity', type: 'error' } }));
                 }

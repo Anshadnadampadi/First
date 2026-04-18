@@ -213,6 +213,15 @@
                         </template>
 
                         <button @click="submitOrder" class="w-full bg-accent text-black font-black py-5 text-[11px] tracking-[0.3em] uppercase hover:bg-white transition-all shadow-[0_0_30px_rgba(255,106,0,0.2)] flex items-center justify-center gap-3" :class="{ 'opacity-50 cursor-not-allowed': isSubmitting || hasCartIssues }" :disabled="isSubmitting || hasCartIssues">
+                        <template x-if="hasCartIssues">
+                            <div class="mb-4 p-4 bg-status-danger/10 border border-status-danger/20">
+                                <p class="text-status-danger text-[9px] font-black uppercase tracking-widest text-center">
+                                    Some items have stock/availability issues. Please return to cart.
+                                </p>
+                            </div>
+                        </template>
+
+                        <button @click="submitOrder" class="w-full bg-accent text-black font-black py-5 text-[11px] tracking-[0.3em] uppercase hover:bg-white transition-all shadow-[0_0_30px_rgba(255,106,0,0.2)] flex items-center justify-center gap-3" :class="{ 'opacity-50 cursor-not-allowed': isSubmitting || hasCartIssues }" :disabled="isSubmitting || hasCartIssues">
                             <span x-show="!isSubmitting" class="flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 Place Order

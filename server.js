@@ -126,20 +126,22 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    console.error("GLOBAL_ERROR:", err.stack || err.message || err);
+
+    console.error("GLOBAL_ERROR:", err.stack);
     
     // Check if it's an AJAX request
     if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
         return res.status(err.status || 500).json({
             success: false,
-            message: err.message || "Internal Server Error",
-            error: process.env.NODE_ENV === 'development' ? err : {}
+
+            message: err.message || "Internal Server Error"
         });
     }
 
     res.status(err.status || 500).render("errors/error", {
         title: "Error Occurred",
-        message: err.message || "An unexpected error occurred",
+
+        message: err.message,
         error: process.env.NODE_ENV === 'development' ? err : {},
         breadcrumbs: [{ label: 'Error', url: '#' }]
     });
