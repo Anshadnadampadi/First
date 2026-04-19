@@ -566,7 +566,7 @@ export const postEditProfile = async (req, res) => {
         }
 
         if (req.file) {
-            const imageUrl = `/uploads/profile/${req.file.filename}`;
+            const imageUrl = req.file.path;
             result.user.profileImage = imageUrl;
             result.user.avatar = imageUrl; // keep legacy field in sync
             await result.user.save();
@@ -589,7 +589,7 @@ export const updateProfileImage = async (req, res) => {
         }
 
         const userId = req.session.user
-        const imagePath = `/uploads/profile/${req.file.filename}`
+        const imagePath = req.file.path
 
         await User.findByIdAndUpdate(userId, {
             profileImage: imagePath,
@@ -622,10 +622,11 @@ export const removeProfileImage = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-    if (req.session && req.session.user) {
-        delete req.session.user;
-    }
-    res.redirect('/');
+    req.session.destroy((err) => {
+        if (err) console.error("User logout session destruction error:", err);
+        res.clearCookie("userSid", { path: '/' });
+        res.redirect('/');
+    });
 };
 export const updateProfile = async (req, res) => {
 

@@ -1,6 +1,4 @@
-import category from "../../../models/category/category.js";
 import * as adminCategoryServices from "../../../services/admin/adminCategoryServices.js";
-import fs from "fs";
 
 export const getCategories = async (req, res) => {
     try {
@@ -40,9 +38,8 @@ export const addCategory = async (req, res) => {
     } catch (error) {
         console.error("Backend Error:", error);
         
-        if (req.file) {
-            fs.unlinkSync(req.file.path);
-        }
+        // Cloudinary cleanup could be implemented here if needed
+
 
         let message = "Error adding category";
         if (error.code === 11000) {
@@ -68,7 +65,8 @@ export const updateCategory = async (req, res) => {
         res.json({ success: true, message: "Category updated successfully!" });
     } catch (error) {
         console.error("Update Error:", error);
-        if (req.file) fs.unlinkSync(req.file.path);
+        // Cloudinary cleanup could be implemented here if needed
+
         res.status(500).json({ success: false, message: error.message || "Error updating category" });
     }
 };

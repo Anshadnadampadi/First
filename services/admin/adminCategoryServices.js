@@ -1,6 +1,5 @@
 import Category from "../../models/category/category.js";
-import fs from "fs";
-import path from "path";
+
 import { commonCache, CACHE_KEYS } from "../common/cacheService.js";
 
 export const getCategoryManagementData = async (query) => {
@@ -47,7 +46,7 @@ export const getCategoryById = async (id) => {
 
 export const createCategory = async (categoryData, file) => {
     const { name, slug, displayOrder, metaDescription } = categoryData;
-    const icon = file ? `/uploads/categories/${file.filename}` : '📁';
+    const icon = file ? file.path : '📁';
 
     const newCategory = new Category({
         name, 
@@ -89,13 +88,7 @@ export const updateCategory = async (id, categoryData, file) => {
     }
 
     if (file) {
-        if (category.icon && category.icon.startsWith('/uploads/')) {
-            const oldPath = path.join(process.cwd(), category.icon);
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-            }
-        }
-        updateData.icon = `/uploads/categories/${file.filename}`;
+        updateData.icon = file.path;
     }
 
     const result = await Category.findByIdAndUpdate(id, updateData, { new: true });

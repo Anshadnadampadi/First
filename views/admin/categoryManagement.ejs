@@ -287,120 +287,89 @@
     <% let query = typeof searchQuery !== 'undefined' && searchQuery ? `search=${searchQuery}` : '' %>
     <%- include('../partials/pagination', { currentPage, totalPages, query }) %>
 
-    <!-- Modal -->
-    <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-6" x-cloak>
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             @click="showModal = false"></div>
-        <div class="bg-black-surface border border-white/10 w-full max-w-lg relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 translate-y-8 scale-95"
-             x-transition:enter-end="opacity-100 translate-y-0 scale-100">
-            
-            <!-- Standard Form Layout -->
-            <div x-show="!isCropping" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-                <div class="p-10">
-                    <div class="flex justify-between items-center mb-10">
-                        <div>
-                            <h2 class="text-white text-xl font-bold uppercase tracking-tight mb-1" x-text="isEdit ? 'Update Category' : 'New Category'"></h2>
-                            <p class="text-[9px] font-bold tracking-widest text-white/30 uppercase">Enterprise Taxonomy Manager</p>
-                        </div>
-                        <button @click="showModal = false" class="w-8 h-8 flex items-center justify-center text-white/20 hover:text-white transition-colors">✕</button>
+    <!-- Category Modal - iOS Styled -->
+    <div x-show="showModal" class="fixed inset-0 z-[1000] flex items-center justify-center p-6 select-none" x-cloak>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-[15px]" @click="showModal = false"></div>
+        
+        <div class="ios-alert-container !max-w-lg !w-full" style="width: 500px; max-width: 95vw;">
+            <div x-show="!isCropping" class="ios-alert-content !p-0">
+                <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                    <div class="text-left">
+                        <h2 class="ios-title !text-left" x-text="isEdit ? 'Update Category' : 'New Category'"></h2>
+                        <p class="ios-message !text-left">Enterprise Taxonomy Manager</p>
                     </div>
-                    
-                    <form @submit.prevent="submitForm()" class="space-y-8">
-                        <div class="grid grid-cols-2 gap-8">
-                            <div class="space-y-3">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Name</label>
-                                <input type="text" x-model="form.name" @input="errors.name = ''" class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors" :class="errors.name ? 'border-status-danger/50' : ''">
-                                <template x-if="errors.name">
-                                    <p class="text-[9px] font-bold text-status-danger uppercase tracking-widest mt-1" x-text="errors.name"></p>
-                                </template>
-                            </div>
-                            <div class="space-y-3">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">URL Path (Slug)</label>
-                                <input type="text" x-model="form.slug" @input="errors.slug = ''" class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors" :class="errors.slug ? 'border-status-danger/50' : ''">
-                                <template x-if="errors.slug">
-                                    <p class="text-[9px] font-bold text-status-danger uppercase tracking-widest mt-1" x-text="errors.slug"></p>
-                                </template>
-                            </div>
-                        </div>
+                    <button @click="showModal = false" class="text-white/20 hover:text-white transition-colors">✕</button>
+                </div>
 
-                        <div class="grid grid-cols-2 gap-8">
-                            <div class="space-y-3">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Icon Graphic</label>
-                                <div class="flex items-center gap-6">
-                                    <div class="w-16 h-16 bg-black border border-white/5 flex items-center justify-center overflow-hidden">
-                                        <template x-if="previewUrl">
-                                            <template x-if="previewUrl.startsWith('/') || previewUrl.startsWith('blob:')">
-                                                <img :src="previewUrl" class="w-full h-full object-cover">
-                                            </template>
-                                            <template x-if="!previewUrl.startsWith('/') && !previewUrl.startsWith('blob:')">
-                                                <span class="text-2xl" x-text="previewUrl || '📁'"></span>
-                                            </template>
-                                        </template>
-                                        <template x-if="!previewUrl">
-                                            <span class="text-2xl text-white/10">📁</span>
-                                        </template>
-                                    </div>
-                                    <div class="flex-1">
-                                        <input type="file" x-ref="iconInput" @change="handleFileChange" accept="image/*" class="hidden">
-                                        <button type="button" @click="$refs.iconInput.click()" class="text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-colors border-b border-white/10 pb-1">Upload New Icon</button>
-                                    </div>
+                <form @submit.prevent="submitForm()" class="p-8 space-y-8 text-left">
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Name</label>
+                            <input type="text" x-model="form.name" @input="errors.name = ''" 
+                                   class="w-full bg-black/40 border border-white/10 rounded-lg py-4 px-6 text-xs text-white focus:outline-none focus:border-accent">
+                        </div>
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">URL Path</label>
+                            <input type="text" x-model="form.slug" @input="errors.slug = ''" 
+                                   class="w-full bg-black/40 border border-white/10 rounded-lg py-4 px-6 text-xs text-white focus:outline-none focus:border-accent">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Icon Graphic</label>
+                            <div class="flex items-center gap-6">
+                                <div class="w-16 h-16 bg-black/40 border border-white/10 rounded-lg flex items-center justify-center overflow-hidden">
+                                    <template x-if="previewUrl">
+                                        <img :src="previewUrl" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!previewUrl">
+                                        <span class="text-2xl text-white/10">📁</span>
+                                    </template>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" x-ref="iconInput" @change="handleFileChange" accept="image/*" class="hidden">
+                                    <button type="button" @click="$refs.iconInput.click()" 
+                                            class="text-[10px] font-bold uppercase tracking-widest text-accent hover:text-white transition-colors">Upload Icon</button>
                                 </div>
                             </div>
-                            <div class="space-y-3">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Sequence Order</label>
-                                <input type="number" x-model="form.displayOrder" @input="errors.displayOrder = ''" onwheel="this.blur()" class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors" :class="errors.displayOrder ? 'border-status-danger/50' : ''">
-                                <template x-if="errors.displayOrder">
-                                    <p class="text-[9px] font-bold text-status-danger uppercase tracking-widest mt-1" x-text="errors.displayOrder"></p>
-                                </template>
-                            </div>
                         </div>
-
                         <div class="space-y-3">
-                            <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Index Description</label>
-                            <textarea x-model="form.metaDescription" @input="errors.metaDescription = ''" rows="3" class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors resize-none" :class="errors.metaDescription ? 'border-status-danger/50' : ''"></textarea>
-                            <template x-if="errors.metaDescription">
-                                <p class="text-[9px] font-bold text-status-danger uppercase tracking-widest mt-1" x-text="errors.metaDescription"></p>
-                            </template>
-                        </div>
-
-                        <div class="pt-6 flex gap-4">
-                            <button type="submit" class="flex-1 bg-white text-black font-bold py-5 text-[10px] tracking-widest uppercase hover:bg-accent transition-all btn-press" x-text="isEdit ? 'Commit Changes' : 'Initialize Category'"></button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Integrated Cropper Layout -->
-            <div x-show="isCropping" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
-                <div class="p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 class="text-white text-lg font-bold uppercase tracking-tight">Focus & Align Icon</h2>
-                            <p class="text-[8px] font-bold tracking-[0.2em] text-white/30 uppercase">Protocol: 1:1 Aspect Ratio Optimization</p>
+                            <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Order</label>
+                            <input type="number" x-model="form.displayOrder" onwheel="this.blur()"
+                                   class="w-full bg-black/40 border border-white/10 rounded-lg py-4 px-6 text-xs text-white focus:outline-none focus:border-accent">
                         </div>
                     </div>
 
-                    <div class="aspect-square bg-black border border-white/5 overflow-hidden mb-6">
+                    <div class="pt-6">
+                        <button type="submit" class="w-full bg-white text-black font-bold py-5 rounded-xl text-[11px] tracking-widest uppercase hover:bg-accent transition-all btn-press" 
+                                x-text="isEdit ? 'Commit Changes' : 'Initialize Category'"></button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Integrated Cropper Layout - iOS Styled -->
+            <div x-show="isCropping" class="ios-alert-content !p-0">
+                <div class="p-8">
+                    <div class="mb-6">
+                        <h2 class="ios-title !text-left">Align Icon</h2>
+                        <p class="ios-message !text-left">1:1 Aspect Ratio Optimization</p>
+                    </div>
+
+                    <div class="aspect-square bg-black/40 border border-white/10 rounded-lg overflow-hidden mb-6">
                         <img x-ref="cropperImage" src="" class="max-w-full">
                     </div>
 
-                    <div class="flex gap-4">
-                        <button type="button" @click="cancelCrop()"
-                            class="flex-1 px-6 py-4 border border-white/10 text-white/40 text-[10px] font-bold tracking-widest uppercase hover:text-white hover:bg-white/5 transition-all">Abort</button>
-                        <button type="button" @click.prevent.stop="commitCrop()"
-                            class="flex-2 px-8 py-4 bg-accent text-black text-[10px] font-bold tracking-widest uppercase hover:bg-white transition-all">Optimize Asset</button>
+                    <div class="ios-button-grid two-buttons">
+                        <button type="button" @click="cancelCrop()" class="ios-button cancel-btn">Abort</button>
+                        <button type="button" @click.prevent.stop="commitCrop()" class="ios-button confirm-btn">Optimize</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 <style>
     /* Cropper Customization */

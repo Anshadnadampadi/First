@@ -37,23 +37,50 @@ app.set("view engine", "ejs")
 app.set("views", path.join(__dirname, "views"));
 app.set("layout", "layouts/main");
 
-app.use(
-    session({
-        secret: process.env.SESSION_SECRET || "fallbackSecretKey",
-        resave: false,
-        saveUninitialized: false,
-        store: MongoStore.create({
-            mongoUrl: process.env.MONGO_URI,
-            ttl: 24 * 60 * 60 // 1 day session persistence
-        }),
-        cookie: {
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax"
-        }
-    })
-);
+// Session configurations for separate User and Admin sessions
+const commonSessionOptions = {
+    secret: process.env.SESSION_SECRET || "fallbackSecretKey",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    }
+};
+
+const userSessionMiddleware = session({
+    ...commonSessionOptions,
+    name: "userSid",
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'userSessions',
+        ttl: 24 * 60 * 60
+    }),
+    cookie: { ...commonSessionOptions.cookie, path: '/' }
+});
+
+const adminSessionMiddleware = session({
+    ...commonSessionOptions,
+    name: "adminSid",
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'adminSessions',
+        ttl: 24 * 60 * 60
+    }),
+    cookie: { ...commonSessionOptions.cookie, path: '/admin' }
+});
+
+// Selective Session Middleware Dispatcher
+app.use((req, res, next) => {
+    if (req.path.startsWith('/admin')) {
+        adminSessionMiddleware(req, res, next);
+    } else {
+        userSessionMiddleware(req, res, next);
+    }
+});
+
 
 
 app.use(passport.initialize());
@@ -89,19 +116,20 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    console.error("GLOBAL_ERROR:", err.stack);
+    console.error("GLOBAL_ERROR:", err.stack || err.message || err);
     
     // Check if it's an AJAX request
     if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
         return res.status(err.status || 500).json({
             success: false,
-            message: err.message || "Internal Server Error"
+            message: err.message || "Internal Server Error",
+            error: process.env.NODE_ENV === 'development' ? err : {}
         });
     }
 
     res.status(err.status || 500).render("errors/error", {
         title: "Error Occurred",
-        message: err.message,
+        message: err.message || "An unexpected error occurred",
         error: process.env.NODE_ENV === 'development' ? err : {},
         breadcrumbs: [{ label: 'Error', url: '#' }]
     });

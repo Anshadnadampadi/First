@@ -1,5 +1,4 @@
 import * as adminProductServices from "../../../services/admin/adminProductServices.js";
-import fs from "fs";
 
 export const getProductManagement = async (req, res) => {
     try {
@@ -52,11 +51,8 @@ export const addProduct = async (req, res) => {
     } catch (error) {
         console.error("Add Product Error:", error);
         
-        if (req.files) {
-            req.files.forEach(file => {
-                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-            });
-        }
+        // Cloudinary handles storage; error cleanup could be added here if needed
+
 
         res.status(500).json({ 
             success: false, 

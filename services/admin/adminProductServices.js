@@ -1,7 +1,6 @@
 import Product from "../../models/product/product.js";
 import Category from "../../models/category/category.js";
-import fs from "fs";
-import path from "path";
+
 import { commonCache, CACHE_KEYS } from "../common/cacheService.js";
 
 export const getProductManagementData = async (query) => {
@@ -137,13 +136,8 @@ export const addVariant = async (productId, variantData, files) => {
         throw new Error("Product not found");
     }
 
-    const images = files ? files.map(file => `/uploads/products/${file.filename}`) : [];
+    const images = files ? files.map(file => file.path) : [];
     if (images.length < 3) {
-        if (files) {
-            files.forEach(file => {
-                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-            });
-        }
         throw new Error("At least 3 images are required for a variant.");
     }
 
@@ -177,7 +171,7 @@ export const updateVariant = async (productId, index, variantData, files) => {
     }
 
     if (files && files.length > 0) {
-        const newImages = files.map(file => `/uploads/products/${file.filename}`);
+        const newImages = files.map(file => file.path);
         variant.images.push(...newImages);
     }
 
@@ -250,13 +244,7 @@ export const deleteVariantAsset = async (productId, index, imgIndex) => {
         throw new Error("Image not found");
     }
 
-    const imgPath = variant.images[imgIndex];
-    const fullPath = path.join(process.cwd(), imgPath);
-
-    if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-    }
-
+    // Remove the image from the array
     variant.images.splice(imgIndex, 1);
 
     syncProductStats(product);

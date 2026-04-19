@@ -253,7 +253,7 @@ export const postEdit = async (req, res) => {
 export const adminLogout = (req, res) => {
     req.session.destroy((err) => {
         if (err) console.error("Admin logout session destruction error:", err);
-        res.clearCookie("connect.sid", { path: '/' });
+        res.clearCookie("adminSid", { path: '/admin' });
         res.redirect("/admin/login");
     });
 };

@@ -1,0 +1,341 @@
+<!-- views/partials/ios-alert.ejs -->
+<div x-data="iosAlertComponent()" 
+     x-show="show" 
+     class="fixed inset-0 z-[10000] flex items-center justify-center p-6 select-none" 
+     x-cloak
+     @show-ios-alert.window="open($event.detail)"
+     @show-confirm.window="open($event.detail)"
+     id="ios-alert-wrapper">
+    
+    <!-- Backdrop with Drastic Blur -->
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-[15px] transition-all duration-500" 
+         x-show="show"
+         x-transition:enter="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="if(!isLocked) cancel()"></div>
+
+    <!-- Modal Box - Pure iOS Fidelity -->
+    <div class="ios-alert-container"
+         x-show="show"
+         x-transition:enter="transition cubic-bezier(0.34, 1.56, 0.64, 1) duration-400 transform"
+         x-transition:enter-start="opacity-0 scale-110 translate-y-2"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200 transform"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95">
+        
+        <div class="ios-alert-content">
+            <!-- Icon Section (Compact) -->
+            <div class="ios-icon-wrapper" x-show="icon">
+                <div class="ios-icon-circle" :class="icon">
+                    <template x-if="icon === 'success'">
+                        <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6 text-white"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </template>
+                    <template x-if="icon === 'error' || icon === 'danger'">
+                        <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6 text-white"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </template>
+                    <template x-if="icon === 'warning'">
+                        <span class="text-white font-bold text-xl">!</span>
+                    </template>
+                    <template x-if="icon === 'info' || icon === 'question'">
+                        <span class="text-white font-bold text-xl">?</span>
+                    </template>
+                </div>
+            </div>
+
+            <h3 class="ios-title" x-text="title"></h3>
+            <p class="ios-message" x-text="text || message"></p>
+        </div>
+
+        <!-- Inputs Section -->
+        <div class="ios-input-section" x-show="input">
+            <template x-if="input === 'text' || input === 'email' || input === 'password'">
+                <input :type="input" x-model="inputValue" class="ios-text-input" :placeholder="inputPlaceholder">
+            </template>
+            <template x-if="input === 'textarea'">
+                <textarea x-model="inputValue" rows="3" class="ios-text-input" :placeholder="inputPlaceholder"></textarea>
+            </template>
+            <template x-if="input === 'select'">
+                <div class="ios-select-wrapper">
+                    <select x-model="inputValue" class="ios-select">
+                        <option value="" x-text="inputPlaceholder || 'Select Option'"></option>
+                        <template x-for="(label, val) in inputOptions" :key="val">
+                            <option :value="val" x-text="label"></option>
+                        </template>
+                    </select>
+                </div>
+            </template>
+        </div>
+
+        <!-- Buttons Section -->
+        <div class="ios-button-grid" :class="showCancelButton ? 'two-buttons' : 'one-button'">
+            <button x-show="showCancelButton" @click="cancel()" class="ios-button cancel-btn">
+                <span x-text="cancelButtonText || 'Cancel'"></span>
+            </button>
+            <button @click="confirm()" class="ios-button confirm-btn">
+                <span x-text="confirmButtonText || 'OK'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    [x-cloak] { display: none !important; }
+    
+    .ios-alert-container {
+        width: 270px;
+        background: rgba(30, 30, 30, 0.72);
+        backdrop-filter: blur(25px) saturate(180%);
+        -webkit-backdrop-filter: blur(25px) saturate(180%);
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        border: 0.5px solid rgba(255,255,255,0.1);
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        position: relative;
+        z-index: 10001;
+    }
+
+    .ios-alert-content {
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .ios-icon-wrapper {
+        margin-bottom: 12px;
+    }
+
+    .ios-icon-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .ios-icon-circle.success { background: #34C759; }
+    .ios-icon-circle.error, .ios-icon-circle.danger { background: #FF3B30; }
+    .ios-icon-circle.warning { background: #FF9500; }
+    .ios-icon-circle.info, .ios-icon-circle.question { background: #007AFF; }
+
+    .ios-title {
+        color: white;
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+
+    .ios-message {
+        color: rgba(255,255,255,0.85);
+        font-size: 13px;
+        line-height: 1.4;
+        font-weight: 400;
+    }
+
+    /* Inputs */
+    .ios-input-section {
+        padding: 0 16px 16px 16px;
+    }
+
+    .ios-text-input {
+        width: 100%;
+        background: rgba(255,255,255,0.08);
+        border: 0.5px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: white;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .ios-select-wrapper {
+        position: relative;
+    }
+
+    .ios-select {
+        width: 100%;
+        background: rgba(255,255,255,0.08);
+        border: 0.5px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: white;
+        font-size: 14px;
+        appearance: none;
+    }
+
+    /* Buttons */
+    .ios-button-grid {
+        display: flex;
+        border-top: 0.5px solid rgba(255,255,255,0.15);
+    }
+
+    .ios-button-grid.one-button .ios-button { width: 100%; }
+    .ios-button-grid.two-buttons .ios-button { width: 50%; }
+
+    .ios-button {
+        padding: 12px 0;
+        background: transparent;
+        border: none;
+        color: #007AFF;
+        font-size: 17px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .ios-button:active {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .cancel-btn {
+        border-right: 0.5px solid rgba(255,255,255,0.15);
+        font-weight: 400;
+    }
+
+    .confirm-btn {
+        font-weight: 600;
+    }
+
+    /* Animation Shakes for Validation Errors */
+    .ios-shake {
+        animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+        10%, 90% { transform: translate3d(-1px, 0, 0); }
+        20%, 80% { transform: translate3d(2px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+        40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('iosAlertComponent', () => ({
+        show: false,
+        title: '',
+        text: '',
+        message: '',
+        icon: null,
+        input: null,
+        inputValue: '',
+        inputPlaceholder: '',
+        inputOptions: {},
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
+        showCancelButton: false,
+        isLocked: false,
+        resolve: null,
+        validator: null,
+
+        open(options) {
+            if (typeof options === 'string') options = { title: options };
+            
+            this.title = options.title || '';
+            this.text = options.text || '';
+            this.message = options.message || '';
+            this.icon = options.icon || null;
+            this.input = options.input || null;
+            this.inputValue = options.inputValue || '';
+            this.inputPlaceholder = options.inputPlaceholder || '';
+            this.inputOptions = options.inputOptions || {};
+            this.confirmButtonText = options.confirmButtonText || 'OK';
+            this.cancelButtonText = options.cancelButtonText || 'Cancel';
+            this.showCancelButton = (options.showCancelButton === true);
+            this.isLocked = options.isLocked || false;
+            this.validator = options.inputValidator || null;
+            
+            this.show = true;
+            
+            return new Promise((res) => {
+                this.resolve = res;
+            });
+        },
+
+        confirm() {
+            if (this.input && this.validator) {
+                const error = this.validator(this.inputValue);
+                if (error) {
+                    const el = document.querySelector('.ios-alert-container');
+                    el.classList.add('ios-shake');
+                    setTimeout(() => el.classList.remove('ios-shake'), 400);
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error, type: 'error' } }));
+                    return;
+                }
+            }
+
+            this.close({ isConfirmed: true, value: this.input ? this.inputValue : true });
+        },
+
+        cancel() {
+            this.close({ isConfirmed: false, isDismissed: true, value: null });
+        },
+
+        close(result) {
+            this.show = false;
+            if (this.resolve) {
+                this.resolve(result);
+                this.resolve = null;
+            }
+            window.dispatchEvent(new CustomEvent('ios-alert-result', { detail: result }));
+            // Also notify confirm-result for legacy compatibility
+            if (result.isConfirmed) {
+                window.dispatchEvent(new CustomEvent('confirm-result', { detail: true }));
+            } else {
+                window.dispatchEvent(new CustomEvent('confirm-result', { detail: false }));
+            }
+        }
+    }));
+});
+
+// Universal Mock
+(function() {
+    window.Swal = {
+        fire: function(options) {
+            return new Promise((resolve) => {
+                window.dispatchEvent(new CustomEvent('show-ios-alert', { detail: options }));
+                const handleRes = (e) => {
+                    window.removeEventListener('ios-alert-result', handleRes);
+                    resolve(e.detail);
+                };
+                window.addEventListener('ios-alert-result', handleRes);
+            });
+        }
+    };
+    ['success', 'error', 'warning', 'info', 'question'].forEach(t => {
+        window.Swal[t] = (title, text) => window.Swal.fire({ title, text, icon: t });
+    });
+
+    window.confirmAction = (options = {}) => {
+        return new Promise((resolve) => {
+            window.dispatchEvent(new CustomEvent('show-ios-alert', { 
+                detail: {
+                    title: options.title,
+                    message: options.message || options.text,
+                    icon: options.type === 'danger' ? 'error' : (options.type || 'warning'),
+                    showCancelButton: true,
+                    confirmButtonText: options.confirmText || 'Yes',
+                    cancelButtonText: options.cancelText || 'No'
+                } 
+            }));
+            const handleRes = (e) => {
+                window.removeEventListener('ios-alert-result', handleRes);
+                resolve(e.detail.isConfirmed);
+            };
+            window.addEventListener('ios-alert-result', handleRes);
+        });
+    };
+})();
+</script>

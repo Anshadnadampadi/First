@@ -83,7 +83,8 @@ export const checkBlocked = async (req, res, next) => {
                    if (req.session) {
                        req.session.destroy((err) => {
                            if (err) console.error("Session cleanup failure:", err);
-                           res.clearCookie('connect.sid', { path: '/' });
+                           res.clearCookie('userSid', { path: '/' });
+                           res.clearCookie('adminSid', { path: '/admin' });
                            return res.redirect('/auth/login?error=blocked');
                        });
                    } else {
@@ -113,4 +114,7 @@ export const checkBlocked = async (req, res, next) => {
 //
 // router.get('/profile', ensureLoggedIn, userProfileHandler);
 // router.get('/signup', ensureLoggedOut, getSignup);
+
+
+
 

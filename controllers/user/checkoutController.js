@@ -43,7 +43,7 @@ export const placeOrder = async (req, res) => {
         if (!result.success) {
             if (result.terminate && req.session) {
                 req.session.destroy();
-                res.clearCookie('connect.sid');
+                res.clearCookie('userSid', { path: '/' });
             }
             return res.status(result.status || 400).json(result);
         }

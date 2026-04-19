@@ -1,23 +1,6 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
-
-const uploadDir = path.join(process.cwd(), "uploads", "profile");
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Storage configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir); // folder to store images
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
-  }
-});
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
 // File filter (allow only images)
 const fileFilter = (req, file, cb) => {
@@ -30,9 +13,18 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer instance for Profile
+// Profile Image Storage
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "StarzoMobiles/profile",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    public_id: (req, file) => `profile-${Date.now()}`
+  }
+});
+
 export const uploadProfileImage = multer({
-  storage: storage,
+  storage: profileStorage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 2 * 1024 * 1024 // 2MB
@@ -40,17 +32,12 @@ export const uploadProfileImage = multer({
 });
 
 // Category Icon Storage
-const categoryStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = path.join(process.cwd(), "uploads", "categories");
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = "cat-" + Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
+const categoryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "StarzoMobiles/categories",
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "svg"],
+    public_id: (req, file) => `cat-${Date.now()}`
   }
 });
 
@@ -61,18 +48,14 @@ export const uploadCategoryIcon = multer({
     fileSize: 1 * 1024 * 1024 // 1MB
   }
 });
+
 // Product Image Storage
-const productStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = path.join(process.cwd(), "uploads", "products");
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = "prod-" + Date.now() + "-" + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-    cb(null, uniqueName);
+const productStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "StarzoMobiles/products",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    public_id: (req, file) => `prod-${Date.now()}-${Math.round(Math.random() * 1e9)}`
   }
 });
 
@@ -83,3 +66,4 @@ export const uploadProductImage = multer({
     fileSize: 5 * 1024 * 1024 // 5MB per file
   }
 });
+

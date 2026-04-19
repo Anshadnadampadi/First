@@ -36,7 +36,7 @@ export const adminLogout = (req, res) => {
             console.error('Logout error:', err);
             return res.status(500).json({ message: 'Server error' });
         }
-        res.clearCookie('connect.sid');
+        res.clearCookie('adminSid', { path: '/admin' });
         res.json({ message: 'Logout successful' });
     });
 }

@@ -13,7 +13,7 @@
                 <button onclick="confirmCancel('<%= order._id %>')" class="text-status-danger text-[10px] font-bold tracking-widest uppercase border border-status-danger/30 px-8 py-4 hover:bg-status-danger hover:text-white transition-all">Cancel Order</button>
             <% } %>
             <div class="flex gap-4">
-                <% if (order.paymentStatus === 'Paid' || order.orderStatus === 'Delivered') { %>
+                <% if (order.orderStatus === 'Delivered') { %>
                     <a href="/account/orders/<%= order._id %>/invoice" class="bg-white text-black text-[10px] font-bold tracking-widest uppercase px-8 py-4 hover:bg-accent transition-all">Download Invoice</a>
                 <% } %>
                 <% if (order.orderStatus === 'Delivered') { %>
@@ -216,8 +216,9 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
+
     async function confirmReturn(orderId) {
         const { value: reason } = await Swal.fire({
             title: 'Request Return',
