@@ -23,9 +23,19 @@ import { setViewLocals } from "./middlewares/viewMiddleware.js";
 
 const PORT = process.env.PORT || 7000
 
+import { createServer } from "http";
+import { initSocket } from "./config/socket.js";
+
 const app = express();
+const httpServer = createServer(app);
+const io = await initSocket(httpServer);
+
+// Make io accessible globally via req if needed
+app.set("io", io);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 
 app.use(expressEjsLayouts);
 app.use(express.static(path.join(__dirname, "public")));
@@ -137,6 +147,8 @@ app.use((err, req, res, next) => {
 
 connectDB();
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
+
     console.log(`server is running on http://localhost:${PORT}`)
 })
+

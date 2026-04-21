@@ -4,7 +4,7 @@ import { getCart, addToCart, updateCartQty, removeCartItem, clearCart } from "..
 
 const router = express.Router();
 
-router.get("/", getCart);
+router.get("/",ensureLoggedIn, getCart);
 router.post("/add", addToCart);
 router.post("/update-qty", updateCartQty);
 router.post("/remove", removeCartItem);

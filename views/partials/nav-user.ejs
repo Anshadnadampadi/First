@@ -1,5 +1,6 @@
 <!-- views/partials/nav-user.ejs -->
-<nav class="h-20 glass border-b border-black-border sticky top-0 z-40 flex items-center justify-between px-6 lg:px-12">
+<nav x-data="{}" class="h-20 glass border-b border-black-border sticky top-0 z-40 flex items-center justify-between px-6 lg:px-12">
+
     <!-- Logo -->
     <div class="flex items-center gap-8">
         <a href="/" class="text-white font-bold tracking-widest text-xl">STARZO</a>
@@ -71,7 +72,9 @@
 
         <!-- Logout -->
         <a href="/auth/logout"
+            @click.prevent="if(await window.confirmAction({ title: 'Logout?', message: 'Are you sure you want to end your session?', confirmText: 'Logout', cancelText: 'Cancel', type: 'danger' })) window.location.href='/auth/logout'"
             class="text-[10px] font-bold tracking-[0.2em] text-white/40 hover:text-accent transition-colors uppercase">Logout</a>
+
 
 
         <!-- Mobile Toggle -->

@@ -209,10 +209,31 @@ export const updateItemQty = async (userId, { itemId, change }) => {
     item.qty = newQty;
     await cart.save();
 
+    // Verify issues after update
+    const hasIssues = cart.items.some(i => {
+        const p = i.product;
+        if (!p || p.isBlocked || !p.isListed) return true;
+        
+        let s = p.stock || 0;
+        if (p.variants?.length > 0 && i.variant) {
+            const v = p.variants.find(varnt => isSameVariant(varnt, i.variant));
+            if (!v || v.isDeleted) return true;
+            s = v.stock || 0;
+        }
+        return i.qty > s || s <= 0;
+    });
+
     return {
         newQty: item.qty,
         itemTotal: item.qty * item.price,
-        cartSubtotal: cart.subtotal
+        cartSubtotal: cart.subtotal,
+        hasIssues,
+        itemStatus: {
+            isUnavailable: !item.product || item.product.isBlocked || !item.product.isListed,
+            isOutOfStock: stock <= 0,
+            insufficientStock: item.qty > stock,
+            availableStock: stock
+        }
     };
 };
 
@@ -225,9 +246,26 @@ export const removeItem = async (userId, itemId) => {
     cart.items = cart.items.filter(item => item._id.toString() !== itemId);
     await cart.save();
 
+    // Population is needed to check issues for the remaining items
+    await cart.populate("items.product");
+
+    const hasIssues = cart.items.some(i => {
+        const p = i.product;
+        if (!p || p.isBlocked || !p.isListed) return true;
+        
+        let s = p.stock || 0;
+        if (p.variants?.length > 0 && i.variant) {
+            const v = p.variants.find(varnt => isSameVariant(varnt, i.variant));
+            if (!v || v.isDeleted) return true;
+            s = v.stock || 0;
+        }
+        return i.qty > s || s <= 0;
+    });
+
     return {
         cartSubtotal: cart.subtotal,
-        isEmpty: cart.items.length === 0
+        isEmpty: cart.items.length === 0,
+        hasIssues
     };
 };
 

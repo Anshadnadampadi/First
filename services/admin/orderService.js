@@ -3,6 +3,26 @@ import Order from '../../models/order/order.js';
 import Product from '../../models/product/product.js';
 import { isSameVariant } from '../../utils/productHelpers.js';
 
+const recalculateOrderTotals = (order) => {
+    // Only count items that are NOT Cancelled or Returned
+    const activeItems = order.items.filter(item => !['Cancelled', 'Returned'].includes(item.status));
+    
+    order.subtotal = activeItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    // Tax is 18% of active subtotal
+    order.tax = Math.floor(order.subtotal * 0.18);
+    
+    // Shipping remains fixed once order is placed
+    if (order.subtotal === 0) order.shippingFee = 0;
+    
+    // Recalculate discount if a coupon was used
+    if (order.couponCode === 'SYNC10') {
+        order.discount = Math.floor((order.subtotal + order.tax) * 0.10);
+    }
+    
+    order.totalAmount = order.subtotal + order.tax + order.shippingFee - order.discount;
+};
+
 export const getOrdersService = async (search, page, limit) => {
     const skip = (page - 1) * limit;
     const filter = {};
@@ -165,6 +185,7 @@ export const updateOrderStatusService = async (orderId, status) => {
         }
     }
 
+    recalculateOrderTotals(order);
     await order.save();
     return { success: true, message: 'Order status updated successfully' };
 };
@@ -228,6 +249,7 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
         order.orderStatus = 'Delivered';
     }
 
+    recalculateOrderTotals(order);
     await order.save();
     return { success: true, message: `Item return status updated to ${status}.` };
 };

@@ -148,6 +148,14 @@
                 <!-- Totals -->
                 <div class="px-10 py-8 bg-white/[0.02] border-t border-white/5">
                     <div class="space-y-3 mb-6">
+                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-white/40">
+                            <span>Subtotal</span>
+                            <span class="font-mono text-white/60">₹<%= order.subtotal.toLocaleString() %></span>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-white/40">
+                            <span>Tax (18% GST)</span>
+                            <span class="font-mono text-white/60">₹<%= (order.tax || 0).toLocaleString() %></span>
+                        </div>
                         <% if (order.discount && order.discount > 0) { %>
                         <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-status-success">
                             <span>Discount</span>

@@ -1,50 +1,140 @@
-<!-- views/user/home.ejs -->
-<%- contentFor('body') %>
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-    <!-- 1. Hero Banner -->
-    <section class="h-screen w-full bg-black relative group overflow-hidden">
-        <!-- Placeholder for large product image (Insta360 style) -->
-        <div class="absolute inset-0 z-0">
-            <img src="https://images.unsplash.com/photo-1616348436168-de43ad0db179?q=80&w=2000&auto=format&fit=crop"
-                class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-[2000ms] ease-out"
-                alt="Featured Phone">
-        </div>
+    <!-- 1. Hero Banner Slider -->
+    <section class="h-screen w-full bg-black relative overflow-hidden">
+        <div class="swiper heroSwiper h-full w-full">
+            <div class="swiper-wrapper">
+                <!-- Slide 1 -->
+                <div class="swiper-slide relative bg-black">
+                    <div class="absolute inset-0 z-0">
+                        <video autoplay muted loop playsinline class="w-full h-full object-cover opacity-60">
+                            <source src="/video/Introducing iPhone 17 Pro and iPhone 17 Pro Max - Vodafone Australia (1080p).mp4" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent"></div>
+                    </div>
+                    
+                    <div class="absolute inset-0 z-10 flex flex-col justify-center px-6 lg:px-24">
+                        <div class="max-w-3xl">
+                            <!-- <span class="text-accent text-[10px] font-black tracking-[0.4em] uppercase mb-6 block animate-fade-in">THE NEW STANDARD</span>
+                            <h1 class="text-white text-display lg:text-hero font-bold leading-tight mb-8 font-display animate-slide-up">
+                                MOBI 15 <br> <span class="text-text-secondary">ULTRA PRO.</span>
+                            </h1>
+                            <p class="text-text-secondary text-lg lg:text-xl font-medium mb-10 max-w-lg leading-relaxed opacity-70">
+                                Experience the world's most powerful imaging system on a mobile device. Engineered for those who demand perfection.
+                            </p> -->
+                            <!-- <div class="flex flex-wrap gap-4">
+                                <a href="/products" class="bg-accent text-black font-black px-12 py-5 text-[10px] tracking-[0.2em] uppercase hover:bg-white transition-all transform hover:-translate-y-1">EXPLORE NOW</a>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Content -->
-        <div class="absolute inset-0 z-10 flex flex-col justify-center px-6 lg:px-24">
-            <div class="max-w-3xl fade-up">
-                <span class="text-accent text-label font-bold mb-6 block">THE NEW STANDARD</span>
-                <h1 class="text-white text-display lg:text-hero font-bold leading-tight mb-8 font-display">
-                    MOBI 15 <br> <span class="text-text-secondary">ULTRA PRO.</span>
-                </h1>
-                <p class="text-text-secondary text-lg lg:text-xl font-medium mb-10 max-w-lg leading-relaxed">
-                    Experience the world's most powerful imaging system on a mobile device. Engineered for those who
-                    demand perfection.
-                </p>
+                <!-- Slide 2 -->
+                <div class="swiper-slide relative bg-black">
+                    <div class="absolute inset-0 z-0">
+                        <video autoplay muted loop playsinline class="w-full h-full object-cover opacity-60">
+                            <source src="/video/YouTube_Meet-Google-Pixel-10-Pro-With-Gemini-The_Media_Z3lqOEM6Zig_001_1080p.mp4" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20"></div>
+                    </div>
+                    
+                    <div class="absolute inset-0 z-10 flex flex-col justify-center items-center text-center px-6">
+                        <div class="max-w-4xl">
+                            
+                            <!-- <div class="flex justify-center gap-4">
+                                <a href="/deals" class="border-2 border-accent text-accent font-black px-12 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-accent hover:text-black transition-all">VIEW DEALS</a>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
 
-                <div class="flex flex-wrap gap-4">
-                    <a href="/phones"
-                        class="bg-accent text-black font-bold px-10 py-5 text-xs tracking-[0.2em] uppercase hover:bg-white transition-all btn-press">
-                        ORDER NOW
-                    </a>
-                    <a href="/phones/flagship"
-                        class="border border-white/20 text-white font-bold px-10 py-5 text-xs tracking-[0.2em] uppercase hover:bg-white/5 transition-all">
-                        LEARN MORE
-                    </a>
+                <!-- Slide 3 -->
+                <div class="swiper-slide relative bg-black">
+                    <div class="absolute inset-0 z-0">
+                        <video autoplay muted loop playsinline class="w-full h-full object-cover opacity-60">
+                            <source src="/video/Ytmp3.gg_YouTube_Meet-Phone-4a-Pro_Media_p18XWICPF94_001_1080p.mp4" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-0 bg-gradient-to-tr from-black via-transparent to-accent/10"></div>
+                    </div>
+                    
+                    <div class="absolute inset-0 z-10 flex flex-col justify-center px-6 lg:px-24">
+                        <div class="max-w-3xl">
+                           
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+
+            <!-- Custom Navigation -->
+            <div class="absolute bottom-12 left-6 lg:left-24 right-6 lg:right-24 z-30 flex items-end justify-between pointer-events-none">
+                <div class="flex gap-4 pointer-events-auto">
+                    <!-- <button class="hero-prev w-12 h-12 flex items-center justify-center border border-white/10 hover:border-accent hover:text-accent text-white/40 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button class="hero-next w-12 h-12 flex items-center justify-center border border-white/10 hover:border-accent hover:text-accent text-white/40 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button> -->
+                </div>
+                
+                <div class="flex flex-col items-end gap-2">
+                   
+                    <div class="swiper-pagination !static !w-auto flex gap-1"></div>
                 </div>
             </div>
         </div>
-
-        <!-- Banner Navigation / Progress (Simulated) -->
-        <div class="absolute bottom-12 left-6 lg:left-24 right-6 lg:right-24 z-20 flex items-center justify-between">
-            <div class="flex gap-2">
-                <div class="w-12 h-1 bg-accent"></div>
-                <div class="w-12 h-1 bg-white/20"></div>
-                <div class="w-12 h-1 bg-white/20"></div>
-            </div>
-            <div class="text-white/20 font-mono text-xs tracking-widest uppercase">01 / 03</div>
-        </div>
     </section>
+
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const swiper = new Swiper('.heroSwiper', {
+                loop: true,
+                effect: 'fade',
+                fadeEffect: { crossFade: true },
+                speed: 1000,
+                autoplay: {
+                    delay: 12000,
+                    disableOnInteraction: false,
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                    renderBullet: function (index, className) {
+                        return `<span class="${className} !w-16 !h-1 !rounded-none !bg-white/20 !opacity-100 [&.swiper-pagination-bullet-active]:!bg-accent !transition-all !duration-700"></span>`;
+                    },
+                },
+                navigation: {
+                    nextEl: '.hero-next',
+                    prevEl: '.hero-prev',
+                },
+            });
+        });
+    </script>
+
+    <style>
+        .heroSwiper .swiper-slide-active h1, 
+        .heroSwiper .swiper-slide-active h2, 
+        .heroSwiper .swiper-slide-active p,
+        .heroSwiper .swiper-slide-active span,
+        .heroSwiper .swiper-slide-active a {
+            animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .swiper-pagination-bullet-active {
+            box-shadow: 0 0 15px rgba(255, 106, 0, 0.4);
+        }
+    </style>
+
 
     <!-- 2. Brand Marquee -->
     <section class="py-12 bg-black-surface border-y border-black-border overflow-hidden">

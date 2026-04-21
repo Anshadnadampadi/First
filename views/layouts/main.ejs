@@ -92,27 +92,26 @@
 
 
     <!-- Global Scripts -->
+    <script>
+        window.USER_ID = "<%= user || '' %>";
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+
     <script src="/js/user-common.js"></script>
+    <script src="/js/socket-client.js"></script>
+    <script src="/js/spa-navigation.js"></script>
     <script>
         window.addEventListener('load', () => {
             const loader = document.getElementById('page-loader');
             if (loader) {
                 loader.classList.add('fade-out');
-                setTimeout(() => loader.remove(), 500);
-            }
-        });
-        // Also trigger on navigation clicks for instant feel
-        document.addEventListener('click', (e) => {
-            const a = e.target.closest('a');
-            if (a && a.href && !a.href.includes('#') && a.target !== '_blank' && !a.href.startsWith('javascript')) {
-                const loader = document.getElementById('page-loader');
-                if (loader) {
-                    loader.style.opacity = '1';
-                    loader.style.visibility = 'visible';
-                    loader.classList.remove('fade-out');
-                }
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    loader.style.visibility = 'hidden';
+                }, 500);
             }
         });
     </script>
 </body>
 </html>
+

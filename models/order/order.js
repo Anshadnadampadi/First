@@ -71,8 +71,9 @@ const orderSchema = new mongoose.Schema({
     paymentMethod: {
         type: String,
         required: true,
-        enum: ['CASH ON DELIVERY', 'RAZORPAY', 'WALLET']
+        enum: ['CASH ON DELIVERY', 'RAZORPAY', 'ONLINE PAYMENT', 'WALLET']
     },
+
     paymentStatus: {
         type: String,
         default: 'Pending',

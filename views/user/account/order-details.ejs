@@ -154,23 +154,27 @@
                             <% }) %>
                         </tbody>
                         <tfoot>
-                            <tr class="bg-white/[0.02]">
-                                <td colspan="2" class="px-8 py-8 text-right text-white/30 text-[10px] font-bold tracking-widest uppercase">Subtotal</td>
-                                <td class="px-8 py-8 text-right text-white font-mono text-sm font-bold">₹<%= order.subtotal.toLocaleString() %></td>
+                            <tr class="bg-white/[0.02] border-t border-white/5">
+                                <td colspan="2" class="px-8 py-5 text-right text-white/30 text-[9px] font-bold tracking-widest uppercase">Subtotal</td>
+                                <td class="px-8 py-5 text-right text-white/60 font-mono text-xs font-bold">₹<%= order.subtotal.toLocaleString() %></td>
                             </tr>
                             <tr class="bg-white/[0.02]">
-                                <td colspan="2" class="px-8 py-4 text-right text-white/30 text-[10px] font-bold tracking-widest uppercase">Shipping</td>
-                                <td class="px-8 py-4 text-right text-status-success font-mono text-sm font-bold">₹<%= order.shippingFee === 0 ? 'FREE' : order.shippingFee.toLocaleString() %></td>
+                                <td colspan="2" class="px-8 py-3 text-right text-white/30 text-[9px] font-bold tracking-widest uppercase">Tax (18% GST)</td>
+                                <td class="px-8 py-3 text-right text-white/60 font-mono text-xs font-bold">₹<%= (order.tax || 0).toLocaleString() %></td>
+                            </tr>
+                            <tr class="bg-white/[0.02]">
+                                <td colspan="2" class="px-8 py-3 text-right text-white/30 text-[9px] font-bold tracking-widest uppercase">Shipping</td>
+                                <td class="px-8 py-3 text-right text-status-success font-mono text-xs font-bold">₹<%= order.shippingFee === 0 ? 'FREE' : order.shippingFee.toLocaleString() %></td>
                             </tr>
                             <% if (order.discount > 0) { %>
                                 <tr class="bg-white/[0.02]">
-                                    <td colspan="2" class="px-8 py-4 text-right text-status-success text-[10px] font-bold tracking-widest uppercase">Discount Applied</td>
-                                    <td class="px-8 py-4 text-right text-status-success font-mono text-sm font-bold">- ₹<%= order.discount.toLocaleString() %></td>
+                                    <td colspan="2" class="px-8 py-3 text-right text-status-success text-[9px] font-bold tracking-widest uppercase">Discount Applied</td>
+                                    <td class="px-8 py-3 text-right text-status-success font-mono text-xs font-bold">- ₹<%= order.discount.toLocaleString() %></td>
                                 </tr>
                             <% } %>
-                            <tr class="bg-white/[0.05] border-t border-black-border">
-                                <td colspan="2" class="px-8 py-8 text-right text-white text-[11px] font-bold tracking-widest uppercase">Total Amount Due</td>
-                                <td class="px-8 py-8 text-right text-accent font-mono text-2xl font-bold">₹<%= order.totalAmount.toLocaleString() %></td>
+                            <tr class="bg-white/[0.05] border-t-2 border-accent/20">
+                                <td colspan="2" class="px-8 py-8 text-right text-white text-[11px] font-black tracking-widest uppercase">Grand Total</td>
+                                <td class="px-8 py-8 text-right text-accent font-mono text-3xl font-bold">₹<%= order.totalAmount.toLocaleString() %></td>
                             </tr>
                         </tfoot>
                     </table>

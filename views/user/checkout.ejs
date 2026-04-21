@@ -158,7 +158,8 @@
                         </label>
 
                         <label class="cursor-pointer group">
-                            <input type="radio" x-model="orderData.paymentMethod" value="RAZORPAY" class="peer sr-only">
+                            <input type="radio" x-model="orderData.paymentMethod" value="ONLINE PAYMENT" class="peer sr-only">
+
                             <div class="flex flex-col border border-white/10 p-6 peer-checked:border-accent peer-checked:bg-accent/[0.05] transition-all bg-black/40 h-full relative overflow-hidden group-hover:border-white/30">
                                 <div class="absolute -right-10 -top-10 w-24 h-24 bg-blue-500/10 rounded-full blur-xl filter"></div>
                                 <div class="flex items-center justify-between mb-4 relative z-10">
@@ -415,10 +416,13 @@
     </div>
 </div>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     const userAddresses = <%- JSON.stringify(addresses || []) %>;
     const baseSubtotal = <%= typeof cart !== 'undefined' ? cart.subtotal : 0 %>;
     const hasCartIssues = <%= cart.items.some(item => item.isUnavailable || item.isOutOfStock || item.insufficientStock) %>;
+    const userEmail = "<%= user.email %>";
+    const userPhone = "<%= addresses && addresses.length > 0 ? addresses[0].phone : '' %>";
 
     function checkoutManager() {
         return {
@@ -544,7 +548,7 @@
                     const result = await response.json();
                     if (result.success) {
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Address ${this.addressMode === 'add' ? 'saved' : 'updated'} successfully`, type: 'success' } }));
-                        setTimeout(() => window.location.reload(), 1000); // Fast sync via reload
+                        setTimeout(() => window.location.reload(), 1000); 
                     } else {
                         this.addressErrors = result.errors || {};
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: result.message || 'Validation failed on server', type: 'error' } }));
@@ -595,10 +599,70 @@
                     const data = await res.json();
                     
                     if(data.success) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Order placed successfully. Redirecting...', type: 'success' }}));
-                        setTimeout(() => window.location.href = '/checkout/success/' + data.orderId, 1200);
+                        if (data.paymentMethod === 'ONLINE PAYMENT') {
+                            this.initiateRazorpay(data);
+                        } else {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Order placed successfully. Redirecting...', type: 'success' }}));
+                            setTimeout(() => window.location.href = '/checkout/success/' + data.orderId, 1200);
+                        }
                     } else {
                         throw new Error(data.message || 'Order could not be placed.');
+                    }
+                } catch(error) {
+                    if (this.isSubmitting) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message, type: 'error' }}));
+                    }
+                    this.isSubmitting = false;
+                }
+            },
+
+            initiateRazorpay(orderInfo) {
+                const options = {
+                    key: "<%= razorpayKeyId %>", 
+                    amount: orderInfo.razorpayOrder.amount,
+
+                    currency: orderInfo.razorpayOrder.currency,
+                    name: "STARZO MOBILES",
+                    description: "Secure Checkout Payment",
+                    order_id: orderInfo.razorpayOrder.id,
+                    handler: async (response) => {
+                        await this.verifyOnlinePayment(response, orderInfo.orderId);
+                    },
+                    prefill: {
+                        name: document.querySelector('[x-model="addressForm.name"]')?.value || "Customer",
+                        email: userEmail,
+                        contact: userPhone
+                    },
+                    theme: {
+                        color: "#ff6a00"
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            this.isSubmitting = false;
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Payment cancelled.', type: 'warning' }}));
+                        }
+                    }
+                };
+                const rzp = new Razorpay(options);
+                rzp.open();
+            },
+
+            async verifyOnlinePayment(razorpayResponse, orderId) {
+                try {
+                    const res = await fetch('/checkout/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...razorpayResponse,
+                            orderId: orderId
+                        })
+                    });
+                    const data = await res.json();
+                    if(data.success) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Payment verified! Order completed.', type: 'success' }}));
+                        setTimeout(() => window.location.href = '/checkout/success/' + orderId, 1000);
+                    } else {
+                        throw new Error(data.message || 'Payment verification failed.');
                     }
                 } catch(error) {
                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message, type: 'error' }}));
@@ -608,6 +672,7 @@
         }
     }
 </script>
+
 
 <style>
     /* Premium aesthetics requirements */

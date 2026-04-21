@@ -178,11 +178,14 @@
             </div>
         </nav>
 
-        <div class="p-6 border-t border-white/5">
-            <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors">
+        <div class="p-6 border-t border-white/5" x-data="{}">
+            <a href="/admin/logout" 
+               @click.prevent="if(await window.confirmAction({ title: 'Logout Admin?', message: 'Are you sure you want to terminate the secure admin session?', confirmText: 'Logout', cancelText: 'Stay', type: 'danger' })) window.location.href='/admin/logout'"
+               class="flex items-center gap-3 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors">
                 🚪 Logout
             </a>
         </div>
+
     </aside>
 
     <!-- Content -->
@@ -191,50 +194,53 @@
             <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
                 System <span class="text-accent ml-2">Active</span>
             </div>
-            <div class="flex items-center gap-4" x-data="{ 
-                open: false, 
-                notifications: [], 
-                unreadCount: 0,
-                async fetchNotifications() {
-                    try {
-                        const res = await fetch('/admin/api/notifications');
-                        const data = await res.json();
-                        if (data.success) {
-                            this.notifications = data.notifications;
-                            this.unreadCount = data.unreadCount;
+            <div class="flex items-center gap-6">
+                <div class="relative" x-data="{ 
+                    open: false, 
+                    notifications: [], 
+                    unreadCount: 0,
+                    async fetchNotifications() {
+                        try {
+                            const res = await fetch('/admin/api/notifications');
+                            const data = await res.json();
+                            if (data.success) {
+                                this.notifications = data.notifications;
+                                this.unreadCount = data.unreadCount;
+                            }
+                        } catch (err) { console.error('Fetch error:', err); }
+                    },
+                    async markAsRead(id) {
+                        try {
+                            const res = await fetch(`/admin/api/notifications/${id}/read`, { method: 'PATCH' });
+                            if ((await res.json()).success) {
+                                this.notifications = this.notifications.map(n => n._id === id ? { ...n, isRead: true } : n);
+                                this.unreadCount = Math.max(0, this.unreadCount - 1);
+                            }
+                        } catch (err) { console.error('Mark read error:', err); }
+                    },
+                    async markAllRead() {
+                        try {
+                            const res = await fetch('/admin/api/notifications/read-all', { method: 'PATCH' });
+                            if ((await res.json()).success) {
+                                this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
+                                this.unreadCount = 0;
+                            }
+                        } catch (err) { console.error('Mark all read error:', err); }
+                    },
+                    getIcon(type) {
+                        switch(type) {
+                            case 'order_placed': return '🛒';
+                            case 'return_requested': return '🔄';
+                            case 'order_cancelled': return '✕';
+                            default: return '🔔';
                         }
-                    } catch (err) { console.error('Fetch error:', err); }
-                },
-                async markAsRead(id) {
-                    try {
-                        const res = await fetch(`/admin/api/notifications/${id}/read`, { method: 'PATCH' });
-                        if ((await res.json()).success) {
-                            this.notifications = this.notifications.map(n => n._id === id ? { ...n, isRead: true } : n);
-                            this.unreadCount = Math.max(0, this.unreadCount - 1);
-                        }
-                    } catch (err) { console.error('Mark read error:', err); }
-                },
-                async markAllRead() {
-                    try {
-                        const res = await fetch('/admin/api/notifications/read-all', { method: 'PATCH' });
-                        if ((await res.json()).success) {
-                            this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
-                            this.unreadCount = 0;
-                        }
-                    } catch (err) { console.error('Mark all read error:', err); }
-                },
-                getIcon(type) {
-                    switch(type) {
-                        case 'order_placed': return '🛒';
-                        case 'return_requested': return '🔄';
-                        case 'order_cancelled': return '✕';
-                        default: return '🔔';
                     }
-                }
-            }" x-init="fetchNotifications(); setInterval(() => fetchNotifications(), 30000)">
-                
-                <!-- Notification Bell -->
-                <div class="relative">
+                }" x-init="fetchNotifications(); window.addEventListener('new-notification', (e) => { 
+                    notifications.unshift(e.detail); 
+                    if(!e.detail.isRead) unreadCount++;
+                })">
+                    
+                    <!-- Notification Bell -->
                     <button @click="open = !open" class="w-10 h-10 flex items-center justify-center rounded-sm hover:bg-white/5 transition-all relative group">
                         <svg class="w-5 h-5 text-white/40 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
@@ -243,6 +249,7 @@
                             <span class="absolute top-2 right-2 w-4 h-4 bg-accent text-[8px] text-black font-black flex items-center justify-center rounded-full border-2 border-black transform translate-x-1/2 -translate-y-1/2 shadow-xl animate-pulse" x-text="unreadCount"></span>
                         </template>
                     </button>
+
 
                     <!-- Dropdown -->
                     <div x-show="open" 
@@ -295,6 +302,7 @@
             </div>
         </header>
 
+
         <%- include('../partials/breadcrumbs', { isAdmin: true }) %>
 
         <main class="flex-1 p-8">
@@ -304,27 +312,26 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        window.USER_ID = "<%= typeof admin !== 'undefined' && admin ? admin._id : '' %>";
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+
     <script src="/js/main.js"></script>
+    <script src="/js/socket-client.js"></script>
+    <script src="/js/spa-navigation.js"></script>
     <%- include('../partials/toast') %>
     <%- include('../partials/ios-alert') %>
-
 
     <script>
         window.addEventListener('load', () => {
             const loader = document.getElementById('page-loader');
             if (loader) {
                 loader.classList.add('fade-out');
-                setTimeout(() => loader.remove(), 450);
-            }
-        });
-        document.addEventListener('click', (e) => {
-            const a = e.target.closest('a');
-            if (a && a.href && !a.href.includes('#') && a.target !== '_blank' && !a.href.startsWith('javascript')) {
-                const loader = document.createElement('div');
-                loader.id = 'page-loader';
-                loader.setAttribute('aria-hidden','true');
-                loader.innerHTML = `<div class="loader-brand">STAR<span>ZO</span></div><div class="loader-bar-track"><div class="loader-bar-fill"></div></div><div class="loader-label">Admin Panel</div>`;
-                document.body.appendChild(loader);
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    loader.style.visibility = 'hidden';
+                }, 450);
             }
         });
 
@@ -337,3 +344,4 @@
     </script>
 </body>
 </html>
+

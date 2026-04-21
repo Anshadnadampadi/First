@@ -64,6 +64,8 @@ export const getOrderDetails = async (req, res) => {
     }
 };
 
+import { sendUserNotification } from "../../utils/notificationHelper.js";
+
 export const updateOrderStatus = async (req, res) => {
     try {
         const { orderId, status } = req.body;
@@ -73,7 +75,20 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(result.status || 400).json(result);
         }
 
+        // Notify User in real-time
+        const order = await Order.findById(orderId).select('user orderId');
+        if (order) {
+            await sendUserNotification(order.user, {
+                type: 'order_status',
+                title: 'Order Update',
+                message: `Your order #${order.orderId} is now ${status}`,
+                orderId: orderId,
+                status: status
+            });
+        }
+
         res.json(result);
+
     } catch (error) {
         console.error('Error updating order status:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });

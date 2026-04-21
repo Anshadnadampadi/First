@@ -9,7 +9,7 @@ import { ensureLoggedIn } from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get('/address', getAddress);
+router.get('/address', ensureLoggedIn,getAddress);
 router.post('/address', postAddress);
 router.put('/address/:id', putAddress);
 router.delete('/address/:id', deleteAddress);

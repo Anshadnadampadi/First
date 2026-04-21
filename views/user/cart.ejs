@@ -38,19 +38,21 @@
                                     <p class="text-text-muted text-xs uppercase tracking-widest">
                                         <%= item.variantDisplay %>
                                     </p>
-                                    <% if (item.isUnavailable) { %>
-                                        <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
-                                            ● Unavailable
-                                        </span>
-                                    <% } else if (item.isOutOfStock) { %>
-                                        <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
-                                            ● Out of Stock
-                                        </span>
-                                    <% } else if (item.insufficientStock) { %>
-                                        <span class="inline-block mt-3 px-3 py-1 bg-status-warning/10 border border-status-warning/30 text-status-warning text-[9px] font-black uppercase tracking-[0.2em]">
-                                            ● Only <%= item.availableStock %> Left
-                                        </span>
-                                    <% } %>
+                                    <div id="item-badge-<%= item._id %>">
+                                        <% if (item.isUnavailable) { %>
+                                            <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
+                                                ● Unavailable
+                                            </span>
+                                        <% } else if (item.isOutOfStock) { %>
+                                            <span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">
+                                                ● Out of Stock
+                                            </span>
+                                        <% } else if (item.insufficientStock) { %>
+                                            <span class="inline-block mt-3 px-3 py-1 bg-status-warning/10 border border-status-warning/30 text-status-warning text-[9px] font-black uppercase tracking-[0.2em]">
+                                                ● Only <%= item.availableStock %> Left
+                                            </span>
+                                        <% } %>
+                                    </div>
                                 </div>
 
                                 <!-- Qty & Price -->
@@ -85,7 +87,7 @@
                                 class="text-white text-label font-bold uppercase mb-8 border-b border-black-border pb-4">
                                 Order Summary</h2>
 
-                            <div class="space-y-6">
+                            <div class="space-y-6" id="cart-summary-actions">
                                 <div class="flex justify-between text-text-secondary text-sm">
                                     <span>Subtotal</span>
                                     <span class="text-white font-mono" data-subtotal>
@@ -101,26 +103,31 @@
                                     <span class="text-white text-2xl font-mono font-bold" data-cart-total>₹<%=
                                             cart.subtotal.toLocaleString() %></span>
                                 </div>
-                            </div>
 
-                            <% const hasIssues = cart.items.some(item => item.isUnavailable || item.isOutOfStock || item.insufficientStock); %>
-                            
-                            <% if (hasIssues) { %>
-                                <div class="mt-8 p-4 bg-status-danger/5 border border-status-danger/20">
-                                    <p class="text-status-danger text-[10px] font-bold uppercase tracking-wider leading-relaxed text-center">
-                                        Some items in your cart have issues (Unavailable/Out of Stock). Please resolve to proceed.
-                                    </p>
+                                <div id="checkout-container" class="pt-4">
+                                    <% const hasIssues = cart.items.some(item => item.isUnavailable || item.isOutOfStock || item.insufficientStock); %>
+                                    
+                                    <div id="cart-issues-container" class="<%= hasIssues ? '' : 'hidden' %> mt-8 p-4 bg-status-danger/5 border border-status-danger/20">
+                                        <p class="text-status-danger text-[10px] font-bold uppercase tracking-wider leading-relaxed text-center">
+                                            Some items in your cart have issues (Unavailable/Out of Stock). Please resolve to proceed.
+                                        </p>
+                                    </div>
+                                    
+                                    <div id="checkout-button-wrapper" class="mt-4">
+                                        <% if (hasIssues) { %>
+                                            <button disabled
+                                                class="w-full bg-white/20 text-white/40 font-bold py-5 text-sm tracking-[0.2em] uppercase cursor-not-allowed block text-center">
+                                                PROCEED TO CHECKOUT
+                                            </button>
+                                        <% } else { %>
+                                            <a href="/checkout"
+                                                class="w-full bg-accent text-black font-bold py-5 text-sm tracking-[0.2em] uppercase hover:bg-white transition-all btn-press block text-center">
+                                                PROCEED TO CHECKOUT
+                                            </a>
+                                        <% } %>
+                                    </div>
                                 </div>
-                                <button disabled
-                                    class="w-full bg-white/20 text-white/40 font-bold py-5 text-sm tracking-[0.2em] uppercase cursor-not-allowed mt-4 block text-center">
-                                    PROCEED TO CHECKOUT
-                                </button>
-                            <% } else { %>
-                                <a href="/checkout"
-                                    class="w-full bg-accent text-black font-bold py-5 text-sm tracking-[0.2em] uppercase hover:bg-white transition-all btn-press mt-10 block text-center">
-                                    PROCEED TO CHECKOUT
-                                </a>
-                            <% } %>
+                            </div>
 
                             <div class="mt-8 flex items-center justify-center gap-4 opacity-30 grayscale">
                                 <!-- Payment Logos -->
@@ -155,6 +162,43 @@
     </div>
 
     <script>
+        function updateItemBadge(itemId, status) {
+            const badgeContainer = document.getElementById('item-badge-' + itemId);
+            if (!badgeContainer) return;
+
+            let badgeHtml = '';
+            if (status.isUnavailable) {
+                badgeHtml = `<span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">● Unavailable</span>`;
+            } else if (status.isOutOfStock) {
+                badgeHtml = `<span class="inline-block mt-3 px-3 py-1 bg-status-danger/10 border border-status-danger/30 text-status-danger text-[9px] font-black uppercase tracking-[0.2em]">● Out of Stock</span>`;
+            } else if (status.insufficientStock) {
+                badgeHtml = `<span class="inline-block mt-3 px-3 py-1 bg-status-warning/10 border border-status-warning/30 text-status-warning text-[9px] font-black uppercase tracking-[0.2em]">● Only ${status.availableStock} Left</span>`;
+            }
+
+            badgeContainer.innerHTML = badgeHtml;
+        }
+
+        function updateCheckoutUI(hasIssues) {
+            const issuesContainer = document.getElementById('cart-issues-container');
+            const buttonWrapper = document.getElementById('checkout-button-wrapper');
+
+            if (hasIssues) {
+                issuesContainer.classList.remove('hidden');
+                buttonWrapper.innerHTML = `
+                    <button disabled class="w-full bg-white/20 text-white/40 font-bold py-5 text-sm tracking-[0.2em] uppercase cursor-not-allowed block text-center">
+                        PROCEED TO CHECKOUT
+                    </button>
+                `;
+            } else {
+                issuesContainer.classList.add('hidden');
+                buttonWrapper.innerHTML = `
+                    <a href="/checkout" class="w-full bg-accent text-black font-bold py-5 text-sm tracking-[0.2em] uppercase hover:bg-white transition-all btn-press block text-center">
+                        PROCEED TO CHECKOUT
+                    </a>
+                `;
+            }
+        }
+
         async function updateQty(itemId, change) {
             try {
                 const res = await fetch('/cart/update-qty', {
@@ -178,7 +222,13 @@
                     const formattedSubtotal = `₹${data.cartSubtotal.toLocaleString()}`;
                     document.querySelector('[data-subtotal]').textContent = formattedSubtotal;
                     document.querySelector('[data-cart-total]').textContent = formattedSubtotal;
-                } // Quickest way to sync state for now
+
+                    // Update Item Badge
+                    updateItemBadge(itemId, data.itemStatus);
+                    
+                    // Update Checkout Button State
+                    updateCheckoutUI(data.hasIssues);
+                } 
                 else {
                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Error updating quantity', type: 'error' } }));
                 }
@@ -209,7 +259,13 @@
                         window.location.reload();
                     } else {
                         document.getElementById('item-' + itemId).remove();
-                        window.location.reload(); // To update total/subtotal easily
+                        // Update subtotal and total
+                        const formattedSubtotal = `₹${data.cartSubtotal.toLocaleString()}`;
+                        document.querySelector('[data-subtotal]').textContent = formattedSubtotal;
+                        document.querySelector('[data-cart-total]').textContent = formattedSubtotal;
+                        
+                        // Update Checkout Button State
+                        updateCheckoutUI(data.hasIssues);
                     }
                 } else {
                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Error removing item', type: 'error' } }));

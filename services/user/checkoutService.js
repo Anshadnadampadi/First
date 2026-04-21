@@ -5,6 +5,7 @@ import User from '../../models/user/User.js';
 import * as cartService from './cartService.js';
 import { isSameVariant } from '../../utils/productHelpers.js';
 import { createAdminNotification } from '../../utils/notificationHelper.js';
+import razorpay from '../../config/razorpay.js';
 
 export const placeOrderService = async (userId, orderData) => {
     const { addressId, paymentMethod, couponCode } = orderData;
@@ -87,21 +88,85 @@ export const placeOrderService = async (userId, orderData) => {
             country: address.country
         },
         subtotal, tax, shippingFee, discount, totalAmount, couponCode, paymentMethod,
-        paymentStatus: paymentMethod === 'CASH ON DELIVERY' ? 'Pending' : 'Paid', 
+        paymentStatus: 'Pending', 
         orderStatus: 'Processing'
     });
 
+    // If Razorpay, create razorpay order
+    let razorpayOrder = null;
+    if (paymentMethod === 'ONLINE PAYMENT') {
+        const options = {
+            amount: Math.round(totalAmount * 100), // in paise
+            currency: "INR",
+            receipt: orderId,
+        };
+        try {
+            razorpayOrder = await razorpay.orders.create(options);
+            newOrder.razorpayOrderId = razorpayOrder.id;
+        } catch (err) {
+            console.error("Razorpay Order Creation Error:", err);
+            return { success: false, message: 'Failed to initiate online payment.', status: 500 };
+        }
+    }
+
     await newOrder.save();
 
-    // Admin Alert
-    await createAdminNotification({
-        type: 'order_placed',
-        title: 'New Order Received',
-        message: `Order #${newOrder.orderId} has been placed by ${user.name || user.email}. Total: ₹${newOrder.totalAmount.toLocaleString()}`,
-        orderId: newOrder._id
-    });
+    // If not Online Payment, we can finalize notifications and clear cart
+    if (paymentMethod !== 'ONLINE PAYMENT') {
+        // Clear Cart
+        await cartService.clearCart(userId);
 
-    await cartService.clearCart(userId);
+        // Admin Alert
+        await createAdminNotification({
+            type: 'order_placed',
+            title: 'New Order Received',
+            message: `Order #${newOrder.orderId} has been placed by ${user.name || user.email}. Total: ₹${newOrder.totalAmount.toLocaleString()}`,
+            orderId: newOrder._id
+        });
+    }
 
-    return { success: true, message: 'Order placed successfully', orderId: newOrder.orderId };
+    return { 
+        success: true, 
+        message: 'Order placed successfully', 
+        orderId: newOrder.orderId,
+        dbOrderId: newOrder._id,
+        razorpayOrder: razorpayOrder,
+        paymentMethod
+    };
+};
+
+export const verifyPaymentService = async (paymentData) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = paymentData;
+
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(sign.toString())
+        .digest("hex");
+
+    if (razorpay_signature === expectedSign) {
+        const order = await Order.findOne({ orderId: orderId });
+        if (order) {
+            order.paymentStatus = 'Paid';
+            order.razorpayPaymentId = razorpay_payment_id;
+            order.razorpaySignature = razorpay_signature;
+            await order.save();
+
+            // Clear Cart
+            await cartService.clearCart(order.user);
+
+            // Admin Alert
+            const user = await User.findById(order.user);
+            await createAdminNotification({
+                type: 'order_placed',
+                title: 'New Online Order',
+                message: `Order #${order.orderId} (Online) confirmed. Total: ₹${order.totalAmount.toLocaleString()}`,
+                orderId: order._id
+            });
+
+            return { success: true, message: 'Payment verified successfully.' };
+        }
+    }
+
+    return { success: false, message: 'Payment verification failed.' };
 };
