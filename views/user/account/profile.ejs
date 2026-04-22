@@ -261,7 +261,7 @@
                         </button>
                     </div>
 
-                    <form id="editProfileForm" @submit.prevent="submitProfileUpdate" class="space-y-6">
+                    <form id="editProfileForm" @submit.prevent="submitProfileUpdate" data-no-spa class="space-y-6">
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-2">
                                 <label
@@ -337,7 +337,7 @@
                     </div>
 
                     <!-- Step 1: Request OTP -->
-                    <form x-show="emailStep === 1" @submit.prevent="requestEmailOtp" class="space-y-6">
+                    <form x-show="emailStep === 1" @submit.prevent="requestEmailOtp" data-no-spa class="space-y-6">
                         <div class="space-y-2">
                             <label class="text-[9px] font-black uppercase tracking-widest text-white/30">New Identity
                                 Endpoint</label>
@@ -352,7 +352,7 @@
                     </form>
 
                     <!-- Step 2: Verify OTP -->
-                    <form x-show="emailStep === 2" @submit.prevent="verifyEmailOtp" class="space-y-8">
+                    <form x-show="emailStep === 2" @submit.prevent="verifyEmailOtp" data-no-spa class="space-y-8">
                         <div class="text-center space-y-4">
                             <p class="text-white/40 text-[10px] uppercase tracking-widest">Protocol sent to <br><span
                                     class="text-accent font-bold" x-text="newEmail"></span></p>
@@ -396,7 +396,7 @@
                         </button>
                     </div>
 
-                    <form @submit.prevent="submitPasswordChange" class="space-y-6">
+                    <form @submit.prevent="submitPasswordChange" data-no-spa class="space-y-6">
                         <div class="space-y-2">
                             <label class="text-[9px] font-black uppercase tracking-widest text-white/30">Current
                                 Code</label>
@@ -707,12 +707,15 @@
                     }
                     if (field === 'new') {
                         const pw = this.passwordForm.new;
+                        const hasUpper = /[A-Z]/.test(pw);
+                        const hasLower = /[a-z]/.test(pw);
+                        const hasNumber = /\d/.test(pw);
+                        const hasSpecial = /[\W_]/.test(pw);
+
                         if (pw.length < 8) {
                             this.passwordErrors.new = 'Pin must be at least 8 segments';
-                        } else if (!/[A-Z]/.test(pw)) {
-                            this.passwordErrors.new = 'Requires at least one uppercase node';
-                        } else if (!/[0-9]/.test(pw)) {
-                            this.passwordErrors.new = 'Requires at least one numeric node';
+                        } else if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+                            this.passwordErrors.new = 'Requires upper, lower, numeric & special char';
                         } else {
                             this.passwordErrors.new = '';
                         }
@@ -791,7 +794,6 @@
                         }));
                     } finally {
                         this.isSubmitting = false;
-                        e.target.reset();
                     }
                 },
 

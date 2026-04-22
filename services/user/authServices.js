@@ -281,7 +281,12 @@ export const changeUserPassword = async (userId, currentPw, newPw) => {
         if (!user) return { success: false, message: 'User not found' };
 
         const isMatch = await bcrypt.compare(currentPw, user.password);
-        if (!isMatch) return { success: false, message: 'Current password is incorrect' };
+        if (!isMatch) {
+            if (user.isGoogleUser) {
+                return { success: false, message: 'Current password incorrect. For Google accounts, use "Forgot Password" to set one.' };
+            }
+            return { success: false, message: 'Current password is incorrect' };
+        }
 
         const hashed = await bcrypt.hash(newPw, 10);
         user.password = hashed;

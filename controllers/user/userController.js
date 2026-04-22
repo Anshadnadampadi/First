@@ -3,6 +3,7 @@ import Address from "../../models/user/Address.js";
 import Order from "../../models/order/order.js";
 import bcrypt from "bcryptjs";
 import { registerValidate } from "../../validation/user/userValidation.js";
+const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,30}$/;
 import { registerUser, loginUser, updateUserProfile, changeUserPassword, addUserAddress, updateUserAddress, deleteUserAddress, setDefaultAddress, validateAndNormalizeAddress, generateReferralCode } from "../../services/user/authServices.js";
 import { sendOtpService, verifyOtpService, forgotPasswordService, resendOtpService, requestEmailChangeOtpService, verifyEmailChangeOtpService } from "../../services/user/authServices.js";
 import product from "../../models/product/product.js";
@@ -229,10 +230,10 @@ export const resetSuccess = (req, res) => {
 export const postResetPassword = async (req, res) => {
     try {
         const { email, password, confirmPassword } = req.body;
-        if (!email) {
+        if (!email || req.session.resetEmail !== email) {
             return res.json({
                 success: false,
-                message: "Session expired. Please try again."
+                message: "Unauthorized or Session expired. Please try again."
             });
         }
         if (!password || !confirmPassword) {
@@ -245,6 +246,12 @@ export const postResetPassword = async (req, res) => {
             return res.json({
                 success: false,
                 message: "Passwords do not match"
+            });
+        }
+        if (!passwordPattern.test(password)) {
+            return res.json({
+                success: false,
+                message: "Password must contain uppercase, lowercase, number and special character and be at least 8 characters long."
             });
         }
 
@@ -261,6 +268,8 @@ export const postResetPassword = async (req, res) => {
         user.otp = null;
         user.otpExpiry = null;
         await user.save();
+
+        delete req.session.resetEmail; // Clear the authorization
 
         return res.json({
             success: true,
@@ -317,6 +326,7 @@ export const postVerifyOtp = async (req, res) => {
     }
 
     if (context === "reset") {
+        req.session.resetEmail = email; // Authorize this session to reset the password
         return res.json({
             success: true,
             redirect: `/auth/reset-password?email=${encodeURIComponent(email)}`
@@ -458,6 +468,9 @@ export const postChangePassword = async (req, res) => {
         }
         if (newPw !== confirmPw) {
             return res.status(400).json({ success: false, message: "Passwords don't match" });
+        }
+        if (!passwordPattern.test(newPw)) {
+            return res.status(400).json({ success: false, message: "Password must contain uppercase, lowercase, number and special character and be at least 8 characters long." });
         }
 
         const result = await changeUserPassword(req.session.user, currentPw, newPw);
