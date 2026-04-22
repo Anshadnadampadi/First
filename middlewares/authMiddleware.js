@@ -41,7 +41,6 @@ export const ensureLoggedIn = async (req, res, next) => {
 export const ensureLoggedOut = (req, res, next) => {
     if (req.session && req.session.user) {
         return res.redirect('/');
-
     }
     next();
 };

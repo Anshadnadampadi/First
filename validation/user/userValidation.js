@@ -39,8 +39,15 @@ export const registerValidate = joi.object({
         .messages({
             'string.empty': 'Please enter a password.',
             'any.required': 'Password is a required field.',
-            'string.pattern.base': 'Password must contain uppercase, lowercase, number and special character 22.'
+            'string.pattern.base': 'Password must contain uppercase, lowercase, number and special character.'
         }),
+    agree: joi.boolean()
+        .valid(true)
+        .required()
+        .messages({
+            'any.only': 'You must agree to the terms and conditions.',
+            'any.required': 'Agreement is required.'
+        })
 });
 
 export const loginValidate = joi.object({

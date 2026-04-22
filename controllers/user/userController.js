@@ -2,6 +2,7 @@ import User from "../../models/user/User.js";
 import Address from "../../models/user/Address.js";
 import Order from "../../models/order/order.js";
 import bcrypt from "bcryptjs";
+import { registerValidate } from "../../validation/user/userValidation.js";
 import { registerUser, loginUser, updateUserProfile, changeUserPassword, addUserAddress, updateUserAddress, deleteUserAddress, setDefaultAddress, validateAndNormalizeAddress, generateReferralCode } from "../../services/user/authServices.js";
 import { sendOtpService, verifyOtpService, forgotPasswordService, resendOtpService, requestEmailChangeOtpService, verifyEmailChangeOtpService } from "../../services/user/authServices.js";
 import product from "../../models/product/product.js";
@@ -32,6 +33,15 @@ export const getSignup = (req, res) => {
 
 export const postSignup = async (req, res) => {
     try {
+        
+        const { error } = registerValidate.validate(req.body);
+        if (error) {
+            return res.json({
+                success: false,
+                message: error.details[0].message
+            });
+        }
+
         const { firstName, lastName, email, password } = req.body;
         const result = await sendOtpService({ firstName, lastName, email, password });
 
@@ -109,12 +119,13 @@ export const getlogin = (req, res) => {
 export const postLogin = async (req, res) => {
     try {
 
-        const { email, password } = req.body;
+        let { email, password } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'All fields required' });
         }
 
+        email = String(email || '').trim().toLowerCase();
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -371,6 +382,47 @@ export const getProfile = async (req, res) => {
         });
     } catch (err) {
         console.error('Get profile error', err);
+        res.status(500).send('Server Error');
+    }
+};
+
+export const getAccountDashboard = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.redirect('/auth/login');
+        }
+        const user = await User.findById(req.session.user).lean();
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        // Aggregate statistics
+        const [ordersCount, totalSpendResult, recentOrders] = await Promise.all([
+            Order.countDocuments({ user: user._id }),
+            Order.aggregate([
+                { $match: { user: user._id, orderStatus: { $ne: 'Cancelled' } } },
+                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+            ]),
+            Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(3).lean()
+        ]);
+
+        user.totalOrders = ordersCount;
+        user.totalSpend = totalSpendResult.length > 0 ? totalSpendResult[0].total : 0;
+
+        const { msg, icon } = req.query;
+        res.render("user/account/dashboard", {
+            user,
+            recentOrders,
+            currentPath: '/account',
+            breadcrumbs: [
+                { label: 'Account', url: '/account' },
+                { label: 'Dashboard', url: '/account' }
+            ],
+            msg: msg || null,
+            icon: icon || null
+        });
+    } catch (err) {
+        console.error('Get account dashboard error', err);
         res.status(500).send('Server Error');
     }
 };

@@ -8,7 +8,7 @@
                 <p class="text-text-muted text-label font-bold uppercase">Access your MOBIVERSE profile</p>
             </div>
 
-            <form @submit.prevent="submitLogin" x-data="loginForm()" class="space-y-6">
+            <form @submit.prevent="submitLogin" x-data="loginForm()" data-no-spa class="space-y-6">
                 <div class="space-y-2">
                     <label class="text-label font-bold uppercase text-text-muted ml-1">Email Address</label>
                     <input type="email" x-model="formData.email" @input="validateField('email')"
@@ -134,9 +134,7 @@
                                     window.dispatchEvent(new CustomEvent('show-toast', {
                                         detail: { message: 'Signed in successfully!', type: 'success', status }
                                     }));
-                                    setTimeout(() => {
-                                        window.location.href = result.redirect || '/';
-                                    }, 1000);
+                                    window.location.replace(result.redirect || '/');
                                 } else {
                                     window.dispatchEvent(new CustomEvent('show-toast', {
                                         detail: { message: result.message || 'Verification failed', type: 'error', status }

@@ -72,7 +72,8 @@
 
         <!-- Logout -->
         <a href="/auth/logout"
-            @click.prevent="if(await window.confirmAction({ title: 'Logout?', message: 'Are you sure you want to end your session?', confirmText: 'Logout', cancelText: 'Cancel', type: 'danger' })) window.location.href='/auth/logout'"
+            data-no-spa
+            @click.prevent="window.confirmAction({ title: 'Logout?', message: 'Are you sure you want to end your session?', confirmText: 'Logout', cancelText: 'Cancel', type: 'danger' }).then(confirmed => { if(confirmed) window.location.href='/auth/logout' })"
             class="text-[10px] font-bold tracking-[0.2em] text-white/40 hover:text-accent transition-colors uppercase">Logout</a>
 
 

@@ -1,0 +1,49 @@
+<!-- views/admin/marketing/banners.ejs -->
+<%- contentFor('body') %>
+
+<div class="space-y-10">
+    <div class="flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight uppercase text-white mb-2">BANNER MANAGEMENT.</h1>
+            <p class="text-white/40 text-[10px] tracking-[0.2em] font-bold uppercase">Configure website hero and promotional banners</p>
+        </div>
+        <button class="px-8 py-4 bg-white text-black text-[10px] font-bold tracking-widest uppercase hover:bg-accent transition-all btn-press shadow-[0_0_15px_rgba(255,255,255,0.1)]">Create Banner</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-black-surface border border-white/5 p-8 relative overflow-hidden group hover:border-accent/30 transition-all flex flex-col justify-between min-h-[300px]">
+            <div class="flex justify-between items-start mb-8 z-10 relative">
+                <div class="bg-accent/10 border border-accent/20 px-3 py-1 font-mono text-accent text-xs font-bold tracking-widest uppercase">
+                    HERO SLIDER 1
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1 bg-status-success/10 border border-status-success/20 rounded-full">
+                    <div class="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse"></div>
+                    <span class="text-[9px] uppercase tracking-widest font-bold text-status-success">ACTIVE</span>
+                </div>
+            </div>
+            
+            <div class="z-10 relative">
+                <h3 class="text-white text-2xl font-black tracking-tight mb-2">Summer Sale 2026</h3>
+                <p class="text-white/40 text-[10px] font-bold tracking-widest uppercase">Target: /category/smartphones</p>
+            </div>
+
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-0"></div>
+            <div class="absolute inset-0 z-[-1] opacity-20 group-hover:opacity-30 transition-opacity bg-cover bg-center" style="background-image: url('/uploads/banners/placeholder.jpg'); background-color: #1a1a1a;"></div>
+
+            <div class="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button class="w-8 h-8 flex items-center justify-center border border-white/10 text-white/40 hover:text-white transition-all bg-black/50 backdrop-blur-md">✎</button>
+                <button class="w-8 h-8 flex items-center justify-center border border-white/10 text-white/40 hover:text-status-danger transition-all bg-black/50 backdrop-blur-md">✕</button>
+            </div>
+        </div>
+        
+        <div class="bg-black-surface border border-white/5 p-8 flex items-center justify-center border-dashed group hover:border-accent/30 transition-all cursor-pointer min-h-[300px]">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-accent/5 group-hover:text-accent group-hover:border-accent/20 transition-all text-white/40">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </div>
+                <h3 class="text-white text-sm font-bold tracking-widest uppercase mb-1">Add New Banner</h3>
+                <p class="text-white/40 text-[10px] tracking-widest uppercase">Upload media & configure links</p>
+            </div>
+        </div>
+    </div>
+</div>

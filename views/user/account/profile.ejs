@@ -95,57 +95,46 @@
                                 </div>
                             </div>
 
-                            <!-- Wallet & Stats Grid -->
-                            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <!-- Wallet Balance -->
-                                <div class="flex flex-col justify-center p-10 bg-black-elevated border border-black-border relative group overflow-hidden transition-all hover:border-accent/40">
-                                    <div class="absolute -right-2 -top-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
-                                        <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2-.9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"></path>
-                                        </svg>
-                                    </div>
-                                    <h4 class="text-white/30 text-[9px] font-black tracking-widest uppercase mb-4">Elite Balance</h4>
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="text-white text-4xl font-mono font-black italic tracking-tighter tabular-nums">₹<%= (user.walletBalance || 0).toLocaleString() %></span>
-                                    </div>
+                            <!-- Referral Section -->
+                            <div class="md:col-span-2 flex flex-col justify-center bg-black-elevated border border-black-border p-12 relative overflow-hidden group rounded-sm transition-all hover:border-accent/30">
+                                <div
+                                    class="absolute right-0 top-0 w-64 h-64 bg-accent/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2">
                                 </div>
-
-                                <!-- Total Orders -->
-                                <div class="flex flex-col justify-center p-10 bg-black-elevated border border-black-border relative group overflow-hidden transition-all hover:border-accent/40">
-                                    <div class="absolute -right-2 -top-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
-                                        <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"></path>
-                                        </svg>
+    
+                                <div class="relative z-10 flex flex-col md:flex-row gap-12 items-center">
+                                    <div class="flex-1 space-y-6">
+                                        <h3
+                                            class="text-white text-4xl font-display font-black tracking-tighter uppercase leading-none">
+                                            Build Your<br><span class="text-accent italic">REFERRALS</span></h3>
+                                        <p class="text-white/40 text-xs leading-relaxed max-w-sm">Expand the Mobiverse.
+                                            Every
+                                            user who signs up with your unique protocol code generates credits for your
+                                            vault.
+                                            Elite rewards for elite networks.</p>
                                     </div>
-                                    <h4 class="text-white/30 text-[9px] font-black tracking-widest uppercase mb-4">Total Orders</h4>
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="text-white text-4xl font-mono font-black italic tracking-tighter tabular-nums"><%= user.totalOrders || 0 %></span>
-                                    </div>
-                                </div>
-
-                                <!-- Total Spend -->
-                                <div class="flex flex-col justify-center p-10 bg-black-elevated border border-black-border relative group overflow-hidden transition-all hover:border-accent/40">
-                                    <div class="absolute -right-2 -top-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
-                                        <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
-                                        </svg>
-                                    </div>
-                                    <h4 class="text-white/30 text-[9px] font-black tracking-widest uppercase mb-4">Life-Time Invested</h4>
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="text-white text-4xl font-mono font-black italic tracking-tighter tabular-nums">₹<%= (user.totalSpend || 0).toLocaleString() %></span>
-                                    </div>
-                                </div>
-
-                                <!-- Network Growth -->
-                                <div class="flex flex-col justify-center p-10 bg-black-elevated border border-black-border relative group overflow-hidden transition-all hover:border-accent/40">
-                                    <div class="absolute -right-2 -top-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
-                                        <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path>
-                                        </svg>
-                                    </div>
-                                    <h4 class="text-white/30 text-[9px] font-black tracking-widest uppercase mb-4">Network Growth</h4>
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="text-white text-4xl font-mono font-black italic tracking-tighter tabular-nums"><%= user.referralCount || 0 %></span>
+                                    <div class="w-full md:w-auto space-y-4">
+                                        <div
+                                            class="bg-black border border-black-border px-8 py-6 backdrop-blur-md flex flex-col items-center group-hover:border-accent/40 transition-colors">
+                                            <span
+                                                class="text-white/30 text-[9px] font-black tracking-[0.3em] uppercase mb-4">Your
+                                                Protocol Code</span>
+                                            <div class="flex items-center gap-6">
+                                                <span
+                                                    class="text-white text-4xl font-mono font-black tracking-[0.1em] selection:bg-accent selection:text-black">
+                                                    <%= user.referralCode %>
+                                                </span>
+                                                <button @click="copyReferral('<%= user.referralCode %>')"
+                                                    class="text-accent hover:text-white transition-colors p-2">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2.5"
+                                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                                        </path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -245,128 +234,79 @@
                             </div>
                         </div>
 
-                        <!-- Referral Section -->
-                        <div class="bg-black-elevated border border-black-border p-12 relative overflow-hidden group fade-up rounded-sm transition-all hover:border-accent/30"
-                            style="animation-delay: 400ms">
-                            <div
-                                class="absolute right-0 top-0 w-64 h-64 bg-accent/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2">
-                            </div>
-
-                            <div class="relative z-10 flex flex-col md:flex-row gap-12 items-center">
-                                <div class="flex-1 space-y-6">
-                                    <h3
-                                        class="text-white text-4xl font-display font-black tracking-tighter uppercase leading-none">
-                                        Build Your<br><span class="text-accent italic">REFERALS</span></h3>
-                                    <p class="text-white/40 text-xs leading-relaxed max-w-sm">Expand the Mobiverse.
-                                        Every
-                                        user who signs up with your unique protocol code generates credits for your
-                                        vault.
-                                        Elite rewards for elite networks.</p>
-                                </div>
-                                <div class="w-full md:w-auto space-y-4">
-                                    <div
-                                        class="bg-black border border-black-border px-8 py-6 backdrop-blur-md flex flex-col items-center group-hover:border-accent/40 transition-colors">
-                                        <span
-                                            class="text-white/30 text-[9px] font-black tracking-[0.3em] uppercase mb-4">Your
-                                            Protocol Code</span>
-                                        <div class="flex items-center gap-6">
-                                            <span
-                                                class="text-white text-4xl font-mono font-black tracking-[0.1em] selection:bg-accent selection:text-black">
-                                                <%= user.referralCode %>
-                                            </span>
-                                            <button @click="copyReferral('<%= user.referralCode %>')"
-                                                class="text-accent hover:text-white transition-colors p-2">
-                                                <svg class="w-6 h-6" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2.5"
-                                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
-                                                    </path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
             </div>
         </div>
 
         <!-- Edit Profile Modal -->
         <div x-show="modals.editProfile" x-cloak
-            class="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
-            x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 scale-95"
+            class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
-            <div class="bg-black border border-white/5 w-full max-w-2xl overflow-hidden shadow-[0_40px_100px_rgba(255,106,0,0.1)] relative group/modal"
+            <div class="bg-black-elevated border border-black-border w-full max-w-lg max-h-[95vh] overflow-y-auto shadow-2xl relative group/modal"
                 @click.away="closeModal('editProfile')">
                 <div class="h-1 bg-accent/20 w-full overflow-hidden">
                     <div x-show="isSubmitting" class="h-full bg-accent animate-progress"></div>
                 </div>
-                <div class="p-16 space-y-12">
+                <div class="p-8 space-y-8">
                     <div class="flex justify-between items-start">
-                        <h3 class="text-white text-5xl font-display font-black tracking-tight uppercase leading-[0.8]">
-                            Update<br><span class="text-accent italic"></span></h3>
+                        <h3 class="text-white text-2xl font-display font-black tracking-tight uppercase leading-none">
+                            Update<br><span class="text-accent italic">Profile</span></h3>
                         <button @click="closeModal('editProfile')"
-                            class="text-white/20 hover:text-white p-2 transition-colors">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="text-white/20 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                         </button>
                     </div>
 
-                    <form id="editProfileForm" @submit.prevent="submitProfileUpdate" class="space-y-10">
-                        <div class="grid grid-cols-2 gap-8">
-                            <div class="space-y-3">
+                    <form id="editProfileForm" @submit.prevent="submitProfileUpdate" class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
                                 <label
-                                    class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 ml-1">Protocol
-                                    Identifier (First)</label>
+                                    class="text-[9px] font-black uppercase tracking-widest text-white/30">First Name</label>
                                 <input type="text" name="firstName" x-model="profileForm.firstName"
                                     @input="validateProfileField('firstName')"
                                     :class="profileErrors.firstName ? 'border-status-danger' : 'border-white/10'"
-                                    class="w-full bg-white/5 border-white/10 text-white px-8 py-5 border focus:border-accent focus:bg-white/[0.08] outline-none transition-all placeholder:text-white/10 font-bold uppercase text-sm">
+                                    class="w-full bg-black border border-white/10 text-white px-4 py-3 focus:border-accent outline-none transition-all placeholder:text-white/10 font-bold uppercase text-sm">
                                 <span x-show="profileErrors.firstName" x-text="profileErrors.firstName"
                                     class="text-status-danger text-[9px] font-bold uppercase tracking-widest mt-1 block"></span>
                             </div>
-                            <div class="space-y-3">
+                            <div class="space-y-2">
                                 <label
-                                    class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 ml-1">Legacy
-                                    Name (Last)</label>
+                                    class="text-[9px] font-black uppercase tracking-widest text-white/30">Last Name</label>
                                 <input type="text" name="lastName" x-model="profileForm.lastName"
                                     @input="validateProfileField('lastName')"
                                     :class="profileErrors.lastName ? 'border-status-danger' : 'border-white/10'"
-                                    class="w-full bg-white/5 border-white/10 text-white px-8 py-5 border focus:border-accent focus:bg-white/[0.08] outline-none transition-all placeholder:text-white/10 font-bold uppercase text-sm">
+                                    class="w-full bg-black border border-white/10 text-white px-4 py-3 focus:border-accent outline-none transition-all placeholder:text-white/10 font-bold uppercase text-sm">
                                 <span x-show="profileErrors.lastName" x-text="profileErrors.lastName"
                                     class="text-status-danger text-[9px] font-bold uppercase tracking-widest mt-1 block"></span>
                             </div>
                         </div>
-                        <div class="space-y-3">
+                        <div class="space-y-2">
                             <label
-                                class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 ml-1">Communication
-                                Channel (Phone)</label>
+                                class="text-[9px] font-black uppercase tracking-widest text-white/30">Phone Number</label>
                             <input type="text" name="phone" x-model="profileForm.phone"
                                 @input="validateProfileField('phone')"
                                 :class="profileErrors.phone ? 'border-status-danger' : 'border-white/10'"
-                                class="w-full bg-white/5 border-white/10 text-white px-8 py-5 border focus:border-accent focus:bg-white/[0.08] outline-none transition-all placeholder:text-white/10 font-mono text-lg font-bold">
+                                class="w-full bg-black border border-white/10 text-white px-4 py-3 focus:border-accent outline-none transition-all placeholder:text-white/10 font-mono text-sm font-bold">
                             <span x-show="profileErrors.phone" x-text="profileErrors.phone"
                                 class="text-status-danger text-[9px] font-bold uppercase tracking-widest mt-1 block"></span>
                         </div>
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 ml-1">Identity
-                                Abstract (Bio)</label>
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-white/30">Bio (Optional)</label>
                             <textarea name="bio" x-model="profileForm.bio" @input="validateProfileField('bio')"
                                 :class="profileErrors.bio ? 'border-status-danger' : 'border-white/10'"
-                                class="w-full bg-white/5 border-white/10 text-white px-8 py-5 border focus:border-accent focus:bg-white/[0.08] outline-none transition-all placeholder:text-white/10 font-medium min-h-[140px] resize-none text-sm leading-relaxed"></textarea>
+                                class="w-full bg-black border border-white/10 text-white px-4 py-3 focus:border-accent outline-none transition-all placeholder:text-white/10 font-medium min-h-[100px] resize-none text-sm leading-relaxed"></textarea>
                             <span x-show="profileErrors.bio" x-text="profileErrors.bio"
                                 class="text-status-danger text-[9px] font-bold uppercase tracking-widest mt-1 block"></span>
                         </div>
 
                         <button type="submit"
-                            class="w-full bg-accent text-black py-6 flex items-center justify-center gap-4 transition-all hover:bg-white group overflow-hidden relative btn-press">
-                            <span class="text-[12px] font-black uppercase tracking-[0.3em]"
-                                x-text="isSubmitting ? 'Synchronizing...' : 'Saves Changes'"></span>
+                            class="w-full bg-accent text-black py-4 flex items-center justify-center gap-2 transition-all hover:bg-white btn-press">
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em]"
+                                x-text="isSubmitting ? 'Saving...' : 'Save Changes'"></span>
                         </button>
                     </form>
                 </div>
@@ -375,7 +315,7 @@
 
         <!-- Minimal Change Email Modal -->
         <div x-show="modals.editEmail" x-cloak
-            class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
             <div
@@ -435,7 +375,7 @@
 
         <!-- Minimal Password Change Modal -->
         <div x-show="modals.changePassword" x-cloak
-            class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
             <div
@@ -500,10 +440,10 @@
 
         <!-- Cropper Modal -->
         <div x-show="modals.cropImage" x-cloak
-            class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+            class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100">
-            <div class="bg-black-elevated border border-black-border w-full max-w-lg overflow-hidden shadow-2xl relative">
+            <div class="bg-black-elevated border border-black-border w-full max-w-lg max-h-[95vh] overflow-y-auto shadow-2xl relative">
                 <div class="h-1 bg-accent/20 w-full overflow-hidden">
                     <div x-show="isUploading" class="h-full bg-accent animate-progress"></div>
                 </div>
@@ -519,10 +459,16 @@
                         <img id="cropper-image" :src="selectedImageUri" class="max-w-full block" />
                     </div>
 
-                    <button @click="uploadCroppedAvatar()"
-                        class="w-full bg-accent text-black py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:bg-white btn-press">
-                        <span x-text="isUploading ? 'Encoding...' : 'Upload Avatar'"></span>
-                    </button>
+                    <div class="flex gap-4">
+                        <button @click="closeModal('cropImage')"
+                            class="flex-1 bg-white/5 border border-white/10 text-white py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:bg-status-danger hover:border-status-danger btn-press">
+                            Cancel
+                        </button>
+                        <button @click="uploadCroppedAvatar()"
+                            class="flex-1 bg-accent text-black py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:bg-white btn-press">
+                            <span x-text="isUploading ? 'Encoding...' : 'Upload Avatar'"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

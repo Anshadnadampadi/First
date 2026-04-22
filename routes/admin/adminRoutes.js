@@ -15,6 +15,7 @@ import adminAuth from "../../middlewares/adminAuth.js";
 import categoryRoutes from '../products/categoryRoutes.js';
 import productRoutes from '../products/productRoutes.js';
 import adminOrderRoutes from './adminOrderRoutes.js';
+import couponRoutes from './adminCoupon.js';
 import { getNotifications, markAsRead, markAllAsRead } from '../../controllers/admin/notificationController.js';
 
 const router = express.Router();
@@ -38,11 +39,13 @@ router.get('/logout', adminLogout);
 
 router.use('/', categoryRoutes);
 router.use('/', productRoutes);
-router.use('/', adminOrderRoutes);
+router.use('/', adminOrderRoutes)
+router.use("/",couponRoutes)
 
 // Dashboard & Users
 router.get('/dashboard', getAdminDashboard);
 router.get('/notifications', (req, res) => res.render('admin/notifications/index', { title: 'System Protocol' }));
+router.get('/marketing/banners', (req, res) => res.render('admin/marketing/banners', { title: 'Banners' }));
 router.get('/customers', getAdminManagement);
 
 router.post('/block/:id', postBlock);
