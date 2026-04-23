@@ -4,36 +4,35 @@ import Wallet from '../../models/user/Wallet.js';
 import User from '../../models/user/User.js';
 import { isSameVariant } from '../../utils/productHelpers.js';
 import { createAdminNotification } from '../../utils/notificationHelper.js';
+import { recalculateOrderTotals, calculateItemRefund } from '../../utils/orderCalculations.js';
 
-const recalculateOrderTotals = (order) => {
-    // Only count items that are NOT Cancelled or Returned
-    const activeItems = order.items.filter(item => !['Cancelled', 'Returned'].includes(item.status));
-    
-    order.subtotal = activeItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    
-    // Tax is 18% of active subtotal
-    order.tax = Math.floor(order.subtotal * 0.18);
-    
-    // Shipping remains fixed once order is placed (or you can logic it here)
-    if (order.subtotal === 0) order.shippingFee = 0;
-    
-    // Recalculate discount if a coupon was used
-    if (order.couponCode === 'SYNC10') {
-        order.discount = Math.floor((order.subtotal + order.tax) * 0.10);
-    } else {
-        // If discount was fixed or proportional, you'd need the original ratio
-        // For now, let's keep it simple as the app seems to use SYNC10 mostly
-    }
-    
-    order.totalAmount = order.subtotal + order.tax + order.shippingFee - order.discount;
-};
+// recalculateOrderTotals moved to utils/orderCalculations.js
 
-export const getUserOrdersService = async (userId, page, limit) => {
+export const getUserOrdersService = async (userId, search, status, page, limit) => {
     const skip = (page - 1) * limit;
-    const totalOrders = await Order.countDocuments({ user: userId });
+    const filter = { user: userId };
+
+    // Status Filter
+    if (status && status !== 'all') {
+        filter.orderStatus = status;
+    }
+
+    if (search) {
+        // Find products matching search
+        const productIds = await Product.find({
+            name: { $regex: search, $options: 'i' }
+        }).distinct('_id');
+
+        filter.$or = [
+            { orderId: { $regex: search, $options: 'i' } },
+            { 'items.product': { $in: productIds } }
+        ];
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
     const totalPages = Math.ceil(totalOrders / limit);
 
-    const orders = await Order.find({ user: userId })
+    const orders = await Order.find(filter)
         .populate('items.product')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -72,7 +71,7 @@ export const cancelOrderService = async (userId, orderId, reason) => {
         order.paymentStatus = 'Refunded';
     }
 
-    recalculateOrderTotals(order);
+    await recalculateOrderTotals(order);
     await order.save();
 
     // Notification
@@ -117,7 +116,7 @@ export const cancelOrderItemService = async (userId, orderId, itemId) => {
     if (item.status === 'Cancelled') return { success: false, message: 'Item already cancelled', status: 400 };
 
     item.status = 'Cancelled';
-    const refundAmount = item.price * item.qty;
+    const refundAmount = calculateItemRefund(item, order.subtotal, order.discount);
 
     if (order.paymentStatus === 'Paid') {
         let wallet = await Wallet.findOne({ user: userId });
@@ -151,7 +150,7 @@ export const cancelOrderItemService = async (userId, orderId, itemId) => {
         if (order.paymentStatus === 'Paid') order.paymentStatus = 'Refunded';
     }
 
-    recalculateOrderTotals(order);
+    await recalculateOrderTotals(order);
     await order.save();
     return { success: true, message: 'Item cancelled successfully and refund processed to wallet.' };
 };

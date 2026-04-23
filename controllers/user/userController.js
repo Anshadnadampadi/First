@@ -2,6 +2,7 @@ import User from "../../models/user/User.js";
 import Address from "../../models/user/Address.js";
 import Order from "../../models/order/order.js";
 import bcrypt from "bcryptjs";
+import Wallet from "../../models/user/Wallet.js";
 import { registerValidate } from "../../validation/user/userValidation.js";
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,30}$/;
 import { registerUser, loginUser, updateUserProfile, changeUserPassword, addUserAddress, updateUserAddress, deleteUserAddress, setDefaultAddress, validateAndNormalizeAddress, generateReferralCode } from "../../services/user/authServices.js";
@@ -407,13 +408,14 @@ export const getAccountDashboard = async (req, res) => {
         }
 
         // Aggregate statistics
-        const [ordersCount, totalSpendResult, recentOrders] = await Promise.all([
+        const [ordersCount, totalSpendResult, recentOrders, wallet] = await Promise.all([
             Order.countDocuments({ user: user._id }),
             Order.aggregate([
                 { $match: { user: user._id, orderStatus: { $ne: 'Cancelled' } } },
                 { $group: { _id: null, total: { $sum: "$totalAmount" } } }
             ]),
-            Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(3).lean()
+            Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(3).lean(),
+            Wallet.findOne({ user: user._id }).lean()
         ]);
 
         user.totalOrders = ordersCount;
@@ -423,6 +425,7 @@ export const getAccountDashboard = async (req, res) => {
         res.render("user/account/dashboard", {
             user,
             recentOrders,
+            wallet: wallet || { balance: 0, transactions: [] },
             currentPath: '/account',
             breadcrumbs: [
                 { label: 'Account', url: '/account' },

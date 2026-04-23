@@ -7,13 +7,13 @@ import Cart from "../../models/cart/cart.js";
 
 
 export const applyCouponService = async (userId, code) => {
+    const normalizedCode = code ? code.trim().toUpperCase() : '';
+    const coupon = await Coupon.findOne({ code: normalizedCode, isActive: true });
 
-    const coupon = await Coupon.findOne({ code });
-
-    if (!coupon) throw new Error("Invalid coupon");
+    if (!coupon) throw new Error("Invalid or inactive coupon");
 
     // Expiry check
-    if (coupon.expiryDate < new Date()) {
+    if (new Date(coupon.expiryDate) < new Date()) {
         throw new Error("Coupon expired");
     }
 
@@ -23,12 +23,12 @@ export const applyCouponService = async (userId, code) => {
     }
 
     // Check if user already used
-    if (coupon.usedBy.includes(userId)) {
+    if (coupon.usedBy.some(id => id.toString() === userId.toString())) {
         throw new Error("You already used this coupon");
     }
 
     // Get cart
-    const cart = await Cart.findOne({ userId }).populate("items.productId");
+    const cart = await Cart.findOne({ userId }).populate("items.product");
 
     if (!cart || cart.items.length === 0) {
         throw new Error("Cart is empty");
@@ -38,7 +38,7 @@ export const applyCouponService = async (userId, code) => {
     let cartTotal = 0;
 
     cart.items.forEach(item => {
-        cartTotal += item.quantity * item.productId.price;
+        cartTotal += item.qty * item.price;
     });
 
     // Minimum amount check
@@ -85,11 +85,22 @@ export const removeCouponService = async (userId) => {
 
     cart.coupon = null;
     cart.discount = 0;
-    cart.finalAmount = cart.totalAmount;
+    cart.finalAmount = cart.subtotal;
 
     await cart.save();
 
     return {
-        finalAmount: cart.totalAmount
+        finalAmount: cart.subtotal
     };
+};
+
+export const getAvailableCouponsService = async (userId) => {
+    const coupons = await Coupon.find({
+        isActive: true,
+        expiryDate: { $gt: new Date() },
+        usedBy: { $ne: userId }
+    }).sort({ createdAt: -1 }).lean();
+    
+    // Filter out coupons that have reached their usage limit
+    return coupons.filter(c => (c.usedBy ? c.usedBy.length : 0) < (c.usageLimit || 1));
 };

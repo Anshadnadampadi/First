@@ -310,8 +310,8 @@
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
 
-                            if (selected <= today) {
-                                this.formErrors.expiryDate = "Must be future date";
+                            if (selected < today) {
+                                this.formErrors.expiryDate = "Cannot be a past date";
                             }
                         }
                     }

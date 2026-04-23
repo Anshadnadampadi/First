@@ -13,8 +13,15 @@ export const getUserOrders = async (req, res) => {
         const userId = req.session.user;
         const page = parseInt(req.query.page) || 1;
         const limit = 5;
+        const search = req.query.search || '';
+        const status = req.query.status || '';
 
-        const { orders, totalPages } = await getUserOrdersService(userId, page, limit);
+        const { orders, totalPages } = await getUserOrdersService(userId, search, status, page, limit);
+
+        // Build query string for pagination
+        let queryString = '';
+        if (search) queryString += `search=${search}&`;
+        if (status) queryString += `status=${status}&`;
 
         res.render('user/account/orders', {
             title: 'My Orders',
@@ -26,6 +33,9 @@ export const getUserOrders = async (req, res) => {
             nextPage: page + 1,
             prevPage: page - 1,
             lastPage: totalPages,
+            search,
+            status,
+            query: queryString,
             breadcrumbs: [
                 { label: 'Home', url: '/' },
                 { label: 'Profile', url: '/profile' },

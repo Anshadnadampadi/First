@@ -270,11 +270,31 @@
 
                         <!-- Protocol Override Section (Coupons) -->
                         <div class="mb-8 p-4 bg-black/40 border border-white/5 border-l-2 border-l-accent/50">
-                            <label class="text-[8px] font-black uppercase tracking-[0.2em] text-white/40 block mb-2">Apply Coupon (Try: SYNC10)</label>
-                            <div class="flex gap-2">
+                            <label class="text-[8px] font-black uppercase tracking-[0.2em] text-white/40 block mb-2">Apply Coupon</label>
+                            <div class="flex gap-2 mb-4">
                                 <input type="text" x-model="orderData.couponCode" class="w-full bg-black border border-white/10 text-white px-3 py-2 text-[10px] font-mono focus:border-accent outline-none transition-all uppercase placeholder-white/20" placeholder="ENTER COUPON CODE">
                                 <button type="button" @click="applyCoupon" class="bg-white/5 border border-white/10 text-white px-4 py-2 text-[9px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all">Verify</button>
                             </div>
+
+                            <!-- Available Coupons Horizontal Scroll -->
+                            <% if (availableCoupons && availableCoupons.length > 0) { %>
+                                <div class="mt-4">
+                                    <p class="text-[7px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">Available Coupons</p>
+                                    <div class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                        <% availableCoupons.forEach(coupon => { %>
+                                            <button type="button" 
+                                                    @click="orderData.couponCode = '<%= coupon.code %>'; applyCoupon()"
+                                                    class="flex-shrink-0 bg-white/5 border border-white/10 p-2 hover:border-accent/50 transition-all text-left min-w-[120px]">
+                                                <p class="text-accent text-[9px] font-black tracking-widest uppercase"><%= coupon.code %></p>
+                                                <p class="text-white/60 text-[7px] font-bold uppercase mt-1">
+                                                    <%= coupon.discountType === 'percentage' ? coupon.discountValue + '% OFF' : '₹' + coupon.discountValue + ' OFF' %>
+                                                </p>
+                                                <p class="text-white/30 text-[6px] font-mono mt-1 uppercase">Min: ₹<%= coupon.minAmount %></p>
+                                            </button>
+                                        <% }) %>
+                                    </div>
+                                </div>
+                            <% } %>
                         </div>
 
                         <!-- Data Readout -->
@@ -445,6 +465,7 @@
 <script>
     const userAddresses = <%- JSON.stringify(addresses || []) %>;
     const baseSubtotal = <%= typeof cart !== 'undefined' ? cart.subtotal : 0 %>;
+    const availableCoupons = <%- JSON.stringify(availableCoupons || []) %>;
     const hasCartIssues = <%= cart.items.some(item => item.isUnavailable || item.isOutOfStock || item.insufficientStock) %>;
     const userEmail = "<%= user.email %>";
     const userPhone = "<%= addresses && addresses.length > 0 ? addresses[0].phone : '' %>";
@@ -456,6 +477,7 @@
             addresses: userAddresses,
             hasCartIssues: hasCartIssues,
             walletBalance: <%= walletBalance %>,
+            availableCoupons: availableCoupons,
             
             // Financials logic
             subtotal: baseSubtotal,
@@ -467,16 +489,31 @@
                 return Math.max(0, this.subtotal + this.tax + this.shippingFee - this.discount);
             },
             
-            applyCoupon() {
+            async applyCoupon() {
                 const code = this.orderData.couponCode ? this.orderData.couponCode.trim().toUpperCase() : '';
-                if(code === 'SYNC10') {
-                    this.discount = Math.floor((this.subtotal + this.tax) * 0.10);
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon applied successfully. 10% off.', type: 'success' }}));
-                } else if(code === '') {
+                if(!code) {
                     this.discount = 0;
-                } else {
-                    this.discount = 0;
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Invalid coupon code.', type: 'error' }}));
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/checkout/validate-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code })
+                    });
+                    const data = await res.json();
+                    
+                    if(data.success) {
+                        this.discount = data.discount;
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon applied successfully!', type: 'success' }}));
+                    } else {
+                        this.discount = 0;
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Invalid coupon.', type: 'error' }}));
+                    }
+                } catch(err) {
+                    console.error(err);
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to verify coupon.', type: 'error' }}));
                 }
             },
 
@@ -673,7 +710,7 @@
                 try {
                     const rzp = new Razorpay(options);
                     rzp.on('payment.failed', function (response){
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Payment Declined: ' + response.error.description, type: 'error' }}));
+                        window.location.href = `/checkout/payment-failure?orderId=${orderInfo.orderId}`;
                     });
                     rzp.open();
                 } catch (err) {

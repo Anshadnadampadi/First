@@ -58,8 +58,12 @@ export const createCouponService = async (data) => {
 
     // ✅ Expiry
     const expiry = new Date(expiryDate);
-    if (!expiryDate || isNaN(expiry.getTime()) || expiry <= new Date()) {
-        throw new Error("Expiry must be a future date");
+    expiry.setHours(23, 59, 59, 999); // Set to end of day
+
+    const now = new Date();
+    // Allow today, but not past days
+    if (!expiryDate || isNaN(expiry.getTime()) || expiry < now) {
+        throw new Error("Expiry must be today or a future date");
     }
 
     // ✅ Usage limit
@@ -165,8 +169,12 @@ export const updateCouponService = async (id, data) => {
 
     // ✅ Expiry
     const expiry = new Date(expiryDate);
-    if (!expiryDate || isNaN(expiry.getTime()) || expiry <= new Date()) {
-        throw new Error("Expiry must be a future date");
+    expiry.setHours(23, 59, 59, 999); // Set to end of day
+
+    const now = new Date();
+    // Allow today, but not past days
+    if (!expiryDate || isNaN(expiry.getTime()) || expiry < now) {
+        throw new Error("Expiry must be today or a future date");
     }
 
     // ✅ Usage limit

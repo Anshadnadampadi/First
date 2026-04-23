@@ -8,30 +8,47 @@ import Address from "../models/user/Address.js";
  */
 export const ensureLoggedIn = async (req, res, next) => {
     try {
-
         if (!req.session || !req.session.user) {
-            return res.redirect('/auth/login');
+            return handleUnauthorized(req, res, "Please login first");
         }
 
         const user = await User.findById(req.session.user);
-        // user deleted case
+
+        // user deleted
         if (!user) {
             if (req.session) delete req.session.user;
-            return res.redirect('/auth/login');
+            return handleUnauthorized(req, res, "User not found");
         }
 
         // blocked user
         if (user.isBlocked) {
             if (req.session) delete req.session.user;
-            return res.redirect('/auth/login?error=blocked');
+            return handleUnauthorized(req, res, "You are blocked");
         }
 
         return next();
 
     } catch (error) {
         console.error(error);
-        return res.redirect('/auth/login');
+        return handleUnauthorized(req, res, "Something went wrong");
     }
+};
+
+
+//  helper function
+const handleUnauthorized = (req, res, message) => {
+
+    //  If AJAX request
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(401).json({
+            success: false,
+            message,
+            redirect: "/auth/login"
+        });
+    }
+
+    //  Normal request
+    return res.redirect("/auth/login");
 };
 
 /**

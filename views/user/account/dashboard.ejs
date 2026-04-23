@@ -41,7 +41,13 @@
                             </svg>
                         </div>
                         <p class="text-white/30 text-[9px] font-black uppercase tracking-[0.2em] mb-4">Elite Balance</p>
-                        <h3 class="text-white text-3xl font-mono font-black italic tracking-tight">₹<%= (user.walletBalance || 0).toLocaleString() %></h3>
+                        <h3 class="text-white text-3xl font-mono font-black italic tracking-tight">₹<%= (wallet.balance || 0).toLocaleString() %></h3>
+                        <% if (wallet.transactions && wallet.transactions.length > 0) { %>
+                            <% const lastTxn = wallet.transactions.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))[0]; %>
+                            <p class="text-[8px] text-white/20 uppercase font-bold tracking-widest mt-2">Latest: <%= lastTxn.description %> (<%= lastTxn.type === 'credit' ? '+' : '-' %>₹<%= lastTxn.amount.toLocaleString() %>)</p>
+                        <% } else { %>
+                            <p class="text-[8px] text-white/20 uppercase font-bold tracking-widest mt-2">No transactions yet</p>
+                        <% } %>
                         <div class="mt-4 pt-4 border-t border-white/5">
                             <a href="/account/wallet" class="text-[10px] text-accent uppercase font-bold tracking-widest hover:text-white transition-colors">Manage Wallet →</a>
                         </div>
