@@ -8,7 +8,7 @@
             <p class="text-text-muted text-label font-bold uppercase">Enter the 6-digit OTP sent to your email</p>
         </div>
 
-        <form @submit.prevent="submitOtp" x-data="otpForm('<%= typeof email !== 'undefined' ? email : '' %>', '<%= typeof context !== 'undefined' ? context : '' %>')" class="space-y-6">
+        <form @submit.prevent="submitOtp" x-data="otpForm('<%= typeof email !== 'undefined' ? email : '' %>', '<%= typeof context !== 'undefined' ? context : '' %>')" data-no-spa class="space-y-6">
             <input type="hidden" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>">
             <input type="hidden" name="context" value="<%= typeof context !== 'undefined' ? context : '' %>">
             
@@ -132,9 +132,7 @@
                                 window.dispatchEvent(new CustomEvent('show-toast', {
                                     detail: { message: 'Identity verified!', type: 'success', status }
                                 }));
-                                setTimeout(() => {
-                                    window.location.href = result.redirect || '/';
-                                }, 1000);
+                                window.location.replace(result.redirect || '/');
                             } else {
                                 window.dispatchEvent(new CustomEvent('show-toast', {
                                     detail: { message: result.message || 'Invalid code', type: 'error', status }

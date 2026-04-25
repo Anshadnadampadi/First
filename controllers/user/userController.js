@@ -2,6 +2,9 @@ import User from "../../models/user/User.js";
 import Address from "../../models/user/Address.js";
 import Order from "../../models/order/order.js";
 import bcrypt from "bcryptjs";
+import Wallet from "../../models/user/Wallet.js";
+import { registerValidate } from "../../validation/user/userValidation.js";
+const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,30}$/;
 import { registerUser, loginUser, updateUserProfile, changeUserPassword, addUserAddress, updateUserAddress, deleteUserAddress, setDefaultAddress, validateAndNormalizeAddress, generateReferralCode } from "../../services/user/authServices.js";
 import { sendOtpService, verifyOtpService, forgotPasswordService, resendOtpService, requestEmailChangeOtpService, verifyEmailChangeOtpService } from "../../services/user/authServices.js";
 import product from "../../models/product/product.js";
@@ -32,6 +35,15 @@ export const getSignup = (req, res) => {
 
 export const postSignup = async (req, res) => {
     try {
+        
+        const { error } = registerValidate.validate(req.body);
+        if (error) {
+            return res.json({
+                success: false,
+                message: error.details[0].message
+            });
+        }
+
         const { firstName, lastName, email, password } = req.body;
         const result = await sendOtpService({ firstName, lastName, email, password });
 
@@ -109,12 +121,13 @@ export const getlogin = (req, res) => {
 export const postLogin = async (req, res) => {
     try {
 
-        const { email, password } = req.body;
+        let { email, password } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'All fields required' });
         }
 
+        email = String(email || '').trim().toLowerCase();
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -218,10 +231,10 @@ export const resetSuccess = (req, res) => {
 export const postResetPassword = async (req, res) => {
     try {
         const { email, password, confirmPassword } = req.body;
-        if (!email) {
+        if (!email || req.session.resetEmail !== email) {
             return res.json({
                 success: false,
-                message: "Session expired. Please try again."
+                message: "Unauthorized or Session expired. Please try again."
             });
         }
         if (!password || !confirmPassword) {
@@ -234,6 +247,12 @@ export const postResetPassword = async (req, res) => {
             return res.json({
                 success: false,
                 message: "Passwords do not match"
+            });
+        }
+        if (!passwordPattern.test(password)) {
+            return res.json({
+                success: false,
+                message: "Password must contain uppercase, lowercase, number and special character and be at least 8 characters long."
             });
         }
 
@@ -250,6 +269,8 @@ export const postResetPassword = async (req, res) => {
         user.otp = null;
         user.otpExpiry = null;
         await user.save();
+
+        delete req.session.resetEmail; // Clear the authorization
 
         return res.json({
             success: true,
@@ -306,6 +327,7 @@ export const postVerifyOtp = async (req, res) => {
     }
 
     if (context === "reset") {
+        req.session.resetEmail = email; // Authorize this session to reset the password
         return res.json({
             success: true,
             redirect: `/auth/reset-password?email=${encodeURIComponent(email)}`
@@ -375,6 +397,49 @@ export const getProfile = async (req, res) => {
     }
 };
 
+export const getAccountDashboard = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.redirect('/auth/login');
+        }
+        const user = await User.findById(req.session.user).lean();
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        // Aggregate statistics
+        const [ordersCount, totalSpendResult, recentOrders, wallet] = await Promise.all([
+            Order.countDocuments({ user: user._id }),
+            Order.aggregate([
+                { $match: { user: user._id, orderStatus: { $ne: 'Cancelled' } } },
+                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+            ]),
+            Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(3).lean(),
+            Wallet.findOne({ user: user._id }).lean()
+        ]);
+
+        user.totalOrders = ordersCount;
+        user.totalSpend = totalSpendResult.length > 0 ? totalSpendResult[0].total : 0;
+
+        const { msg, icon } = req.query;
+        res.render("user/account/dashboard", {
+            user,
+            recentOrders,
+            wallet: wallet || { balance: 0, transactions: [] },
+            currentPath: '/account',
+            breadcrumbs: [
+                { label: 'Account', url: '/account' },
+                { label: 'Dashboard', url: '/account' }
+            ],
+            msg: msg || null,
+            icon: icon || null
+        });
+    } catch (err) {
+        console.error('Get account dashboard error', err);
+        res.status(500).send('Server Error');
+    }
+};
+
 // handle submission from profile edit modal
 export const postUpdateProfile = async (req, res) => {
     try {
@@ -406,6 +471,9 @@ export const postChangePassword = async (req, res) => {
         }
         if (newPw !== confirmPw) {
             return res.status(400).json({ success: false, message: "Passwords don't match" });
+        }
+        if (!passwordPattern.test(newPw)) {
+            return res.status(400).json({ success: false, message: "Password must contain uppercase, lowercase, number and special character and be at least 8 characters long." });
         }
 
         const result = await changeUserPassword(req.session.user, currentPw, newPw);

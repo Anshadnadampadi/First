@@ -2,6 +2,7 @@ import User from "../../models/user/User.js";
 
 import express from "express";
 import {
+    getAccountDashboard,
     getProfile,
     getHome,
     geteditProfile,
@@ -54,6 +55,7 @@ router.get(
 router.get("/", getHome);
 
 // Profile Management (Require Auth)
+router.get("/account", ensureLoggedIn, getAccountDashboard);
 router.get("/profile", ensureLoggedIn, getProfile);
 router.post("/profile", ensureLoggedIn, postUpdateProfile);
 router.post("/profile/password", ensureLoggedIn, postChangePassword);

@@ -6,6 +6,7 @@ import Wallet from '../../models/user/Wallet.js';
 import * as cartService from './cartService.js';
 import { isSameVariant } from '../../utils/productHelpers.js';
 import { createAdminNotification } from '../../utils/notificationHelper.js';
+import Coupon from '../../models/coupon/coupon.js';
 import razorpay from '../../config/razorpay.js';
 
 export const placeOrderService = async (userId, orderData) => {
@@ -39,8 +40,29 @@ export const placeOrderService = async (userId, orderData) => {
     let shippingFee = subtotal > 500 ? 0 : 50; 
     
     let discount = 0;
-    if (couponCode && couponCode.trim().toUpperCase() === 'SYNC10') {
-        discount = Math.floor((subtotal + tax) * 0.10);
+    let appliedCoupon = null;
+
+    if (couponCode) {
+        const coupon = await Coupon.findOne({ 
+            code: couponCode.trim().toUpperCase(),
+            isActive: true
+        });
+
+        if (coupon && new Date(coupon.expiryDate) > new Date()) {
+            // Re-validate basic constraints
+            const hasUsed = coupon.usedBy.some(id => id.toString() === userId.toString());
+            if (subtotal >= coupon.minAmount && !hasUsed && coupon.usedBy.length < coupon.usageLimit) {
+                if (coupon.discountType === 'percentage') {
+                    discount = Math.floor((subtotal) * (coupon.discountValue / 100));
+                    if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+                        discount = coupon.maxDiscount;
+                    }
+                } else {
+                    discount = coupon.discountValue;
+                }
+                appliedCoupon = coupon;
+            }
+        }
     }
     
     let totalAmount = Math.max(0, subtotal + tax + shippingFee - discount);
@@ -107,6 +129,7 @@ export const placeOrderService = async (userId, orderData) => {
             description: `Payment for Order #${orderId}`,
             txnId: `TXN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
             orderId: orderId,
+            status: 'Success',
             timestamp: new Date()
         });
         await wallet.save();
@@ -130,6 +153,12 @@ export const placeOrderService = async (userId, orderData) => {
     }
 
     await newOrder.save();
+
+    // If coupon used, update coupon stats
+    if (appliedCoupon) {
+        appliedCoupon.usedBy.push(userId);
+        await appliedCoupon.save();
+    }
 
     // If not Online Payment, we can finalize notifications and clear cart
     if (paymentMethod !== 'ONLINE PAYMENT') {

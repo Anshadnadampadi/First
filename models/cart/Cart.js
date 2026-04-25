@@ -35,6 +35,19 @@ const cartSchema = new mongoose.Schema({
         type: Number,
         required: true,
         default: 0
+    },
+    coupon: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Coupon",
+        default: null
+    },
+    discount: {
+        type: Number,
+        default: 0
+    },
+    finalAmount: {
+        type: Number,
+        default: 0
     }
 }, { timestamps: true });
 
@@ -47,5 +60,5 @@ cartSchema.pre("save", async function() {
     }
 });
 
-const Cart = mongoose.model("Cart", cartSchema);
+const Cart = mongoose.models.Cart || mongoose.model("Cart", cartSchema);
 export default Cart;

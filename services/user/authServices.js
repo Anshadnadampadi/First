@@ -7,6 +7,8 @@ dotenv.config()
 
 export const registerUser = async ({ firstName, lastName, email, password }) => {
     try {
+        email = String(email || '').trim().toLowerCase();
+        
         if (!firstName || !email || !password) {
             return { success: false, message: "All fields required" };
         }
@@ -41,6 +43,7 @@ export const registerUser = async ({ firstName, lastName, email, password }) => 
 export const loginUser = async (email, password) => {
 
     try {
+        email = String(email || '').trim().toLowerCase();
         const existingUser = await User.findOne({ email });
 
         if (!existingUser) {
@@ -87,6 +90,7 @@ export const generateReferralCode = async () => {
 
 export const sendOtpService = async ({ firstName, lastName, email, password }) => {
     try {
+        email = String(email || '').trim().toLowerCase();
 
         if (!firstName || !email || !password) {
             return { success: false, message: "All fields required" };
@@ -102,7 +106,7 @@ export const sendOtpService = async ({ firstName, lastName, email, password }) =
 
         const otp = generateOTP();
 
-        const otpExpiry = Date.now() + 1 * 60 * 1000; // 1 minutes
+        const otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
 
 
         let user;
@@ -143,7 +147,7 @@ export const sendOtpService = async ({ firstName, lastName, email, password }) =
                  <h3>Your OTP Code</h3>
                  <p>Your verification OTP is:</p>
                  <h2>${otp}</h2>
-                 <p>This OTP will expire in 1 minutes.</p>
+                 <p>This OTP will expire in 5 minutes.</p>
              `
 
             });
@@ -170,6 +174,7 @@ export const sendOtpService = async ({ firstName, lastName, email, password }) =
 
 export const verifyOtpService = async ({ email, otp, context }) => {
     try {
+        email = String(email || '').trim().toLowerCase();
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -209,13 +214,14 @@ export const verifyOtpService = async ({ email, otp, context }) => {
 
 export const forgotPasswordService = async (email) => {
     try {
+        email = String(email || '').trim().toLowerCase();
         const user = await User.findOne({ email: email })
         if (!user) {
             return { success: false, message: "user not found" }
         }
         const otp = generateOTP();
         user.otp = otp;
-        user.otpExpiry = Date.now() + 1 * 60 * 1000;
+        user.otpExpiry = Date.now() + 5 * 60 * 1000;
         await user.save();
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
@@ -225,7 +231,7 @@ export const forgotPasswordService = async (email) => {
             <h3>Password Recovery OTP</h3>
             <p>Your password recovery OTP is:</p>           
             <h2>${otp}</h2>
-            <p>This OTP will expire in 1 minutes.</p>
+            <p>This OTP will expire in 5 minutes.</p>
         `
         });
         return { success: true, message: "OTP sent to your email", email: user.email }
@@ -275,7 +281,12 @@ export const changeUserPassword = async (userId, currentPw, newPw) => {
         if (!user) return { success: false, message: 'User not found' };
 
         const isMatch = await bcrypt.compare(currentPw, user.password);
-        if (!isMatch) return { success: false, message: 'Current password is incorrect' };
+        if (!isMatch) {
+            if (user.isGoogleUser) {
+                return { success: false, message: 'Current password incorrect. For Google accounts, use "Forgot Password" to set one.' };
+            }
+            return { success: false, message: 'Current password is incorrect' };
+        }
 
         const hashed = await bcrypt.hash(newPw, 10);
         user.password = hashed;
@@ -469,10 +480,17 @@ export const setDefaultAddress = async (userId, addrId) => {
     try {
         const user = await User.findById(userId);
         if (!user) return { success: false, message: 'User not found' };
-        user.addresses.forEach(a => {
-            a.default = a._id.toString() === addrId.toString();
-        });
-        await user.save();
+        // Unset all addresses for this user as default
+        await Address.updateMany(
+            { _id: { $in: user.addresses } },
+            { $set: { default: false } }
+        );
+
+        // Set the selected address as default
+        const result = await Address.findByIdAndUpdate(addrId, { $set: { default: true } }, { new: true });
+        
+        if (!result) return { success: false, message: 'Address not found' };
+
         return { success: true };
     } catch (error) {
         console.log('Set default address error:', error);
@@ -509,7 +527,7 @@ export const requestEmailChangeOtpService = async ({ userId, newEmail }) => {
         }
 
         const otp = generateOTP();
-        const otpExpiry = Date.now() + 1 * 60 * 1000;
+        const otpExpiry = Date.now() + 5 * 60 * 1000;
 
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
@@ -519,7 +537,7 @@ export const requestEmailChangeOtpService = async ({ userId, newEmail }) => {
                 <h3>Email Change Verification</h3>
                 <p>Use this OTP to confirm your new email address:</p>
                 <h2>${otp}</h2>
-                <p>This OTP expires in 1 minute.</p>
+                <p>This OTP expires in 5 minutes.</p>
             `
         });
 
@@ -584,13 +602,14 @@ export const verifyEmailChangeOtpService = async ({ userId, pendingEmail, entere
 
 export const resendOtpService = async (email) => {
     try {
+        email = String(email || '').trim().toLowerCase();
         if (!email) return { success: false, message: 'Email required' };
         const user = await User.findOne({ email });
         if (!user) return { success: false, message: 'User not found' };
 
         const otp = generateOTP();
         user.otp = otp;
-        user.otpExpiry = Date.now() + 1 * 60 * 1000;
+        user.otpExpiry = Date.now() + 5 * 60 * 1000;
         await user.save();
 
         try {
@@ -602,7 +621,7 @@ export const resendOtpService = async (email) => {
                     <h3>Your OTP Code</h3>
                     <p>Your verification OTP is:</p>
                     <h2>${otp}</h2>
-                    <p>This OTP will expire in 1 minute.</p>
+                    <p>This OTP will expire in 5 minutes.</p>
                 `
             });
         } catch (mailErr) {

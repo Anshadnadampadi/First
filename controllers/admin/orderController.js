@@ -8,10 +8,16 @@ import {
 export const getOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = 4;
+        const limit = 10; // Increased limit for better view
         const search = req.query.search || '';
+        const status = req.query.status || '';
 
-        const { orders, stats, totalPages } = await getOrdersService(search, page, limit);
+        const { orders, stats, totalPages } = await getOrdersService(search, status, page, limit);
+
+        // Build query string for pagination
+        let queryString = '';
+        if (search) queryString += `search=${search}&`;
+        if (status) queryString += `status=${status}&`;
 
         res.render('admin/orders', {
             title: 'Orders',
@@ -25,7 +31,8 @@ export const getOrders = async (req, res) => {
             prevPage: page - 1,
             lastPage: totalPages,
             search,
-            query: search ? `search=${search}` : '',
+            status,
+            query: queryString,
             breadcrumbs: [
                 { label: 'Dashboard', url: '/admin/dashboard' },
                 { label: 'Orders', url: '/admin/orders' }

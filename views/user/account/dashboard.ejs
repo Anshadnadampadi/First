@@ -1,0 +1,152 @@
+<!-- views/user/account/dashboard.ejs -->
+<%- contentFor('body') %>
+
+<div class="min-h-screen bg-black py-24">
+    <div class="max-w-screen-xl mx-auto px-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8 fade-up">
+            <div class="space-y-4">
+                <h1 class="text-white text-display font-display font-black tracking-tighter uppercase leading-[0.9]">
+                    Account<br><span class="text-accent underline decoration-4 underline-offset-8">Dashboard</span>
+                </h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="/auth/logout"
+                    @click.prevent="if(await window.confirmAction({ title: 'Logout?', message: 'Are you sure you want to end your session?', confirmText: 'Logout', cancelText: 'Cancel', type: 'danger' })) window.location.href='/auth/logout'"
+                    class="group flex items-center gap-4 bg-accent px-10 py-5 hover:bg-white transition-all duration-500 shadow-[0_10px_30px_rgba(255,106,0,0.3)]">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-black">Sign Out</span>
+                    <svg class="w-4 h-4 text-black transform group-hover:translate-x-1 transition-transform"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+            <!-- Sidebar Nav -->
+            <%- include('../../partials/account-sidebar', { activeTab: 'dashboard' }) %>
+
+            <!-- Main Content Area -->
+            <div class="lg:col-span-3 space-y-12">
+
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 fade-up" style="animation-delay: 100ms">
+                    <!-- Wallet Balance -->
+                    <div class="bg-black-elevated border border-black-border p-8 relative overflow-hidden group hover:border-accent/40 transition-all">
+                        <div class="absolute -right-2 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
+                            <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2-.9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-white/30 text-[9px] font-black uppercase tracking-[0.2em] mb-4">Elite Balance</p>
+                        <h3 class="text-white text-3xl font-mono font-black italic tracking-tight">₹<%= (wallet.balance || 0).toLocaleString() %></h3>
+                        <% if (wallet.transactions && wallet.transactions.length > 0) { %>
+                            <% const lastTxn = wallet.transactions.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))[0]; %>
+                            <p class="text-[8px] text-white/20 uppercase font-bold tracking-widest mt-2">Latest: <%= lastTxn.description %> (<%= lastTxn.type === 'credit' ? '+' : '-' %>₹<%= lastTxn.amount.toLocaleString() %>)</p>
+                        <% } else { %>
+                            <p class="text-[8px] text-white/20 uppercase font-bold tracking-widest mt-2">No transactions yet</p>
+                        <% } %>
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <a href="/account/wallet" class="text-[10px] text-accent uppercase font-bold tracking-widest hover:text-white transition-colors">Manage Wallet →</a>
+                        </div>
+                    </div>
+
+                    <!-- Total Orders -->
+                    <div class="bg-black-elevated border border-black-border p-8 relative overflow-hidden group hover:border-accent/40 transition-all">
+                        <div class="absolute -right-2 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
+                            <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-white/30 text-[9px] font-black uppercase tracking-[0.2em] mb-4">Total Orders</p>
+                        <h3 class="text-white text-3xl font-mono font-black italic tracking-tight"><%= user.totalOrders || 0 %></h3>
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <a href="/account/orders" class="text-[10px] text-accent uppercase font-bold tracking-widest hover:text-white transition-colors">View All Orders →</a>
+                        </div>
+                    </div>
+
+                    <!-- Total Spend -->
+                    <div class="bg-black-elevated border border-black-border p-8 relative overflow-hidden group hover:border-accent/40 transition-all">
+                        <div class="absolute -right-2 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-700 pointer-events-none">
+                            <svg class="w-24 h-24 text-accent" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-white/30 text-[9px] font-black uppercase tracking-[0.2em] mb-4">Lifetime Spend</p>
+                        <h3 class="text-white text-3xl font-mono font-black italic tracking-tight">₹<%= (user.totalSpend || 0).toLocaleString() %></h3>
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <span class="text-[10px] text-white/30 uppercase font-bold tracking-widest">Across All Time</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="bg-black-surface border border-black-border p-10 fade-up relative overflow-hidden group hover:border-accent/30 transition-all" style="animation-delay: 200ms">
+                    <h2 class="text-white text-xl font-display font-black tracking-tighter uppercase mb-8">Personal Information</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Name</p>
+                            <p class="text-white text-lg font-bold"><%= (user.firstName || user.name) %> <%= (user.lastName || '') %></p>
+                        </div>
+                        <div>
+                            <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Email</p>
+                            <p class="text-white text-lg font-bold"><%= user.email %></p>
+                        </div>
+                        <div>
+                            <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Phone</p>
+                            <p class="text-white text-lg font-bold font-mono"><%= user.phone || '+ -- --- --- ----' %></p>
+                        </div>
+                        <div class="flex items-end">
+                            <a href="/profile" class="px-6 py-3 bg-white/5 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all">Edit Profile</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="fade-up" style="animation-delay: 300ms">
+                    <div class="flex justify-between items-end mb-6">
+                        <h2 class="text-white text-xl font-display font-black tracking-tighter uppercase">Recent Orders</h2>
+                        <a href="/account/orders" class="text-[10px] text-accent uppercase font-bold tracking-widest hover:text-white transition-colors">View All →</a>
+                    </div>
+
+                    <% if (recentOrders && recentOrders.length > 0) { %>
+                        <div class="space-y-4">
+                            <% recentOrders.forEach(order => { %>
+                                <div class="bg-black-elevated border border-black-border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:border-accent/30 transition-all">
+                                    <div>
+                                        <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Order ID</p>
+                                        <p class="text-white font-mono font-bold"><%= order.orderId %></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Date</p>
+                                        <p class="text-white text-sm font-bold"><%= new Date(order.createdAt).toLocaleDateString() %></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Status</p>
+                                        <%- include('../../partials/status-badge', { status: order.orderStatus }) %>
+                                    </div>
+                                    <div>
+                                        <p class="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Amount</p>
+                                        <p class="text-white font-mono font-black italic">₹<%= order.totalAmount.toLocaleString() %></p>
+                                    </div>
+                                    <div>
+                                        <a href="/account/orders/<%= order._id %>" class="px-6 py-3 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Details</a>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <div class="bg-black-elevated border border-black-border p-12 text-center">
+                            <p class="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-4">No recent activity detected.</p>
+                            <a href="/shop" class="inline-block px-8 py-4 bg-accent text-black text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(255,106,0,0.2)]">Start Shopping</a>
+                        </div>
+                    <% } %>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

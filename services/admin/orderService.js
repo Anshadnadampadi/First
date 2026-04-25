@@ -2,33 +2,24 @@ import mongoose from 'mongoose';
 import Order from '../../models/order/order.js';
 import Product from '../../models/product/product.js';
 import { isSameVariant } from '../../utils/productHelpers.js';
+import { recalculateOrderTotals, calculateItemRefund } from '../../utils/orderCalculations.js';
 
-const recalculateOrderTotals = (order) => {
-    // Only count items that are NOT Cancelled or Returned
-    const activeItems = order.items.filter(item => !['Cancelled', 'Returned'].includes(item.status));
-    
-    order.subtotal = activeItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    
-    // Tax is 18% of active subtotal
-    order.tax = Math.floor(order.subtotal * 0.18);
-    
-    // Shipping remains fixed once order is placed
-    if (order.subtotal === 0) order.shippingFee = 0;
-    
-    // Recalculate discount if a coupon was used
-    if (order.couponCode === 'SYNC10') {
-        order.discount = Math.floor((order.subtotal + order.tax) * 0.10);
-    }
-    
-    order.totalAmount = order.subtotal + order.tax + order.shippingFee - order.discount;
-};
+// recalculateOrderTotals moved to utils/orderCalculations.js
 
-export const getOrdersService = async (search, page, limit) => {
+export const getOrdersService = async (search, status, page, limit) => {
     const skip = (page - 1) * limit;
     const filter = {};
     
+    // Status Filter
+    if (status && status !== 'all') {
+        filter.orderStatus = status;
+    }
+
     if (search) {
         const User = mongoose.model('User');
+        const Product = mongoose.model('Product');
+
+        // Find users matching search
         const users = await User.find({
             $or: [
                 { firstName: { $regex: search, $options: 'i' } },
@@ -39,10 +30,16 @@ export const getOrdersService = async (search, page, limit) => {
         }).select('_id');
         const userIds = users.map(u => u._id);
 
+        // Find products matching search
+        const products = await Product.find({
+            name: { $regex: search, $options: 'i' }
+        }).select('_id');
+        const productIds = products.map(p => p._id);
+
         filter.$or = [
             { orderId: { $regex: search, $options: 'i' } },
             { paymentStatus: { $regex: search, $options: 'i' } },
-            { orderStatus: { $regex: search, $options: 'i' } },
+            { 'items.product': { $in: productIds } },
             { user: { $in: userIds } }
         ];
     }
@@ -142,7 +139,7 @@ export const updateOrderStatusService = async (orderId, status) => {
 
         for (const item of newlyTerminalItems) {
             if (item.status === 'Returned' || (item.status === 'Cancelled' && isOnlinePaid)) {
-                totalRefund += (item.price * item.qty);
+                totalRefund += calculateItemRefund(item, order.subtotal, order.discount);
             }
 
             const product = await Product.findById(item.product);
@@ -185,7 +182,7 @@ export const updateOrderStatusService = async (orderId, status) => {
         }
     }
 
-    recalculateOrderTotals(order);
+    await recalculateOrderTotals(order);
     await order.save();
     return { success: true, message: 'Order status updated successfully' };
 };
@@ -201,7 +198,7 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
     item.status = status;
 
     if (status === 'Returned' && oldItemStatus !== 'Returned') {
-        const refundAmount = item.price * item.qty;
+        const refundAmount = calculateItemRefund(item, order.subtotal, order.discount);
         const Wallet = mongoose.model('Wallet');
         let wallet = await Wallet.findOne({ user: order.user });
         
@@ -235,21 +232,28 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
         }
     }
 
-    const allItemsReturned = order.items.every(i => i.status === 'Returned' || i.status === 'Cancelled');
+    const allItemsTerminal = order.items.every(i => i.status === 'Returned' || i.status === 'Cancelled');
     const anyItemReturned = order.items.some(i => i.status === 'Returned');
+    const anyItemPicked = order.items.some(i => i.status === 'Return Picked');
+    const anyItemRequested = order.items.some(i => i.status === 'Return Requested');
+    const anyItemApproved = order.items.some(i => i.status === 'Return Approved');
     
-    if (allItemsReturned) {
+    if (allItemsTerminal) {
         order.orderStatus = 'Returned';
         order.paymentStatus = 'Refunded';
-    } else if (order.items.some(i => i.status === 'Return Requested')) {
+    } else if (anyItemRequested) {
         order.orderStatus = 'Return Requested';
+    } else if (anyItemApproved) {
+        order.orderStatus = 'Return Approved';
+    } else if (anyItemPicked) {
+        order.orderStatus = 'Return Picked';
     } else if (anyItemReturned) {
         order.orderStatus = 'Partially Returned';
     } else {
         order.orderStatus = 'Delivered';
     }
 
-    recalculateOrderTotals(order);
+    await recalculateOrderTotals(order);
     await order.save();
     return { success: true, message: `Item return status updated to ${status}.` };
 };

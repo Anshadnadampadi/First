@@ -3,6 +3,7 @@ import User from "../../models/user/User.js";
 import Wallet from "../../models/user/Wallet.js";
 import Order from "../../models/order/order.js";
 import { placeOrderService, verifyPaymentService } from "../../services/user/checkoutService.js";
+import { applyCouponService, getAvailableCouponsService, removeCouponService } from "../../services/user/couponService.js";
 import { sendAdminNotification } from "../../utils/notificationHelper.js";
 
 
@@ -22,12 +23,14 @@ export const getCheckout = async (req, res) => {
 
         const user = await User.findById(req.session.user).populate("addresses").lean();
         const wallet = await Wallet.findOne({ user: req.session.user }).lean();
+        const availableCoupons = await getAvailableCouponsService(req.session.user);
 
         res.render("user/checkout", {
             title: "Checkout",
             cart, user,
             addresses: user.addresses || [],
             walletBalance: wallet ? wallet.balance : 0,
+            availableCoupons,
             razorpayKeyId: process.env.RAZORPAY_KEY_ID,
             breadcrumbs: [
                 { label: 'Shop', url: '/products' },
@@ -114,6 +117,39 @@ export const getOrderSuccess = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching order success:', error);
+        res.redirect('/');
+    }
+};
+
+export const validateCoupon = async (req, res) => {
+    try {
+        const { code } = req.body;
+        const userId = req.session.user;
+        const result = await applyCouponService(userId, code);
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+export const removeCoupon = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const result = await removeCouponService(userId);
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+export const getPaymentFailure = async (req, res) => {
+    try {
+        const orderId = req.query.orderId || 'UNKNOWN';
+        res.render('user/paymentFailure', {
+            title: 'Payment Failed',
+            orderId
+        });
+    } catch (error) {
         res.redirect('/');
     }
 };

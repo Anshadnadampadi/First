@@ -1,14 +1,15 @@
 <!-- views/partials/ios-alert.ejs -->
 <div x-data="iosAlertComponent()" 
      x-show="show" 
-     class="fixed inset-0 z-[10000] flex items-center justify-center p-6 select-none" 
+     style="position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; z-index: 999999999 !important; pointer-events: none; margin: 0 !important; padding: 0 !important;"
      x-cloak
      @show-ios-alert.window="open($event.detail)"
      @show-confirm.window="open($event.detail)"
      id="ios-alert-wrapper">
     
     <!-- Backdrop with Drastic Blur -->
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-[15px] transition-all duration-500" 
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-[20px] transition-all duration-500" 
+         style="pointer-events: auto; position: fixed !important; inset: 0 !important;"
          x-show="show"
          x-transition:enter="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -18,13 +19,11 @@
 
     <!-- Modal Box - Pure iOS Fidelity -->
     <div class="ios-alert-container"
+         style="pointer-events: auto; position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 1000000000 !important; margin: 0 !important; box-sizing: border-box !important;"
          x-show="show"
-         x-transition:enter="transition cubic-bezier(0.34, 1.56, 0.64, 1) duration-400 transform"
-         x-transition:enter-start="opacity-0 scale-110 translate-y-2"
-         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-200 transform"
-         x-transition:leave-start="opacity-100 scale-100"
-         x-transition:leave-end="opacity-0 scale-95">
+         x-transition:enter="transition ease-out duration-300 transform"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100">
         
         <div class="ios-alert-content">
             <!-- Icon Section (Compact) -->
@@ -95,7 +94,7 @@
         overflow: hidden;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
         position: relative;
-        z-index: 10001;
+        z-index: 999999 !important;
     }
 
     .ios-alert-content {

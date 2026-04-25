@@ -8,7 +8,7 @@
                 <p class="text-text-muted text-label font-bold uppercase">Standard of mobile excellence</p>
             </div>
 
-            <form @submit.prevent="submitRegister" x-data="registerForm()" class="space-y-6">
+            <form @submit.prevent="submitRegister" x-data="registerForm()" data-no-spa class="space-y-6">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="text-label font-bold uppercase text-text-muted ml-1">First Name</label>
@@ -136,7 +136,18 @@
                                     this.errors.email = !emailRegex.test(this.formData.email) ? 'Invalid email address' : '';
                                     break;
                                 case 'password':
-                                    this.errors.password = this.formData.password.length < 8 ? 'Min. 8 characters required' : '';
+                                    const hasUpper = /[A-Z]/.test(this.formData.password);
+                                    const hasLower = /[a-z]/.test(this.formData.password);
+                                    const hasNumber = /\d/.test(this.formData.password);
+                                    const hasSpecial = /[\W_]/.test(this.formData.password);
+                                    
+                                    if (this.formData.password.length < 8) {
+                                        this.errors.password = 'Min. 8 characters required';
+                                    } else if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+                                        this.errors.password = 'Must contain Upper, Lower, Number & Special Char';
+                                    } else {
+                                        this.errors.password = '';
+                                    }
                                     break;
                             }
                         },
@@ -167,11 +178,9 @@
 
                                 if (result.success) {
                                     window.dispatchEvent(new CustomEvent('show-toast', {
-                                        detail: { message: 'Registration successful! Verifying...', type: 'success', status }
+                                        detail: { message: 'Registration successful! Redirecting...', type: 'success', status }
                                     }));
-                                    setTimeout(() => {
-                                        window.location.href = result.redirect || '/auth/verify-otp?email=' + encodeURIComponent(this.formData.email);
-                                    }, 1500);
+                                    window.location.replace(result.redirect || '/auth/verify-otp?email=' + encodeURIComponent(this.formData.email));
                                 } else {
                                     window.dispatchEvent(new CustomEvent('show-toast', {
                                         detail: { message: result.message || 'Registration failed', type: 'error', status }
