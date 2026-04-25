@@ -1,17 +1,33 @@
 <!-- views/admin/dashboard.ejs -->
 <%- contentFor('body') %>
 
-<div class="space-y-10">
+<div class="space-y-10" x-data="{ 
+    currentFilter: 'monthly', 
+    startDate: '', 
+    endDate: '',
+    async fetchChart(filter) {
+        this.currentFilter = filter;
+        let url = `/admin/api/dashboard/chart-data?filter=${filter}`;
+        if (filter === 'custom') {
+            if (!this.startDate || !this.endDate) return;
+            url += `&startDate=${this.startDate}&endDate=${this.endDate}`;
+        }
+        await updateChart(url);
+    }
+}">
     <!-- Header -->
-    <div class="flex justify-between items-end">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-start gap-6 border-b border-white/5 pb-10">
         <div>
-            <h1 class="text-3xl font-bold tracking-tight uppercase text-white mb-2">OPERATIONS OVERVIEW.</h1>
-            <p class="text-white/40 text-xs tracking-widest uppercase font-semibold">Real-time performance metrics</p>
+            <h1 class="text-4xl font-bold tracking-tight uppercase text-white mb-2">OPERATIONS OVERVIEW.</h1>
+            <p class="text-white/40 text-[10px] tracking-widest uppercase font-semibold">Real-time analytical infrastructure</p>
         </div>
-        <div class="flex gap-2">
-            <button class="px-4 py-2 bg-white/5 border border-white/10 text-white text-[11px] font-bold tracking-widest uppercase hover:bg-white/10 transition-colors">7D</button>
-            <button class="px-4 py-2 bg-white/5 border border-white/10 text-white text-[11px] font-bold tracking-widest uppercase hover:bg-white/10 transition-colors">30D</button>
-            <button class="px-4 py-2 bg-white border-white text-black text-[11px] font-bold tracking-widest uppercase">ALL TIME</button>
+        
+        <div class="flex flex-col items-end gap-4">
+            <!-- Strategic Action -->
+            <a href="/admin/sales-report" class="px-8 py-3 bg-accent text-black text-[11px] font-black tracking-[0.2em] uppercase hover:bg-white transition-all flex items-center gap-3 group shadow-lg shadow-accent/10">
+                Sales Report
+                <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </a>
         </div>
     </div>
 
@@ -28,87 +44,204 @@
         <div class="bg-black-surface border border-white/5 p-8 group hover:border-white/10 transition-all">
             <h4 class="text-white/30 text-[10px] font-bold tracking-[0.2em] uppercase mb-6">Total Orders</h4>
             <span class="text-3xl font-mono font-bold text-white"><%= stats.orders.total %></span>
-            <p class="text-white/20 text-[10px] mt-2 font-bold uppercase tracking-widest">Across all categories</p>
+            <p class="text-white/20 text-[10px] mt-2 font-bold uppercase tracking-widest">Delivered successfully</p>
         </div>
 
         <div class="bg-black-surface border border-white/5 p-8 group hover:border-white/10 transition-all">
             <h4 class="text-white/30 text-[10px] font-bold tracking-[0.2em] uppercase mb-6">Active Customers</h4>
             <span class="text-3xl font-mono font-bold text-white"><%= stats.customers.total %></span>
-            <p class="text-accent text-[10px] mt-2 font-bold uppercase tracking-widest">84 new this week</p>
+            <p class="text-accent text-[10px] mt-2 font-bold uppercase tracking-widest">Verified identities</p>
         </div>
 
         <div class="bg-black-surface border border-white/5 p-8 group hover:border-white/10 transition-all">
-            <h4 class="text-white/30 text-[10px] font-bold tracking-[0.2em] uppercase mb-6">Conversion Rate</h4>
-            <span class="text-3xl font-mono font-bold text-white">4.2%</span>
-            <p class="text-status-danger text-[10px] mt-2 font-bold uppercase tracking-widest">↓ 0.8% drop</p>
+            <h4 class="text-white/30 text-[10px] font-bold tracking-[0.2em] uppercase mb-6">Performance Index</h4>
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full border-2 border-accent/20 flex items-center justify-center">
+                    <span class="text-[10px] font-bold text-accent">94%</span>
+                </div>
+                <p class="text-white/20 text-[10px] font-bold uppercase tracking-widest">System Efficiency</p>
+            </div>
         </div>
     </div>
 
-    <!-- Charts / Tables -->
+    <!-- Charts / Leaderboards -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Sales Chart -->
         <div class="lg:col-span-2 bg-black-surface border border-white/5 p-10">
-            <h3 class="text-white text-[11px] font-bold tracking-widest uppercase mb-10 pb-4 border-b border-white/5">Sales Performance</h3>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-white/5">
+                <h3 class="text-white text-[11px] font-bold tracking-widest uppercase">Revenue Visualization</h3>
+                
+                <!-- Visualization Controls -->
+                <div class="flex items-center gap-3">
+                    <select x-model="currentFilter" @change="fetchChart(currentFilter)" class="bg-black border border-white/10 text-white text-[10px] px-3 py-1.5 focus:border-accent outline-none uppercase tracking-widest transition-colors min-w-[120px]">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="custom">Custom</option>
+                    </select>
+
+                    <div x-show="currentFilter === 'custom'" class="flex items-center gap-2 animate-in fade-in slide-in-from-right-1">
+                        <input type="date" x-model="startDate" @change="fetchChart('custom')" class="bg-black border border-white/10 text-white text-[9px] px-2 py-1.5 focus:border-accent outline-none">
+                        <span class="text-white/20 text-[9px] font-bold">TO</span>
+                        <input type="date" x-model="endDate" @change="fetchChart('custom')" class="bg-black border border-white/10 text-white text-[9px] px-2 py-1.5 focus:border-accent outline-none">
+                    </div>
+                </div>
+            </div>
             <div class="h-[400px]">
                 <canvas id="salesChart"></canvas>
             </div>
         </div>
 
-        <!-- Recent Activity -->
-        <div class="bg-black-surface border border-white/5 overflow-hidden">
-            <h3 class="text-white text-[11px] font-bold tracking-widest uppercase px-10 py-8 border-b border-white/5">Recent Activity</h3>
-            <div class="divide-y divide-white/5">
-                <% stats.recentActivity.forEach(activity => { %>
-                    <div class="px-10 py-6 hover:bg-white/[0.02] transition-colors">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-white text-xs font-bold truncate uppercase"><%= activity.title %></span>
-                            <span class="text-[9px] font-mono text-white/20 whitespace-nowrap ml-4"><%= activity.time %></span>
-                        </div>
-                        <p class="text-white/40 text-[10px] tracking-wide"><%= activity.desc %></p>
+        <!-- Leaderboards Section -->
+        <div class="space-y-8" x-data="{ tab: 'products' }">
+            <div class="bg-black-surface border border-white/5 overflow-hidden">
+                <div class="flex border-b border-white/5">
+                    <button @click="tab = 'products'" :class="tab === 'products' ? 'text-white border-b-2 border-accent' : 'text-white/30'" class="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest transition-colors hover:text-white">Products</button>
+                    <button @click="tab = 'categories'" :class="tab === 'categories' ? 'text-white border-b-2 border-accent' : 'text-white/30'" class="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest transition-colors hover:text-white">Categories</button>
+                    <button @click="tab = 'brands'" :class="tab === 'brands' ? 'text-white border-b-2 border-accent' : 'text-white/30'" class="flex-1 py-4 text-[10px] font-bold uppercase tracking-widest transition-colors hover:text-white">Brands</button>
+                </div>
+
+                <div class="p-6">
+                    <!-- Top Products -->
+                    <div x-show="tab === 'products'" class="space-y-4">
+                        <% stats.topProducts.forEach((p, i) => { %>
+                            <div class="flex items-center justify-between group">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] font-mono text-white/20">0<%= i+1 %></span>
+                                    <span class="text-[11px] text-white/60 group-hover:text-white transition-colors truncate w-32 uppercase tracking-wide"><%= p.name %></span>
+                                </div>
+                                <span class="text-[10px] font-bold text-accent"><%= p.totalSold %> SOLD</span>
+                            </div>
+                        <% }) %>
                     </div>
-                <% }) %>
+
+                    <!-- Top Categories -->
+                    <div x-show="tab === 'categories'" class="space-y-4">
+                        <% stats.topCategories.forEach((c, i) => { %>
+                            <div class="flex items-center justify-between group">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] font-mono text-white/20">0<%= i+1 %></span>
+                                    <span class="text-[11px] text-white/60 group-hover:text-white transition-colors uppercase tracking-wide"><%= c.name %></span>
+                                </div>
+                                <span class="text-[10px] font-bold text-accent"><%= c.totalSold %> UNITS</span>
+                            </div>
+                        <% }) %>
+                    </div>
+
+                    <!-- Top Brands -->
+                    <div x-show="tab === 'brands'" class="space-y-4">
+                        <% stats.topBrands.forEach((b, i) => { %>
+                            <div class="flex items-center justify-between group">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] font-mono text-white/20">0<%= i+1 %></span>
+                                    <span class="text-[11px] text-white/60 group-hover:text-white transition-colors uppercase tracking-wide"><%= b.name %></span>
+                                </div>
+                                <span class="text-[10px] font-bold text-accent"><%= b.totalSold %> UNITS</span>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+                <div class="bg-white/[0.02] p-4 text-center border-t border-white/5">
+                    <p class="text-[9px] text-white/20 uppercase font-bold tracking-[0.2em]">Top 10 Strategic Leaders</p>
+                </div>
             </div>
-            <a href="#" class="block text-center py-4 bg-white/5 text-white/40 text-[10px] font-bold tracking-widest uppercase hover:text-white transition-colors">View All Events</a>
+
+            <!-- Quick Access -->
+            <div class="bg-black-surface border border-white/5 p-8">
+                <h3 class="text-white text-[11px] font-bold tracking-widest uppercase mb-6 pb-4 border-b border-white/5">Intelligence Tools</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/admin/sales-report" class="bg-white/5 p-4 border border-white/5 hover:border-accent transition-colors group">
+                        <span class="block text-[10px] text-white/40 group-hover:text-accent mb-2">📊</span>
+                        <span class="text-[10px] font-bold text-white uppercase tracking-widest">Ledger Book</span>
+                    </a>
+                    <a href="/admin/marketing/coupons" class="bg-white/5 p-4 border border-white/5 hover:border-accent transition-colors group">
+                        <span class="block text-[10px] text-white/40 group-hover:text-accent mb-2">🎟️</span>
+                        <span class="text-[10px] font-bold text-white uppercase tracking-widest">Promotions</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Revenue',
-                    data: [350000, 480000, 290000, 620000, 550000, 840000],
-                    borderColor: '#FF6A00',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    pointBackgroundColor: '#FF6A00',
-                    fill: true,
-                    backgroundColor: 'rgba(255, 106, 0, 0.05)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10, family: 'JetBrains Mono' } }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10, family: 'Inter' } }
-                    }
-                },
-                plugins: {
-                    legend: { display: false }
+    let salesChart;
+
+    async function updateChart(url) {
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.success) {
+                const ctx = document.getElementById('salesChart').getContext('2d');
+                
+                if (salesChart) {
+                    salesChart.destroy();
                 }
+
+                salesChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: result.labels,
+                        datasets: [{
+                            label: 'Revenue',
+                            data: result.data,
+                            borderColor: '#FF6A00',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointBackgroundColor: '#FF6A00',
+                            pointRadius: 4,
+                            fill: true,
+                            backgroundColor: 'rgba(255, 106, 0, 0.05)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { 
+                                    color: 'rgba(255,255,255,0.3)', 
+                                    font: { size: 10, family: 'JetBrains Mono' },
+                                    callback: function(value) { return '₹' + value.toLocaleString(); }
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10, family: 'Inter' } }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#111',
+                                titleFont: { family: 'Inter', size: 12 },
+                                bodyFont: { family: 'JetBrains Mono', size: 12 },
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'REVENUE: ₹' + context.raw.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
-        });
+        } catch (error) {
+            console.error('Chart update error:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateChart('/admin/api/dashboard/chart-data?filter=monthly');
     });
 </script>

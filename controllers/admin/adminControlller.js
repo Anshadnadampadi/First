@@ -2,6 +2,8 @@ import admin from '../../models/admin/admin.js';
 import User from '../../models/user/User.js';
 import Address from '../../models/user/Address.js';
 import Order from '../../models/order/order.js';
+import Product from '../../models/product/product.js';
+import Category from '../../models/category/category.js';
 import bcrypt from 'bcryptjs';
 import { adminLogin} from '../../services/admin/adminServices.js';
 import {
@@ -64,9 +66,9 @@ export const postAdminLogin = async (req, res) => {
 
 export const getAdminDashboard = async (req, res) => {
     try {
-        const [ordersStats, totalCustomers] = await Promise.all([
+        const [ordersStats, totalCustomers, topProducts, topCategories, topBrands] = await Promise.all([
             Order.aggregate([
-                { $match: { orderStatus: { $ne: 'Cancelled' } } },
+                { $match: { orderStatus: 'Delivered' } },
                 { 
                     $group: { 
                         _id: null, 
@@ -75,13 +77,79 @@ export const getAdminDashboard = async (req, res) => {
                     } 
                 }
             ]),
-            User.countDocuments({ isAdmin: false })
+            User.countDocuments({ isAdmin: false }),
+            // Top 10 Best Selling Products
+            Order.aggregate([
+                { $match: { orderStatus: 'Delivered' } },
+                { $unwind: "$items" },
+                { $group: { _id: "$items.product", totalSold: { $sum: "$items.qty" } } },
+                { $sort: { totalSold: -1 } },
+                { $limit: 10 },
+                {
+                    $lookup: {
+                        from: "products",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "productInfo"
+                    }
+                },
+                { $unwind: "$productInfo" },
+                { $project: { name: "$productInfo.name", totalSold: 1 } }
+            ]),
+            // Top 10 Best Selling Categories
+            Order.aggregate([
+                { $match: { orderStatus: 'Delivered' } },
+                { $unwind: "$items" },
+                {
+                    $lookup: {
+                        from: "products",
+                        localField: "items.product",
+                        foreignField: "_id",
+                        as: "productInfo"
+                    }
+                },
+                { $unwind: "$productInfo" },
+                { $group: { _id: "$productInfo.category", totalSold: { $sum: "$items.qty" } } },
+                { $sort: { totalSold: -1 } },
+                { $limit: 10 },
+                {
+                    $lookup: {
+                        from: "categories",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "categoryInfo"
+                    }
+                },
+                { $unwind: "$categoryInfo" },
+                { $project: { name: "$categoryInfo.name", totalSold: 1 } }
+            ]),
+            // Top 10 Best Selling Brands
+            Order.aggregate([
+                { $match: { orderStatus: 'Delivered' } },
+                { $unwind: "$items" },
+                {
+                    $lookup: {
+                        from: "products",
+                        localField: "items.product",
+                        foreignField: "_id",
+                        as: "productInfo"
+                    }
+                },
+                { $unwind: "$productInfo" },
+                { $group: { _id: "$productInfo.brand", totalSold: { $sum: "$items.qty" } } },
+                { $sort: { totalSold: -1 } },
+                { $limit: 10 },
+                { $project: { name: "$_id", totalSold: 1 } }
+            ])
         ]);
 
         const stats = {
             revenue: { total: ordersStats.length > 0 ? ordersStats[0].totalRevenue : 0 },
             orders: { total: ordersStats.length > 0 ? ordersStats[0].totalOrders : 0 },
             customers: { total: totalCustomers },
+            topProducts,
+            topCategories,
+            topBrands,
             recentActivity: [
                 { title: 'New Order #8829', time: '2 mins ago', desc: 'Iphone 15 Pro Max - ₹1,44,900' },
                 { title: 'Customer Signup', time: '15 mins ago', desc: 'New user joined: sarath@example.com' },
@@ -102,8 +170,64 @@ export const getAdminDashboard = async (req, res) => {
             icon: icon || null 
         });
     } catch (error) {
-        console.log(error);
+        console.error('Error fetching admin dashboard stats:', error);
         res.status(500).send("Server Error");
+    }
+};
+
+export const getChartData = async (req, res) => {
+    try {
+        const { filter = 'monthly', startDate, endDate } = req.query;
+        let labels = [];
+        let data = [];
+
+        if (filter === 'yearly') {
+            const currentYear = new Date().getFullYear();
+            const yearlyData = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(currentYear - 5, 0, 1) } } },
+                { $group: { _id: { $year: "$createdAt" }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = yearlyData.map(d => d._id.toString());
+            data = yearlyData.map(d => d.total);
+        } else if (filter === 'monthly') {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const currentYear = new Date().getFullYear();
+            const monthlyData = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(currentYear, 0, 1) } } },
+                { $group: { _id: { $month: "$createdAt" }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = months;
+            data = new Array(12).fill(0);
+            monthlyData.forEach(d => { data[d._id - 1] = d.total; });
+        } else if (filter === 'custom' && startDate && endDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+
+            const customData = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: start, $lte: end } } },
+                { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = customData.map(d => d._id);
+            data = customData.map(d => d.total);
+        } else { // daily/weekly
+            const last7Days = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } },
+                { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = last7Days.map(d => d._id);
+            data = last7Days.map(d => d.total);
+        }
+
+        res.json({ success: true, labels, data });
+    } catch (error) {
+        console.error('Error fetching chart data:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 

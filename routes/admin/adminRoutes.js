@@ -8,7 +8,8 @@ import {
     postBlock,
     postUnblock,
     postDelete,
-    postEdit
+    postEdit,
+    getChartData
 } from '../../controllers/admin/adminControlller.js';
 
 import adminAuth from "../../middlewares/adminAuth.js";
@@ -17,6 +18,7 @@ import productRoutes from '../products/productRoutes.js';
 import adminOrderRoutes from './adminOrderRoutes.js';
 import couponRoutes from './adminCoupon.js';
 import offerRoutes from './adminOfferRoutes.js';
+import salesReportRoutes from './salesReportRoutes.js';
 import { getNotifications, markAsRead, markAllAsRead, clearAllNotifications } from '../../controllers/admin/notificationController.js';
 
 const router = express.Router();
@@ -35,6 +37,7 @@ router.get('/api/notifications', getNotifications);
 router.patch('/api/notifications/read-all', markAllAsRead);
 router.delete('/api/notifications/clear-all', clearAllNotifications);
 router.patch('/api/notifications/:id/read', markAsRead);
+router.get('/api/dashboard/chart-data', getChartData);
 
 //  Protected Routes
 router.get('/logout', adminLogout);
@@ -44,6 +47,7 @@ router.use('/', productRoutes);
 router.use('/', adminOrderRoutes)
 router.use("/", couponRoutes);
 router.use("/marketing/offers", offerRoutes);
+router.use("/", salesReportRoutes);
 
 // Dashboard & Users
 router.get('/dashboard', getAdminDashboard);
