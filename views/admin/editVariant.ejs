@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
 
-<div class="space-y-10" x-data="variantManager('<%= product._id %>', '<%= variantIndex %>', <%= JSON.stringify(variant) %>)">
+<div class="space-y-10" x-data="variantManager">
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
@@ -20,7 +20,7 @@
     </div>
 
     <div class="max-w-4xl">
-        <form @submit.prevent="submitForm()" class="bg-black-surface border border-white/5 p-10 space-y-12">
+        <form @submit.prevent="submitForm()" data-no-spa="true" novalidate class="bg-black-surface border border-white/5 p-10 space-y-12">
             <!-- Specifications -->
             <div class="space-y-8">
                 <div class="border-l-2 border-accent pl-6">
@@ -31,31 +31,36 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="space-y-2">
                         <label class="text-[9px] font-bold uppercase tracking-widest text-white/40">Color / Finish</label>
-                        <input type="text" x-model="form.color" required placeholder="e.g., Titanium Gray"
+                        <input type="text" x-model="form.color" placeholder="e.g., Titanium Gray"
                             class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors placeholder:text-white/10 uppercase font-bold">
+                        <p x-show="errors.color" x-text="errors.color" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; margin-top:4px; font-weight:500;"></p>
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-bold uppercase tracking-widest text-white/40">RAM Capacity</label>
-                        <input type="text" x-model="form.ram" required placeholder="e.g., 12GB"
+                        <input type="text" x-model="form.ram" placeholder="e.g., 12GB"
                             class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors placeholder:text-white/10 uppercase font-bold">
+                        <p x-show="errors.ram" x-text="errors.ram" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; margin-top:4px; font-weight:500;"></p>
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-bold uppercase tracking-widest text-white/40">Storage Volume</label>
-                        <input type="text" x-model="form.storage" required placeholder="e.g., 256GB"
+                        <input type="text" x-model="form.storage" placeholder="e.g., 256GB"
                             class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors placeholder:text-white/10 uppercase font-bold">
+                        <p x-show="errors.storage" x-text="errors.storage" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; margin-top:4px; font-weight:500;"></p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-2">
                         <label class="text-[9px] font-bold uppercase tracking-widest text-white/40">Pricing (INR)</label>
-                        <input type="number" x-model="form.price" required onwheel="this.blur()"
+                        <input type="number" x-model="form.price" onwheel="this.blur()"
                             class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors placeholder:text-white/10 font-mono">
+                        <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; margin-top:4px; font-weight:500;"></p>
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-bold uppercase tracking-widest text-white/40">Inventory Level</label>
-                        <input type="number" x-model="form.stock" required onwheel="this.blur()"
+                        <input type="number" x-model="form.stock" onwheel="this.blur()"
                             class="w-full bg-black border border-white/5 py-4 px-6 text-xs text-white focus:outline-none focus:border-accent transition-colors placeholder:text-white/10 font-mono">
+                        <p x-show="errors.stock" x-text="errors.stock" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; margin-top:4px; font-weight:500;"></p>
                     </div>
                 </div>
             </div>
@@ -143,164 +148,155 @@
 
 
     <script>
-    function variantManager(productId, variantIndex, existingData) {
-        return {
-            productId,
-            variantIndex,
-            showCropModal: false,
-            isSubmitting: false,
-            cropper: null,
-            previews: [],
-            fileQueue: [],
-            existingImageCount: (existingData.images || []).length,
-            form: {
-                color: existingData.color,
-                ram: existingData.ram,
-                storage: existingData.storage,
-                price: existingData.price,
-                stock: existingData.stock
-            },
+        (() => {
+            const register = () => {
+                if (Alpine.data('variantManager')) return;
+                const existingData = <%- JSON.stringify(variant) %>;
+                Alpine.data('variantManager', () => ({
+                    productId: '<%= product._id %>',
+                    variantIndex: '<%= variantIndex %>',
+                    showCropModal: false,
+                    isSubmitting: false,
+                    cropper: null,
+                    previews: [],
+                    fileQueue: [],
+                    existingImageCount: (existingData.images || []).length,
+                    errors: { color: '', ram: '', storage: '', price: '', stock: '' },
+                    form: {
+                        color: existingData.color,
+                        ram: existingData.ram,
+                        storage: existingData.storage,
+                        price: existingData.price,
+                        stock: existingData.stock
+                    },
 
-            handleFileChange(e) {
-                const files = Array.from(e.target.files);
-                if (files.length === 0) return;
-
-                if (this.previews.length + this.existingImageCount + files.length > 5) {
-                    window.dispatchEvent(new CustomEvent('show-toast', { 
-                        detail: { message: 'Maximum 5 assets total allowed.', type: 'error' } 
-                    }));
-                    return;
-                }
-
-                this.fileQueue = [...files];
-                this.processNextInQueue();
-                e.target.value = '';
-            },
-
-            processNextInQueue() {
-                if (this.fileQueue.length === 0) return;
-
-                const file = this.fileQueue.shift();
-                const reader = new FileReader();
-
-                reader.onload = (event) => {
-                    this.showCropModal = true;
-                    setTimeout(() => {
-                        this.$refs.cropImage.src = event.target.result;
-                        if (this.cropper) this.cropper.destroy();
-                        this.cropper = new Cropper(this.$refs.cropImage, {
-                          //  aspectRatio: 1,
-                            viewMode: 1,
-                            autoCropArea: 1,
-                            background: false,
-                            zoomable: true,
-                        });
-                    }, 100);
-                };
-                reader.readAsDataURL(file);
-            },
-
-            confirmCrop() {
-                if (!this.cropper) return;
-                this.cropper.getCroppedCanvas({ width: 600, height: 600 }).toBlob((blob) => {
-                    this.previews.push({
-                        file: blob,
-                        url: URL.createObjectURL(blob)
-                    });
-                    this.closeCropModal();
-                    if (this.fileQueue.length > 0) {
-                        setTimeout(() => this.processNextInQueue(), 300);
-                    }
-                }, 'image/jpeg', 0.9);
-            },
-
-            cancelCrop() {
-                this.closeCropModal();
-                this.fileQueue = []; 
-            },
-
-            closeCropModal() {
-                if (this.cropper) {
-                    this.cropper.destroy();
-                    this.cropper = null;
-                }
-                this.showCropModal = false;
-            },
-
-            removeFile(index) {
-                URL.revokeObjectURL(this.previews[index].url);
-                this.previews.splice(index, 1);
-            },
-
-            async deleteExistingAsset(imgIndex) {
-                const confirmed = await window.confirmAction({
-                    title: 'PURGE ASSET?',
-                    message: 'This image will be permanently removed from this configuration.',
-                    type: 'danger'
-                });
-
-                if (confirmed) {
-                    try {
-                        const res = await fetch(`/admin/products/variant/delete-asset/${this.productId}/${this.variantIndex}/${imgIndex}`, {
-                            method: 'DELETE'
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { 
-                                detail: { message: 'Asset purged from catalog.', type: 'success' } 
-                            }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            throw new Error(data.message);
+                    handleFileChange(e) {
+                        const files = Array.from(e.target.files);
+                        if (files.length === 0) return;
+                        if (this.previews.length + this.existingImageCount + files.length > 5) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Maximum 5 assets total allowed.', type: 'error' } }));
+                            return;
                         }
-                    } catch (error) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { 
-                            detail: { message: error.message || 'Error deleting asset', type: 'error' } 
-                        }));
+                        this.fileQueue = [...files];
+                        this.processNextInQueue();
+                        e.target.value = '';
+                    },
+
+                    processNextInQueue() {
+                        if (this.fileQueue.length === 0) return;
+                        const file = this.fileQueue.shift();
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.showCropModal = true;
+                            setTimeout(() => {
+                                this.$refs.cropImage.src = event.target.result;
+                                if (this.cropper) this.cropper.destroy();
+                                this.cropper = new Cropper(this.$refs.cropImage, { viewMode: 1, autoCropArea: 1, background: false, zoomable: true });
+                            }, 100);
+                        };
+                        reader.readAsDataURL(file);
+                    },
+
+                    confirmCrop() {
+                        if (!this.cropper) return;
+                        this.cropper.getCroppedCanvas({ width: 600, height: 600 }).toBlob((blob) => {
+                            this.previews.push({ file: blob, url: URL.createObjectURL(blob) });
+                            this.closeCropModal();
+                            if (this.fileQueue.length > 0) setTimeout(() => this.processNextInQueue(), 300);
+                        }, 'image/jpeg', 0.9);
+                    },
+
+                    cancelCrop() { this.closeCropModal(); this.fileQueue = []; },
+                    closeCropModal() {
+                        if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
+                        this.showCropModal = false;
+                    },
+                    removeFile(index) {
+                        URL.revokeObjectURL(this.previews[index].url);
+                        this.previews.splice(index, 1);
+                    },
+
+                    async deleteExistingAsset(imgIndex) {
+                        const confirmed = await window.confirmAction({ title: 'PURGE ASSET?', message: 'Image will be removed.', type: 'danger' });
+                        if (confirmed) {
+                            try {
+                                const res = await fetch(`/admin/products/variant/delete-asset/${this.productId}/${this.variantIndex}/${imgIndex}`, { method: 'DELETE' });
+                                const data = await res.json();
+                                if (data.success) {
+                                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Asset purged.', type: 'success' } }));
+                                    setTimeout(() => window.location.reload(), 1000);
+                                } else { throw new Error(data.message); }
+                            } catch (error) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error deleting asset', type: 'error' } }));
+                            }
+                        }
+                    },
+
+                    validate() {
+                        Object.keys(this.errors).forEach(key => this.errors[key] = '');
+                        let isValid = true;
+                        
+                        const colorVal = this.form.color ? this.form.color.trim() : '';
+                        if (!colorVal || colorVal.length < 3) {
+                            this.errors.color = 'Color must be at least 3 characters.';
+                            isValid = false;
+                        } else if (!/[a-zA-Z]/.test(colorVal)) {
+                            this.errors.color = 'Color must contain letters.';
+                            isValid = false;
+                        }
+                        
+                        const ramVal = this.form.ram ? this.form.ram.trim() : '';
+                        if (!ramVal) {
+                            this.errors.ram = 'RAM is required.';
+                            isValid = false;
+                        } else if (!/[0-9]/.test(ramVal)) {
+                            this.errors.ram = 'RAM must contain a numeric value (e.g., 12GB).';
+                            isValid = false;
+                        }
+
+                        const storageVal = this.form.storage ? this.form.storage.trim() : '';
+                        if (!storageVal) {
+                            this.errors.storage = 'Storage is required.';
+                            isValid = false;
+                        } else if (!/[0-9]/.test(storageVal)) {
+                            this.errors.storage = 'Storage must contain a numeric value (e.g., 256GB).';
+                            isValid = false;
+                        }
+
+                        if (!this.form.price || parseFloat(this.form.price) <= 0) { this.errors.price = 'Price must be positive.'; isValid = false; }
+                        if (this.form.stock === '' || parseInt(this.form.stock) < 0) { this.errors.stock = 'Stock must be non-negative.'; isValid = false; }
+                        return isValid;
+                    },
+
+                    async submitForm() {
+                        if (this.isSubmitting) return;
+                        if (!this.validate()) return;
+                        
+                        this.isSubmitting = true;
+                        const formData = new FormData();
+                        Object.keys(this.form).forEach(key => formData.append(key, this.form[key]));
+                        this.previews.forEach((p, i) => formData.append('images', p.file, `update-${Date.now()}-${i}.jpg`));
+                        try {
+                            const res = await fetch(`/admin/products/variant/update/${this.productId}/${this.variantIndex}`, { method: 'PATCH', body: formData });
+                            const result = await res.json();
+                            if (result.success) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Variant updated.', type: 'success' } }));
+                                setTimeout(() => { window.location.href = `/admin/products/details/${this.productId}`; }, 1500);
+                            } else { throw new Error(result.message); }
+                        } catch (error) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error updating variant.', type: 'error' } }));
+                        } finally { this.isSubmitting = false; }
                     }
-                }
-            },
+                }));
+            };
 
-            async submitForm() {
-                if (this.isSubmitting) return;
-
-                this.isSubmitting = true;
-                const formData = new FormData();
-                
-                Object.keys(this.form).forEach(key => formData.append(key, this.form[key]));
-                
-                this.previews.forEach((p, i) => {
-                    formData.append('images', p.file, `variant-update-${Date.now()}-${i}.jpg`);
-                });
-
-                try {
-                    const res = await fetch(`/admin/products/variant/update/${this.productId}/${this.variantIndex}`, {
-                        method: 'PATCH',
-                        body: formData
-                    });
-                    
-                    const result = await res.json();
-                    if (result.success) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { 
-                            detail: { message: 'Synchronization complete. Catalog updated.', type: 'success' } 
-                        }));
-                        setTimeout(() => {
-                            window.location.href = `/admin/products/details/${this.productId}`;
-                        }, 1500);
-                    } else {
-                        throw new Error(result.message);
-                    }
-                } catch (error) {
-                    window.dispatchEvent(new CustomEvent('show-toast', { 
-                        detail: { message: error.message || 'An unexpected synchronization error occurred.', type: 'error' } 
-                    }));
-                } finally {
-                    this.isSubmitting = false;
-                }
+            if (window.Alpine) {
+                register();
+            } else {
+                document.addEventListener('alpine:init', register);
             }
-        };
-    }
-</script>
+        })();
+    </script>
 
 <style>
     .cropper-view-box, .cropper-face { border-radius: 0; }

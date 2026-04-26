@@ -94,6 +94,8 @@ export const getProductListing = async ({ searchQuery, categoryFilter, brandFilt
     const products = results[0];
     const total = results[1];
 
+    console.log(`[DEBUG] Products found in DB: ${products.length}, Limit: ${limit}, Total: ${total}`);
+
     let resultIdx = 2;
     if (!categories) {
         categories = results[resultIdx++];
@@ -116,13 +118,15 @@ export const getProductListing = async ({ searchQuery, categoryFilter, brandFilt
 
     let pagination = "";
     for (let i = 1; i <= totalPages; i++) {
-        pagination += `<button class="pagination-link" data-page="${i}">${i}</button>`;
+        const activeClass = i === page ? "active" : "";
+        pagination += `<a href="#" class="page-link ${activeClass}" data-page="${i}" onclick="event.preventDefault(); loadProducts(${i})">${i}</a>`;
     }
 
     return {
         products: productsWithOffers,
         total,
         totalPages,
+        currentPage: page,
         categories,
         brands,
         pagination

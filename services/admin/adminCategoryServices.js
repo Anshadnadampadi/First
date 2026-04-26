@@ -63,6 +63,11 @@ export const createCategory = async (categoryData, file) => {
         throw new Error("Category with this name already exists");
     }
 
+    const existingSlug = await Category.findOne({ slug });
+    if (existingSlug) {
+        throw new Error("This URL Path (slug) is already in use");
+    }
+
     const result = await newCategory.save();
     commonCache.delete(CACHE_KEYS.CATEGORIES);
     return result;
@@ -84,6 +89,17 @@ export const updateCategory = async (id, categoryData, file) => {
 
         if (existingCategory) {
             throw new Error("Category with this name already exists");
+        }
+    }
+
+    if (updateData.slug) {
+        const existingSlug = await Category.findOne({
+            slug: updateData.slug,
+            _id: { $ne: id }
+        });
+
+        if (existingSlug) {
+            throw new Error("This URL Path (slug) is already in use");
         }
     }
 

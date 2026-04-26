@@ -145,11 +145,16 @@ export const removeCoupon = async (req, res) => {
 export const getPaymentFailure = async (req, res) => {
     try {
         const orderId = req.query.orderId || 'UNKNOWN';
+        const order = await Order.findOne({ orderId, user: req.session.user });
+
         res.render('user/paymentFailure', {
             title: 'Payment Failed',
-            orderId
+            orderId,
+            order: order || null
         });
     } catch (error) {
+        console.error('Error in payment failure:', error);
         res.redirect('/');
     }
 };
+

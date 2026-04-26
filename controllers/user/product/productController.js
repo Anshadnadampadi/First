@@ -43,6 +43,9 @@ export const loadProductListing = async (req, res) => {
             products: data.products,
             categories: data.categories,
             brands: data.brands,
+            pagination: data.pagination,
+            currentPage: data.currentPage,
+            totalPages: data.totalPages,
             searchQuery: search || "",
             selectedCategories: category
                 ? Array.isArray(category)

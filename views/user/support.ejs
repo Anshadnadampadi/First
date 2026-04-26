@@ -1,0 +1,210 @@
+<%- contentFor('body') %>
+
+<div class="min-h-[80vh] py-12 px-4 md:px-8 bg-black">
+    <div class="max-w-6xl mx-auto space-y-12">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div>
+                <h1 class="text-4xl font-black tracking-tight text-white uppercase mb-2">Support Center.</h1>
+                <p class="text-white/40 text-[11px] font-bold uppercase tracking-[0.3em]">How can we assist your technical journey?</p>
+            </div>
+            <button @click="$dispatch('open-modal', 'create-ticket')" 
+                class="px-8 py-4 bg-white text-black font-black text-[10px] tracking-widest uppercase hover:bg-accent transition-all btn-press shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                Initialize New Ticket
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <!-- Stats/Help Info -->
+            <div class="space-y-6">
+                <div class="bg-[#0a0a0a] border border-white/5 p-8 rounded-sm group hover:border-accent/30 transition-all">
+                    <h3 class="text-white text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span>
+                        Status Overview
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                            <span class="text-white/30">Active Tickets</span>
+                            <span class="text-white"><%= tickets.filter(t => t.status !== 'Closed').length %></span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                            <span class="text-white/30">Resolved</span>
+                            <span class="text-status-success"><%= tickets.filter(t => t.status === 'Resolved' || t.status === 'Closed').length %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#0a0a0a] border border-white/5 p-8 rounded-sm">
+                    <h3 class="text-white text-xs font-black uppercase tracking-widest mb-6">Quick Assistance</h3>
+                    <div class="space-y-4">
+                        <a href="/faq" class="block text-[10px] text-white/40 hover:text-white font-bold uppercase tracking-widest transition-colors">
+                            Knowledge Base
+                        </a>
+                        <a href="/account/orders" class="block text-[10px] text-white/40 hover:text-white font-bold uppercase tracking-widest transition-colors">
+                            Track Order Status
+                        </a>
+                        <a href="#" class="block text-[10px] text-white/40 hover:text-white font-bold uppercase tracking-widest transition-colors">
+                            Return Policy
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tickets List -->
+            <div class="lg:col-span-2">
+                <div class="bg-[#0a0a0a] border border-white/5 overflow-hidden">
+                    <div class="p-6 border-b border-white/5 bg-white/[0.02]">
+                        <h2 class="text-white text-xs font-black uppercase tracking-widest">Communication Logs</h2>
+                    </div>
+
+                    <% if (tickets.length === 0) { %>
+                        <div class="p-12 text-center">
+                            <div class="w-16 h-16 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <svg class="w-8 h-8 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                                </svg>
+                            </div>
+                            <p class="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">No active communication logs detected.</p>
+                        </div>
+                    <% } else { %>
+                        <div class="divide-y divide-white/5">
+                            <% tickets.forEach(ticket => { %>
+                                <a href="/support/ticket/<%= ticket._id %>" class="block p-8 hover:bg-white/[0.03] transition-all group">
+                                    <div class="flex flex-col md:flex-row justify-between gap-4">
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-3 mb-1">
+                                                <span class="text-[9px] font-mono text-accent font-bold tracking-widest uppercase">
+                                                    <%= ticket.ticketId %>
+                                                </span>
+                                                <span class="w-1 h-1 bg-white/20 rounded-full"></span>
+                                                <span class="text-[9px] text-white/40 font-bold uppercase tracking-widest">
+                                                    <%= ticket.category %>
+                                                </span>
+                                            </div>
+                                            <h4 class="text-white text-lg font-black tracking-tight group-hover:text-accent transition-colors">
+                                                <%= ticket.subject %>
+                                            </h4>
+                                            <p class="text-white/30 text-[10px] line-clamp-1">
+                                                <%= ticket.message %>
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-4">
+                                            <div class="px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-[0.2em] 
+                                                <%= ticket.status === 'Open' ? 'bg-accent/10 text-accent border border-accent/20' : 
+                                                    ticket.status === 'In-Progress' ? 'bg-status-success/10 text-status-success border border-status-success/20' :
+                                                    ticket.status === 'Resolved' ? 'bg-white/10 text-white border border-white/20' :
+                                                    'bg-white/5 text-white/40 border border-white/10' %>">
+                                                <%= ticket.status %>
+                                            </div>
+                                            <span class="text-[9px] text-white/20 font-bold uppercase tracking-widest">
+                                                <%= new Date(ticket.updatedAt).toLocaleDateString() %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Ticket Modal -->
+<div x-data="ticketCreator" @open-modal.window="if ($event.detail === 'create-ticket') showModal = true"
+    x-show="showModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+    x-cloak style="display: none;">
+    
+    <div class="bg-[#0a0a0a] border border-white/10 w-full max-w-lg p-10 relative shadow-2xl"
+        @click.away="showModal = false">
+        
+        <h2 class="text-2xl font-black text-white uppercase tracking-tight mb-2">New Support Protocol</h2>
+        <p class="text-white/40 text-[9px] font-bold uppercase tracking-widest mb-8">Initialize a secure communication channel with our technicians.</p>
+
+        <form @submit.prevent="submitTicket" class="space-y-6">
+            <div class="space-y-2">
+                <label class="text-[9px] font-black uppercase tracking-widest text-white/30">Category</label>
+                <select x-model="formData.category" class="w-full bg-black border border-white/10 p-4 text-white text-xs focus:outline-none focus:border-accent transition-colors appearance-none">
+                    <option value="Order Issue">Order Issue</option>
+                    <option value="Payment Problem">Payment Problem</option>
+                    <option value="Account Access">Account Access</option>
+                    <option value="Product Inquiry">Product Inquiry</option>
+                    <option value="Feedback">Feedback</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[9px] font-black uppercase tracking-widest text-white/30">Subject</label>
+                <input type="text" x-model="formData.subject" placeholder="e.g. Warranty Claim - Order #1234"
+                    class="w-full bg-black border border-white/10 p-4 text-white text-xs focus:outline-none focus:border-accent transition-colors">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[9px] font-black uppercase tracking-widest text-white/30">Message Details</label>
+                <textarea x-model="formData.message" rows="5" placeholder="Describe the incident in detail..."
+                    class="w-full bg-black border border-white/10 p-4 text-white text-xs focus:outline-none focus:border-accent transition-colors resize-none"></textarea>
+            </div>
+
+            <div class="flex gap-4 pt-4">
+                <button type="button" @click="showModal = false"
+                    class="flex-1 py-4 border border-white/10 text-white/60 font-black text-[10px] tracking-widest uppercase hover:bg-white/5 transition-all">
+                    Abort
+                </button>
+                <button type="submit" :disabled="isSubmitting"
+                    class="flex-1 py-4 bg-white text-black font-black text-[10px] tracking-widest uppercase hover:bg-accent transition-all disabled:opacity-50">
+                    <span x-show="!isSubmitting">Initialize Channel</span>
+                    <span x-show="isSubmitting">Connecting...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const register = () => {
+            if (Alpine.data('ticketCreator')) return;
+            Alpine.data('ticketCreator', () => ({
+                showModal: false,
+                isSubmitting: false,
+                formData: {
+                    subject: '',
+                    category: 'Order Issue',
+                    priority: 'Medium',
+                    message: '',
+                    orderId: ''
+                },
+                async submitTicket() {
+                    if (!this.formData.subject || !this.formData.message) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Please fill in all required fields.", type: 'error' } }));
+                        return;
+                    }
+                    this.isSubmitting = true;
+                    try {
+                        const res = await fetch('/support/create', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.formData)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message, type: 'success' } }));
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    } catch (error) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message || "Failed to create ticket.", type: 'error' } }));
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                }
+            }));
+        };
+
+        if (window.Alpine) register();
+        else document.addEventListener('alpine:init', register);
+    })();
+</script>

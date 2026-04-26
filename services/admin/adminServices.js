@@ -20,7 +20,8 @@ export const adminLogin = async ({ email, password }) => {
         if (isMatch) {
             return {
                 success: true,
-                message: "Login Successfully"
+                message: "Login Successfully",
+                admin: admin
             };
         }
     }

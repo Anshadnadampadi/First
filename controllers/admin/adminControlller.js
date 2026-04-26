@@ -48,7 +48,8 @@ export const postAdminLogin = async (req, res) => {
 
     // Create admin session
     req.session.admin = {
-      email,
+      _id: result.admin._id,
+      email: result.admin.email,
       role: "admin"
     };
 

@@ -1,69 +1,65 @@
 <!-- views/user/paymentFailure.ejs -->
 <%- contentFor('body') %>
 
-<div class="min-h-[80vh] bg-[#050505] flex items-center justify-center py-20 px-6 relative overflow-hidden">
-    <!-- Background Accents -->
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-status-danger/5 rounded-full blur-[120px] pointer-events-none"></div>
-    <div class="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-status-danger/[0.03] to-transparent pointer-events-none"></div>
+<div class="min-h-[85vh] flex items-center justify-center p-4 bg-black">
+    <div class="max-w-lg w-full bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden">
+        
+        <!-- Subtle Danger Glow -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-status-danger/20 blur-[80px] pointer-events-none"></div>
 
-    <div class="max-w-xl w-full text-center relative z-10">
-        <!-- Error Hologram Icon -->
-        <div class="mb-10 relative inline-block group">
-            <div class="absolute inset-0 bg-status-danger/20 rounded-full blur-2xl group-hover:bg-status-danger/30 transition-all duration-700 animate-pulse"></div>
-            <div class="relative w-24 h-24 bg-black border-2 border-status-danger flex items-center justify-center rounded-full shadow-[0_0_50px_rgba(255,59,48,0.2)]">
-                <svg class="w-12 h-12 text-status-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </div>
-            
-            <!-- Scanning lines decoration -->
-            <div class="absolute -left-4 -right-4 top-1/2 h-[1px] bg-status-danger/30 blur-[1px] animate-pulse"></div>
+        <!-- Failure Icon -->
+        <div class="w-20 h-20 bg-status-danger/10 border border-status-danger/20 rounded-full flex items-center justify-center mx-auto mb-8 relative z-10 shadow-[0_0_20px_rgba(255,59,48,0.2)]">
+            <svg class="w-10 h-10 text-status-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
         </div>
 
-        <h1 class="text-white text-4xl font-black tracking-tighter uppercase mb-4">
-            Payment <span class="text-status-danger">Failed</span>
-        </h1>
-        
-        <p class="text-white/40 font-mono text-[11px] uppercase tracking-[0.3em] mb-12 max-w-sm mx-auto leading-relaxed">
+        <h1 class="text-3xl md:text-4xl font-display font-black tracking-tight text-white mb-3 relative z-10">Payment Failed!</h1>
+        <p class="text-white/60 mb-8 max-w-sm mx-auto relative z-10 text-sm leading-relaxed">
             Transaction aborted by the gateway. <br>
-            Your security protocols remained intact.
+            Your payment was not processed successfully.
         </p>
 
-        <div class="bg-white/[0.02] border border-white/5 backdrop-blur-md p-8 mb-10 text-left relative overflow-hidden group">
-            <div class="absolute top-0 left-0 w-1 h-full bg-status-danger transform origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-500"></div>
+        <!-- Order Summary Card -->
+        <% if (order) { %>
+        <div class="bg-black border border-white/10 rounded-xl p-6 text-left mb-8 relative z-10 shadow-inner">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+                <span class="text-white/40 text-xs font-semibold uppercase tracking-wider">Order ID</span>
+                <span class="text-white font-mono font-bold text-sm"><%= order.orderId %></span>
+            </div>
             
-            <h3 class="text-white/60 text-[10px] font-black uppercase tracking-widest mb-6 border-b border-white/5 pb-4 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-status-danger rounded-full"></span>
-                Incident Report
-            </h3>
-
-            <div class="space-y-4">
-                <div class="flex justify-between items-center border-b border-white/[0.03] pb-3">
-                    <span class="text-white/30 text-[9px] font-bold uppercase tracking-widest">Order Reference</span>
-                    <span class="text-white font-mono text-[10px]"><%= orderId %></span>
-                </div>
-                <div class="flex justify-between items-center border-b border-white/[0.03] pb-3">
-                    <span class="text-white/30 text-[9px] font-bold uppercase tracking-widest">Gateway Status</span>
-                    <span class="text-status-danger font-black text-[9px] uppercase tracking-widest">Payment Refused</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-white/30 text-[9px] font-bold uppercase tracking-widest">Timestamp</span>
-                    <span class="text-white/60 font-mono text-[10px]"><%= new Date().toLocaleString() %></span>
-                </div>
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+                <span class="text-white/40 text-xs font-semibold uppercase tracking-wider">Payment Status</span>
+                <span class="text-status-danger font-bold text-xs uppercase tracking-widest">Failed / Pending</span>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <span class="text-white/40 text-xs font-semibold uppercase tracking-wider">Total amount</span>
+                <span class="text-status-danger text-2xl font-black tracking-tighter">₹<%= order.totalAmount.toLocaleString() %></span>
             </div>
         </div>
+        <% } else { %>
+            <div class="bg-black border border-white/10 rounded-xl p-6 text-left mb-8 relative z-10 shadow-inner">
+                <div class="flex justify-between items-center">
+                    <span class="text-white/40 text-xs font-semibold uppercase tracking-wider">Reference ID</span>
+                    <span class="text-white font-mono font-bold text-sm"><%= orderId %></span>
+                </div>
+            </div>
+        <% } %>
 
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/checkout" class="bg-white text-black font-black px-10 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-status-danger hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
+            <a href="/checkout" class="w-full sm:w-auto px-6 py-4 bg-status-danger text-white font-black uppercase text-xs tracking-widest hover:bg-white hover:text-black rounded-lg transition-all shadow-[0_0_15px_rgba(255,59,48,0.3)]">
                 Try Again
             </a>
-            <a href="/account/orders" class="border border-white/10 text-white font-bold px-10 py-4 text-[10px] tracking-[0.2em] uppercase hover:bg-white/5 transition-all">
+            <a href="/account/orders" class="w-full sm:w-auto px-6 py-4 border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold uppercase text-xs tracking-widest rounded-lg transition-all">
                 Order History
             </a>
         </div>
         
-        <p class="mt-12 text-white/20 text-[8px] font-black uppercase tracking-[0.4em]">
-            Need help? Contact support via encrypted channel.
+        <p class="mt-10 text-white/20 text-[8px] font-black uppercase tracking-[0.4em] relative z-10">
+            Secure encryption active. Your data is safe.
         </p>
     </div>
 </div>

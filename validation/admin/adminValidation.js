@@ -20,31 +20,45 @@ export const adminLoginValidate = joi.object({
 });
 
 export const categoryValidate = joi.object({
-    id: joi.string().hex().length(24).optional(),
+    id: joi.string().hex().length(24).allow('', null).optional(),
     name: joi.string()
-        .min(2)
+        .trim()
+        .min(3)
         .max(50)
+        .pattern(/^[a-zA-Z0-9\s&'-]+$/)
         .required()
         .messages({
             'string.empty': 'Category name is required.',
-            'string.min': 'Category name must be at least 2 characters long.',
-            'string.max': 'Category name cannot exceed 50 characters.'
+            'string.min': 'Category name must be at least 3 characters long.',
+            'string.max': 'Category name cannot exceed 50 characters.',
+            'string.pattern.base': 'Category name contains invalid characters.'
         }),
     slug: joi.string()
+        .trim()
+        .lowercase()
         .pattern(/^[a-z0-9-]+$/)
         .required()
         .messages({
+            'string.empty': 'URL Path (slug) is required.',
             'string.pattern.base': 'Slug must be lowercase alphanumeric with hyphens only.'
         }),
     displayOrder: joi.number()
         .integer()
         .min(0)
         .optional()
-        .default(0),
+        .default(0)
+        .messages({
+            'number.base': 'Display order must be a number.',
+            'number.min': 'Display order cannot be negative.'
+        }),
     metaDescription: joi.string()
+        .trim()
         .max(500)
         .allow('', null)
         .optional()
+        .messages({
+            'string.max': 'Meta description cannot exceed 500 characters.'
+        })
 });
 
 // export const productValidate = joi.object({
@@ -61,6 +75,7 @@ export const productValidate = joi.object({
     id: joi.string()
         .hex()
         .length(24)
+        .allow('', null)
         .optional(),
 
     name: joi.string()
@@ -77,7 +92,7 @@ export const productValidate = joi.object({
         .trim()
         .min(2)
         .max(50)
-        .pattern(/^[a-zA-Z0-9\s\-]+$/)
+        .pattern(/^[a-zA-Z\s\-]+$/)
         .required(),
 
     category: joi.string()

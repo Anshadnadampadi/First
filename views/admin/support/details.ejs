@@ -1,0 +1,222 @@
+<%- contentFor('body') %>
+
+<div class="space-y-10 max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div>
+            <div class="flex items-center gap-4 mb-4">
+                <a href="/admin/support" class="text-white/20 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
+                <span class="text-xs font-mono text-accent font-bold tracking-widest uppercase"><%= ticket.ticketId %></span>
+                <%- include('../../partials/status-badge', { status: ticket.status }) %>
+            </div>
+            <h1 class="text-3xl font-black tracking-tight uppercase text-white mb-2"><%= ticket.subject %></h1>
+            <p class="text-white/40 text-[10px] tracking-[0.2em] font-bold uppercase">Customer Inquiry Lifecycle: <%= ticket.category %></p>
+        </div>
+        <div class="flex gap-4">
+             <div x-data="statusUpdater" class="flex gap-2">
+                <select x-model="status" class="bg-black border border-white/10 px-4 py-3 text-[10px] text-white uppercase tracking-widest focus:outline-none focus:border-accent transition-colors font-bold">
+                    <option value="Open" <%= ticket.status === 'Open' ? 'selected' : '' %>>Open</option>
+                    <option value="In-Progress" <%= ticket.status === 'In-Progress' ? 'selected' : '' %>>In-Progress</option>
+                    <option value="Resolved" <%= ticket.status === 'Resolved' ? 'selected' : '' %>>Resolved</option>
+                    <option value="Closed" <%= ticket.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                </select>
+                <button @click="updateStatus" :disabled="isUpdating" 
+                    class="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all disabled:opacity-50">
+                    Update
+                </button>
+             </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <!-- Thread Area -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-black-surface border border-white/5 p-8 rounded-sm">
+                <div class="flex items-center gap-4 mb-6 pb-6 border-b border-white/5">
+                    <div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                        <img src="<%= ticket.user.profileImage || '/images/default-avatar.png' %>" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <p class="text-white text-[10px] font-black uppercase tracking-widest"><%= ticket.user.name %></p>
+                        <p class="text-white/30 text-[8px] font-bold uppercase tracking-widest">Original Transmission • <%= new Date(ticket.createdAt).toLocaleString() %></p>
+                    </div>
+                </div>
+                <div class="text-white/70 text-sm leading-relaxed">
+                    <%= ticket.message %>
+                </div>
+                <% if (ticket.orderId) { %>
+                    <div class="mt-6 pt-6 border-t border-white/5 flex items-center gap-4">
+                        <span class="text-[9px] text-white/30 font-bold uppercase tracking-widest">Linked Order</span>
+                        <a href="/admin/orders/details/<%= ticket.orderId %>" class="text-accent font-mono text-[10px] font-bold hover:underline">#<%= ticket.orderId %></a>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Responses -->
+            <div class="space-y-6">
+                <% ticket.responses.forEach(response => { %>
+                    <div class="flex gap-4 <%= response.isAdmin ? 'flex-row-reverse' : '' %>">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center overflow-hidden">
+                            <% if (response.isAdmin) { %>
+                                <div class="w-full h-full bg-accent flex items-center justify-center text-black font-black text-[10px]">AD</div>
+                            <% } else { %>
+                                <img src="<%= response.sender.profileImage || '/images/default-avatar.png' %>" class="w-full h-full object-cover">
+                            <% } %>
+                        </div>
+                        <div class="max-w-[85%] space-y-1 <%= response.isAdmin ? 'text-right' : '' %>">
+                            <p class="text-[9px] font-black <%= response.isAdmin ? 'text-accent' : 'text-white/40' %> uppercase tracking-widest">
+                                <%= response.isAdmin ? 'Support Team' : ticket.user.name %> • <%= new Date(response.timestamp).toLocaleTimeString() %>
+                            </p>
+                            <div class="bg-[#0a0a0a] border <%= response.isAdmin ? 'border-accent/20' : 'border-white/5' %> p-4 text-white/70 text-xs leading-relaxed inline-block text-left">
+                                <%= response.message %>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+
+            <!-- Respond Area -->
+            <% if (ticket.status !== 'Closed') { %>
+                <div x-data="ticketResponder" class="pt-10 border-t border-white/5">
+                    <form @submit.prevent="submitResponse" class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-white/30">Admin Response Protocol</label>
+                            <textarea x-model="message" rows="5" placeholder="Formulate resolution message..."
+                                class="w-full bg-black border border-white/10 p-6 text-white text-sm focus:outline-none focus:border-accent transition-colors resize-none font-mono"></textarea>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <label class="text-[9px] text-white/40 font-bold uppercase tracking-widest">Set Status After Sending</label>
+                                <select x-model="afterStatus" class="bg-black border border-white/10 px-3 py-2 text-[9px] text-white uppercase tracking-widest focus:outline-none focus:border-accent font-bold">
+                                    <option value="Resolved">Resolved</option>
+                                    <option value="In-Progress">In-Progress</option>
+                                    <option value="Closed">Closed</option>
+                                </select>
+                            </div>
+                            <button type="submit" :disabled="isSubmitting || !message"
+                                class="px-10 py-4 bg-white text-black font-black text-[10px] tracking-widest uppercase hover:bg-accent transition-all disabled:opacity-50">
+                                <span x-show="!isSubmitting">Transmit Response</span>
+                                <span x-show="isSubmitting">Processing...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="space-y-6">
+            <div class="bg-black-surface border border-white/5 p-8 rounded-sm">
+                <h3 class="text-white text-xs font-black uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Customer Dossier</h3>
+                <div class="space-y-6">
+                    <div>
+                        <p class="text-white/20 text-[8px] font-black uppercase tracking-widest mb-1">Display Name</p>
+                        <p class="text-white text-[10px] font-bold uppercase"><%= ticket.user.name %></p>
+                    </div>
+                    <div>
+                        <p class="text-white/20 text-[8px] font-black uppercase tracking-widest mb-1">Email Address</p>
+                        <p class="text-white text-[10px] font-mono"><%= ticket.user.email %></p>
+                    </div>
+                    <div>
+                        <p class="text-white/20 text-[8px] font-black uppercase tracking-widest mb-1">Ticket History</p>
+                        <a href="/admin/support?search=<%= ticket.user.email %>" class="text-accent text-[9px] font-black uppercase tracking-widest hover:underline">View All Inquiries</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-black-surface border border-white/5 p-8 rounded-sm">
+                <h3 class="text-white text-xs font-black uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Incident Metadata</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">
+                        <span class="text-white/20">Priority</span>
+                        <span class="<%= ticket.priority === 'High' ? 'text-status-danger' : 'text-white' %>"><%= ticket.priority %></span>
+                    </div>
+                    <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">
+                        <span class="text-white/20">Category</span>
+                        <span class="text-white"><%= ticket.category %></span>
+                    </div>
+                    <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">
+                        <span class="text-white/20">Reference</span>
+                        <span class="text-white font-mono"><%= ticket.ticketId %></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const registerStatusUpdater = () => {
+            if (Alpine.data('statusUpdater')) return;
+            Alpine.data('statusUpdater', () => ({
+                status: '<%= ticket.status %>',
+                isUpdating: false,
+                async updateStatus() {
+                    this.isUpdating = true;
+                    try {
+                        const res = await fetch('/admin/support/ticket/<%= ticket._id %>/status', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: this.status })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message, type: 'success' } }));
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    } catch (error) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message || "Failed to update status.", type: 'error' } }));
+                    } finally {
+                        this.isUpdating = false;
+                    }
+                }
+            }));
+        };
+
+        const registerResponder = () => {
+            if (Alpine.data('ticketResponder')) return;
+            Alpine.data('ticketResponder', () => ({
+                message: '',
+                afterStatus: 'Resolved',
+                isSubmitting: false,
+                async submitResponse() {
+                    if (!this.message) return;
+                    this.isSubmitting = true;
+                    try {
+                        const res = await fetch('/admin/support/ticket/<%= ticket._id %>/respond', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: this.message, status: this.afterStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message, type: 'success' } }));
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    } catch (error) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message || "Failed to send response.", type: 'error' } }));
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                }
+            }));
+        };
+
+        if (window.Alpine) {
+            registerStatusUpdater();
+            registerResponder();
+        } else {
+            document.addEventListener('alpine:init', () => {
+                registerStatusUpdater();
+                registerResponder();
+            });
+        }
+    })();
+</script>

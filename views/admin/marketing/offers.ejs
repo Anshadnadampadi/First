@@ -1,7 +1,7 @@
 <!-- views/admin/marketing/offers.ejs -->
 <%- contentFor('body') %>
 
-    <div class="space-y-10" x-data="offerManager()">
+    <div class="space-y-10" x-data="offerManager">
         <div class="flex justify-between items-end">
             <div>
                 <h1 class="text-3xl font-bold tracking-tight uppercase text-white mb-2">PROMOTIONAL OFFERS.</h1>
@@ -114,23 +114,29 @@
                         <div class="space-y-1" x-show="formData.type === 'Product'">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Select Product</label>
                             <select x-model="formData.productId"
-                                class="w-full bg-black border border-white/10 px-3 py-2 text-white text-xs focus:border-accent focus:outline-none transition-colors">
+                                @change="validateField('productId')"
+                                :class="formErrors.productId ? 'border-status-danger' : 'border-white/10'"
+                                class="w-full bg-black border px-3 py-2 text-white text-xs focus:border-accent focus:outline-none transition-colors">
                                 <option value="">-- Choose Product --</option>
                                 <% products.forEach(product => { %>
                                     <option value="<%= product._id %>"><%= product.name %></option>
                                 <% }) %>
                             </select>
+                            <p x-show="formErrors.productId" class="text-status-danger text-[10px] mt-1" x-text="formErrors.productId"></p>
                         </div>
 
                         <div class="space-y-1" x-show="formData.type === 'Category'">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Select Category</label>
                             <select x-model="formData.categoryId"
-                                class="w-full bg-black border border-white/10 px-3 py-2 text-white text-xs focus:border-accent focus:outline-none transition-colors">
+                                @change="validateField('categoryId')"
+                                :class="formErrors.categoryId ? 'border-status-danger' : 'border-white/10'"
+                                class="w-full bg-black border px-3 py-2 text-white text-xs focus:border-accent focus:outline-none transition-colors">
                                 <option value="">-- Choose Category --</option>
                                 <% categories.forEach(category => { %>
                                     <option value="<%= category._id %>"><%= category.name %></option>
                                 <% }) %>
                             </select>
+                            <p x-show="formErrors.categoryId" class="text-status-danger text-[10px] mt-1" x-text="formErrors.categoryId"></p>
                         </div>
 
                         <div class="space-y-1">
@@ -152,10 +158,12 @@
                     </div>
 
                     <div class="flex items-center gap-3 pt-5 border-t border-white/5">
-                        <button type="button" @click="closeModal()"
-                            class="flex-1 py-3 border border-white/10 text-white text-[10px] font-bold tracking-widest uppercase hover:bg-white/5 transition-all">Cancel</button>
-                        <button type="submit"
-                            class="flex-1 py-3 bg-accent text-black text-[10px] font-bold tracking-widest uppercase hover:bg-white transition-all btn-press shadow-[0_0_15px_rgba(255,106,0,0.3)]">Save</button>
+                        <button type="button" @click="closeModal()" :disabled="isSubmitting"
+                            class="flex-1 py-3 border border-white/10 text-white text-[10px] font-bold tracking-widest uppercase hover:bg-white/5 disabled:opacity-50 transition-all">Cancel</button>
+                        <button type="submit" :disabled="isSubmitting"
+                            class="flex-1 py-3 bg-accent text-black text-[10px] font-bold tracking-widest uppercase hover:bg-white disabled:opacity-50 transition-all btn-press shadow-[0_0_15px_rgba(255,106,0,0.3)]">
+                            Save Offer
+                        </button>
                     </div>
                 </form>
             </div>
@@ -163,31 +171,15 @@
     </div>
 
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('offerManager', () => ({
-                showModal: false,
-                isEditing: false,
-                currentId: null,
-                formData: {
-                    name: '',
-                    type: 'Product',
-                    discountType: 'percentage',
-                    discountValue: '',
-                    productId: '',
-                    categoryId: '',
-                    expiryDate: ''
-                },
-                formErrors: {
-                    name: '',
-                    discountValue: '',
-                    expiryDate: '',
-                    productId: '',
-                    categoryId: ''
-                },
-                openCreateModal() {
-                    this.isEditing = false;
-                    this.currentId = null;
-                    this.formData = {
+        (() => {
+            const register = () => {
+                if (Alpine.data('offerManager')) return;
+                Alpine.data('offerManager', () => ({
+                    showModal: false,
+                    isEditing: false,
+                    isSubmitting: false,
+                    currentId: null,
+                    formData: {
                         name: '',
                         type: 'Product',
                         discountType: 'percentage',
@@ -195,130 +187,165 @@
                         productId: '',
                         categoryId: '',
                         expiryDate: ''
-                    };
-                    Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
-                    this.showModal = true;
-                },
-                openEditModal(id, name, type, dType, val, pId, cId, expiry) {
-                    this.isEditing = true;
-                    this.currentId = id;
-                    this.formData = {
-                        name: name,
-                        type: type,
-                        discountType: dType,
-                        discountValue: val,
-                        productId: pId || '',
-                        categoryId: cId || '',
-                        expiryDate: expiry || ''
-                    };
-                    Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
-                    this.showModal = true;
-                },
-                async toggleStatus(id) {
-                    try {
-                        const res = await fetch(`/admin/marketing/offers/toggle/${id}`, { method: 'PATCH' });
-                        const data = await res.json();
-                        if (data.success) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer status updated', type: 'success' } }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to update status', type: 'error' } }));
+                    },
+                    formErrors: {
+                        name: '',
+                        discountValue: '',
+                        expiryDate: '',
+                        productId: '',
+                        categoryId: ''
+                    },
+                    openCreateModal() {
+                        this.isEditing = false;
+                        this.isSubmitting = false;
+                        this.currentId = null;
+                        this.formData = {
+                            code: '', // Note: there is no code in offers, but keeping consistency with existing formData structure if any
+                            name: '',
+                            type: 'Product',
+                            discountType: 'percentage',
+                            discountValue: '',
+                            productId: '',
+                            categoryId: '',
+                            expiryDate: ''
+                        };
+                        Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
+                        this.showModal = true;
+                    },
+                    openEditModal(id, name, type, dType, val, pId, cId, expiry) {
+                        this.isEditing = true;
+                        this.currentId = id;
+                        this.formData = {
+                            name: name,
+                            type: type,
+                            discountType: dType,
+                            discountValue: val,
+                            productId: pId || '',
+                            categoryId: cId || '',
+                            expiryDate: expiry || ''
+                        };
+                        Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
+                        this.showModal = true;
+                    },
+                    async toggleStatus(id) {
+                        try {
+                            const res = await fetch(`/admin/marketing/offers/toggle/${id}`, { method: 'PATCH' });
+                            const data = await res.json();
+                            if (data.success) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer status updated', type: 'success' } }));
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to update status', type: 'error' } }));
+                            }
+                        } catch (err) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
                         }
-                    } catch (err) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
-                    }
-                },
-                async deleteOffer(id) {
-                    if (!await window.confirmAction({ title: 'Delete Offer?', message: 'Are you sure you want to permanently delete this offer?', confirmText: 'Delete', type: 'danger' })) return;
-                    
-                    try {
-                        const res = await fetch(`/admin/marketing/offers/delete/${id}`, { method: 'DELETE' });
-                        const data = await res.json();
-                        if (data.success) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer deleted successfully', type: 'success' } }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to delete offer', type: 'error' } }));
+                    },
+                    async deleteOffer(id) {
+                        if (!await window.confirmAction({ title: 'Delete Offer?', message: 'Are you sure you want to permanently delete this offer?', confirmText: 'Delete', type: 'danger' })) return;
+                        
+                        try {
+                            const res = await fetch(`/admin/marketing/offers/delete/${id}`, { method: 'DELETE' });
+                            const data = await res.json();
+                            if (data.success) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer deleted successfully', type: 'success' } }));
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to delete offer', type: 'error' } }));
+                            }
+                        } catch (err) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
                         }
-                    } catch (err) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
-                    }
-                },
-                closeModal() {
-                    this.showModal = false;
-                },
-                validateField(field) {
-                    const v = this.formData;
-                    this.formErrors[field] = '';
+                    },
+                    closeModal() {
+                        this.showModal = false;
+                    },
+                    validateField(field) {
+                        const v = this.formData;
+                        this.formErrors[field] = '';
 
-                    if (field === "name") {
-                        if (!v.name || v.name.trim().length < 3) this.formErrors.name = "Min 3 chars";
-                    }
-
-                    if (field === "discountValue") {
-                        if (!v.discountValue || v.discountValue <= 0) {
-                            this.formErrors.discountValue = "Must be > 0";
-                        } else if (v.discountType === "percentage" && v.discountValue > 99) {
-                            this.formErrors.discountValue = "Max 99%";
-                        }
-                    }
-
-                    if (field === "expiryDate") {
-                        if (!v.expiryDate) {
-                            this.formErrors.expiryDate = "Required";
-                        } else {
-                            const selected = new Date(v.expiryDate);
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            if (selected < today) this.formErrors.expiryDate = "Cannot be a past date";
-                        }
-                    }
-                },
-                validateAll() {
-                    const fields = ["name", "discountValue", "expiryDate"];
-                    fields.forEach(f => this.validateField(f));
-                    
-                    if (this.formData.type === 'Product' && !this.formData.productId) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Please select a product', type: 'error' } }));
-                        return false;
-                    }
-                    if (this.formData.type === 'Category' && !this.formData.categoryId) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Please select a category', type: 'error' } }));
-                        return false;
-                    }
-
-                    return Object.values(this.formErrors).every(e => !e);
-                },
-                async submitForm() {
-                    if (!this.validateAll()) return;
-
-                    try {
-                        const url = this.isEditing
-                            ? `/admin/marketing/offers/update/${this.currentId}`
-                            : '/admin/marketing/offers/create';
-
-                        const method = this.isEditing ? 'PUT' : 'POST';
-
-                        const res = await fetch(url, {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.formData)
-                        });
-
-                        const data = await res.json();
-
-                        if (data.success) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer saved successfully!', type: 'success' } }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to save offer', type: 'error' } }));
+                        if (field === "name") {
+                            if (!v.name || v.name.trim().length < 3) this.formErrors.name = "Min 3 chars";
                         }
 
-                    } catch (err) {
-                        console.error(err);
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
+                        if (field === "discountValue") {
+                            if (!v.discountValue || v.discountValue <= 0) {
+                                this.formErrors.discountValue = "Must be > 0";
+                            } else if (v.discountType === "percentage" && v.discountValue > 99) {
+                                this.formErrors.discountValue = "Max 99%";
+                            }
+                        }
+
+                        if (field === "expiryDate") {
+                            if (!v.expiryDate) {
+                                this.formErrors.expiryDate = "Required";
+                            } else {
+                                const selected = new Date(v.expiryDate);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                if (selected < today) this.formErrors.expiryDate = "Cannot be a past date";
+                            }
+                        }
+
+                        if (field === "productId" && v.type === 'Product') {
+                            if (!v.productId) this.formErrors.productId = "Select a product";
+                        }
+
+                        if (field === "categoryId" && v.type === 'Category') {
+                            if (!v.categoryId) this.formErrors.categoryId = "Select a category";
+                        }
+                    },
+                    validateAll() {
+                        const fields = ["name", "discountValue", "expiryDate", "productId", "categoryId"];
+                        fields.forEach(f => this.validateField(f));
+                        return Object.values(this.formErrors).every(e => !e);
+                    },
+                    async submitForm() {
+                        if (this.isSubmitting) return;
+                        if (!this.validateAll()) return;
+
+                        this.isSubmitting = true;
+                        try {
+                            const url = this.isEditing
+                                ? `/admin/marketing/offers/update/${this.currentId}`
+                                : '/admin/marketing/offers/create';
+
+                            const method = this.isEditing ? 'PUT' : 'POST';
+
+                            const res = await fetch(url, {
+                                method,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(this.formData)
+                            });
+
+                            const data = await res.json();
+
+                            if (data.success) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer saved successfully!', type: 'success' } }));
+                                this.closeModal();
+                                if (window.SpaNavigation) {
+                                    window.SpaNavigation.loadPage(window.location.href, false);
+                                } else {
+                                    setTimeout(() => window.location.reload(), 1000);
+                                }
+                            } else {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to save offer', type: 'error' } }));
+                                this.isSubmitting = false;
+                            }
+
+                        } catch (err) {
+                            console.error(err);
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
+                            this.isSubmitting = false;
+                        }
                     }
-                }
-            }));
-        });
+                }));
+            };
+
+            if (window.Alpine) {
+                register();
+            } else {
+                document.addEventListener('alpine:init', register);
+            }
+        })();
     </script>

@@ -9,6 +9,8 @@ import adminRoutes from "./routes/admin/adminRoutes.js"
 import productRoutes from "./routes/products/productRoutes.js";
 import Cart from "./models/cart/Cart.js";
 import wishlistRoutes from "./routes/user/wishlistRoutes.js"
+import supportRoutes from "./routes/user/supportRoutes.js"
+import adminSupportRoutes from "./routes/admin/supportRoutes.js"
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import connectDB from "./config/db.js"
@@ -105,6 +107,7 @@ app.use(nocache())
 app.use("/", userRoutes);
 app.use("/", productRoutes);
 app.use("/wishlist",wishlistRoutes)
+app.use("/support", supportRoutes);
 
 app.use("/admin", 
     nocache(),  
@@ -113,6 +116,15 @@ app.use("/admin",
         next();
     },
     adminRoutes
+);
+
+app.use("/admin/support", 
+    nocache(),
+    (req, res, next) => {
+        res.locals.layout = "layouts/admin";
+        next();
+    },
+    adminSupportRoutes
 );
 
 

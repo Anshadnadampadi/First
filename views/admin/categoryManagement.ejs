@@ -3,191 +3,141 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
 
-<div class="space-y-10" x-data="{ 
-    showModal: false, 
-    isEdit: false,
-    previewUrl: null,
-    form: { id: '', name: '', slug: '', displayOrder: 0, metaDescription: '' },
-    errors: {},
-    cropper: null,
-    croppedBlob: null,
-    isCropping: false,
-    openAdd() {
-        this.isEdit = false;
-        this.form = { id: '', name: '', slug: '', displayOrder: 0, metaDescription: '' };
-        this.errors = {};
-        this.previewUrl = null;
-        this.croppedBlob = null;
-        this.showModal = true;
-        this.isCropping = false;
-        this.$refs.iconInput.value = '';
-    },
-    async openEdit(id) {
-        this.isEdit = true;
-        this.errors = {};
-        try {
-            const res = await fetch(`/admin/categories/api/${id}`);
-            const data = await res.json();
-            this.form = { 
-                id: data._id, 
-                name: data.name, 
-                slug: data.slug, 
-                displayOrder: data.displayOrder || 0,
-                metaDescription: data.metaDescription || ''
+<div class="space-y-10" x-data="categoryManager">
+    <script>
+        (() => {
+            const register = () => {
+                if (Alpine.data('categoryManager')) return;
+                Alpine.data('categoryManager', () => ({
+                    showModal: false, 
+                    isEdit: false,
+                    previewUrl: null,
+                    form: { id: '', name: '', slug: '', displayOrder: 0, metaDescription: '' },
+                    errors: { name: '', slug: '', displayOrder: '', metaDescription: '' },
+                    cropper: null,
+                    croppedBlob: null,
+                    isCropping: false,
+
+                    openAdd() {
+                        this.isEdit = false;
+                        this.form = { id: '', name: '', slug: '', displayOrder: 0, metaDescription: '' };
+                        this.errors = { name: '', slug: '', displayOrder: '', metaDescription: '' };
+                        this.previewUrl = null;
+                        this.croppedBlob = null;
+                        this.showModal = true;
+                        this.isCropping = false;
+                        if (this.$refs.iconInput) this.$refs.iconInput.value = '';
+                    },
+
+                    async openEdit(id) {
+                        this.isEdit = true;
+                        this.errors = { name: '', slug: '', displayOrder: '', metaDescription: '' };
+                        try {
+                            const res = await fetch(`/admin/categories/api/${id}`);
+                            const data = await res.json();
+                            this.form = { 
+                                id: data._id, 
+                                name: data.name, 
+                                slug: data.slug, 
+                                displayOrder: data.displayOrder || 0,
+                                metaDescription: data.metaDescription || ''
+                            };
+                            this.previewUrl = data.icon;
+                            this.showModal = true;
+                            this.isCropping = false;
+                            if (this.$refs.iconInput) this.$refs.iconInput.value = '';
+                        } catch (error) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Fetch error.', type: 'error' } }));
+                        }
+                    },
+
+                    handleFileChange(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.isCropping = true;
+                            this.$nextTick(() => {
+                                const img = this.$refs.cropperImage;
+                                img.onload = () => {
+                                    if (this.cropper) this.cropper.destroy();
+                                    this.cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1, background: false, autoCropArea: 1 });
+                                };
+                                img.src = event.target.result;
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    },
+
+                    async commitCrop() {
+                        if (!this.cropper) return;
+                        try {
+                            const canvas = this.cropper.getCroppedCanvas();
+                            canvas.toBlob((blob) => {
+                                this.croppedBlob = blob;
+                                this.previewUrl = URL.createObjectURL(blob);
+                                this.closeCropper();
+                            }, 'image/jpeg', 0.9);
+                        } catch (err) { this.closeCropper(); }
+                    },
+
+                    cancelCrop() { this.closeCropper(); if (this.$refs.iconInput) this.$refs.iconInput.value = ''; },
+                    closeCropper() {
+                        if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
+                        this.isCropping = false;
+                    },
+
+                    validate() {
+                        Object.keys(this.errors).forEach(key => this.errors[key] = '');
+                        let isValid = true;
+                        if (!this.form.name || this.form.name.trim().length < 3) { this.errors.name = 'Name too short.'; isValid = false; }
+                        const slugRegex = /^[a-z0-9-]+$/;
+                        if (!this.form.slug || !slugRegex.test(this.form.slug)) { this.errors.slug = 'Invalid slug.'; isValid = false; }
+                        return isValid;
+                    },
+
+                    async submitForm() {
+                        if (!this.validate()) return;
+                        this.isSubmitting = true;
+                        const url = this.isEdit ? `/admin/categories/edit/${this.form.id}` : '/admin/categories/add';
+                        const method = this.isEdit ? 'PUT' : 'POST';
+                        const formData = new FormData();
+                        Object.keys(this.form).forEach(key => formData.append(key, this.form[key]));
+                        if (this.croppedBlob) formData.append('icon', this.croppedBlob, 'icon.jpg');
+                        try {
+                            const res = await fetch(url, { method, body: formData });
+                            const result = await res.json();
+                            if (result.success) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Success', type: 'success' } }));
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else { throw new Error(result.message); }
+                        } catch (error) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message || 'Error', type: 'error' } }));
+                        } finally { this.isSubmitting = false; }
+                    },
+
+                    async toggleStatus(id, currentStatus) {
+                        const action = currentStatus ? 'Show' : 'Hide';
+                        const confirmed = await window.confirmAction({ title: `${action.toUpperCase()} CATEGORY?`, message: `Update visibility?`, type: 'warning' });
+                        if (confirmed) {
+                            const res = await fetch(`/admin/categories/delete/${id}`, { method: 'PATCH' });
+                            const result = await res.json();
+                            if (result.success) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Updated', type: 'success' } }));
+                                setTimeout(() => window.location.reload(), 1000);
+                            }
+                        }
+                    }
+                }));
             };
-            this.previewUrl = data.icon;
-            this.showModal = true;
-            this.isCropping = false;
-            this.$refs.iconInput.value = '';
-        } catch (error) {
-            window.dispatchEvent(new CustomEvent('show-toast', { 
-                detail: { message: 'Failed to fetch category details.', type: 'error' } 
-            }));
-        }
-    },
-    handleFileChange(e) {
-        const file = e.target.files[0];
-        if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            this.isCropping = true;
-            this.$nextTick(() => {
-                const img = this.$refs.cropperImage;
-                img.onload = () => {
-                    if (this.cropper) this.cropper.destroy();
-                    this.cropper = new Cropper(img, {
-                        aspectRatio: 1,
-                        viewMode: 1,
-                        background: false,
-                        autoCropArea: 1
-                    });
-                };
-                img.src = event.target.result;
-            });
-        };
-        reader.readAsDataURL(file);
-    },
-    async commitCrop() {
-        if (!this.cropper) return;
-        
-        try {
-            const canvas = this.cropper.getCroppedCanvas();
-            if (!canvas) throw new Error('Canvas generation failed');
-
-            canvas.toBlob((blob) => {
-                this.croppedBlob = blob;
-                this.previewUrl = URL.createObjectURL(blob);
-                this.closeCropper();
-            }, 'image/jpeg', 0.9);
-        } catch (err) {
-            console.error('Crop Error:', err);
-            this.closeCropper();
-        }
-    },
-    cancelCrop() {
-        this.closeCropper();
-        this.$refs.iconInput.value = '';
-    },
-    closeCropper() {
-        if (this.cropper) {
-            this.cropper.destroy();
-            this.cropper = null;
-        }
-        this.isCropping = false;
-        this.$nextTick(() => { window.dispatchEvent(new Event('resize')); });
-    },
-    validate() {
-        this.errors = {};
-        let isValid = true;
-
-        if (!this.form.name || this.form.name.trim().length < 3) {
-            this.errors.name = 'Name must be at least 3 characters.';
-            isValid = false;
-        } else if (this.form.name.length > 50) {
-            this.errors.name = 'Name cannot exceed 50 characters.';
-            isValid = false;
-        }
-
-        const slugRegex = /^[a-z0-9-]+$/;
-        if (!this.form.slug || !slugRegex.test(this.form.slug)) {
-            this.errors.slug = 'Slug must be lowercase alphanumeric and hyphens only.';
-            isValid = false;
-        }
-
-        if (this.form.displayOrder < 0) {
-            this.errors.displayOrder = 'Order must be non-negative.';
-            isValid = false;
-        }
-
-        if (this.form.metaDescription && this.form.metaDescription.length > 200) {
-            this.errors.metaDescription = 'Description cannot exceed 200 characters.';
-            isValid = false;
-        }
-
-        return isValid;
-    },
-    async submitForm() {
-        if (!this.validate()) return;
-
-        const url = this.isEdit ? `/admin/categories/edit/${this.form.id}` : '/admin/categories/add';
-        const method = this.isEdit ? 'PUT' : 'POST';
-        
-        const formData = new FormData();
-        formData.append('name', this.form.name);
-        formData.append('slug', this.form.slug);
-        formData.append('displayOrder', this.form.displayOrder);
-        formData.append('metaDescription', this.form.metaDescription);
-        
-        if (this.croppedBlob) {
-            formData.append('icon', this.croppedBlob, 'category-icon.jpg');
-        } else if (this.$refs.iconInput.files[0]) {
-            formData.append('icon', this.$refs.iconInput.files[0]);
-        }
-
-        try {
-            const res = await fetch(url, {
-                method: method,
-                body: formData
-            });
-            
-            const result = await res.json();
-            if (result.success) {
-                window.dispatchEvent(new CustomEvent('show-toast', { 
-                    detail: { message: result.message || (this.isEdit ? 'Category updated successfully!' : 'Category created successfully!'), type: 'success' } 
-                }));
-                setTimeout(() => window.location.reload(), 1500);
+            if (window.Alpine) {
+                register();
             } else {
-                window.dispatchEvent(new CustomEvent('show-toast', { 
-                    detail: { message: result.message || 'Operation failed.', type: 'error' } 
-                }));
+                document.addEventListener('alpine:init', register);
             }
-        } catch (error) {
-            window.dispatchEvent(new CustomEvent('show-toast', { 
-                detail: { message: 'An unexpected system error occurred.', type: 'error' } 
-            }));
-        }
-    },
-    async toggleStatus(id, currentStatus) {
-        const action = currentStatus ? 'Show' : 'Hide';
-        const confirmed = await window.confirmAction({
-            title: `${action.toUpperCase()} CATEGORY?`,
-            message: `This will change the visibility of the category in the shop.`,
-            type: 'warning'
-        });
-
-        if (confirmed) {
-            const res = await fetch(`/admin/categories/delete/${id}`, { method: 'PATCH' });
-            const result = await res.json();
-            if (result.success) {
-                window.dispatchEvent(new CustomEvent('show-toast', { 
-                    detail: { message: `Category ${action.toLowerCase()} successfully!`, type: 'success' } 
-                }));
-                setTimeout(() => window.location.reload(), 1000);
-            }
-        }
-    }
-}">
+        })();
+    </script>
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
@@ -301,17 +251,19 @@
                     <button @click="showModal = false" class="text-white/20 hover:text-white transition-colors">✕</button>
                 </div>
 
-                <form @submit.prevent="submitForm()" class="p-8 space-y-8 text-left">
+                <form @submit.prevent="submitForm()" data-no-spa="true" class="p-8 space-y-8 text-left">
                     <div class="grid grid-cols-2 gap-8">
                         <div class="space-y-3">
                             <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Name</label>
                             <input type="text" x-model="form.name" @input="errors.name = ''" 
                                    class="w-full bg-black/40 border border-white/10 rounded-lg py-4 px-6 text-xs text-white focus:outline-none focus:border-accent">
+                            <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; font-weight:500;"></p>
                         </div>
                         <div class="space-y-3">
                             <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">URL Path</label>
                             <input type="text" x-model="form.slug" @input="errors.slug = ''" 
                                    class="w-full bg-black/40 border border-white/10 rounded-lg py-4 px-6 text-xs text-white focus:outline-none focus:border-accent">
+                            <p x-show="errors.slug" x-text="errors.slug" class="text-red-500 text-xs mt-1" style="color:#ef4444; font-size:12px; font-weight:500;"></p>
                         </div>
                     </div>
 

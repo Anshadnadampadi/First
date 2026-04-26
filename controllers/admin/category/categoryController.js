@@ -1,4 +1,5 @@
 import * as adminCategoryServices from "../../../services/admin/adminCategoryServices.js";
+import { categoryValidate } from "../../../validation/admin/adminValidation.js";
 
 export const getCategories = async (req, res) => {
     try {
@@ -30,7 +31,15 @@ export const getCategoryById = async (req, res) => {
 
 export const addCategory = async (req, res) => {
     try {
-        await adminCategoryServices.createCategory(req.body, req.file);
+        const { error, value } = categoryValidate.validate(req.body);
+        if (error) {
+            return res.status(400).json({ 
+                success: false, 
+                message: error.details[0].message 
+            });
+        }
+
+        await adminCategoryServices.createCategory(value, req.file);
         return res.status(201).json({ 
             success: true, 
             message: "Category created successfully!" 
@@ -61,7 +70,15 @@ export const addCategory = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
     try {
-        await adminCategoryServices.updateCategory(req.params.id, req.body, req.file);
+        const { error, value } = categoryValidate.validate({ ...req.body, id: req.params.id });
+        if (error) {
+            return res.status(400).json({ 
+                success: false, 
+                message: error.details[0].message 
+            });
+        }
+
+        await adminCategoryServices.updateCategory(req.params.id, value, req.file);
         res.json({ success: true, message: "Category updated successfully!" });
     } catch (error) {
         console.error("Update Error:", error);

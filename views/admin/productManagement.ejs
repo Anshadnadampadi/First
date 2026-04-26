@@ -2,8 +2,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
 
-    <div class="space-y-10" x-data="productManager()">
-
+    <div class="space-y-10" x-data="productManager">
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div>
@@ -175,7 +174,7 @@
                                 <button @click="showEditModal = false" class="text-white/20 hover:text-white transition-colors">✕</button>
                             </div>
 
-                            <form @submit.prevent="submitForm(true)" class="p-8 space-y-6 text-left">
+                            <form @submit.prevent="submitForm(true)" data-no-spa="true" class="p-8 space-y-6 text-left">
                                 <div class="grid grid-cols-2 gap-6">
                                     <div class="space-y-2">
                                         <label class="text-[10px] font-bold uppercase tracking-widest text-white/40 block">Product Name</label>
@@ -290,259 +289,141 @@
 
 
     <script>
-        function productManager() {
-            return {
-                showEditModal: false,
-                showCropModal: false,
-                isSubmitting: false,
-                cropper: null,
-                fileQueue: [],
-                editPreviews: [],
-                editSelectedFiles: [],
-                isEditMode: false,
-                form: { id: '', name: '', brand: '', category: '', price: '', stock: '' },
-                errors: {},
+        (() => {
+            const register = () => {
+                if (Alpine.data('productManager')) return;
+                Alpine.data('productManager', () => ({
+                    showEditModal: false,
+                    isSubmitting: false,
+                    showCropModal: false,
+                    cropper: null,
+                    fileQueue: [],
+                    isEditMode: false,
+                    form: { id: '', name: '', brand: '', category: '', price: '', stock: '' },
+                    errors: { name: '', brand: '', category: '', price: '', stock: '' },
 
-                validate() {
-                    this.errors = {};
-                    let isValid = true;
-
-                    if (!this.form.name || this.form.name.trim().length < 3) {
-                        this.errors.name = 'Name must be at least 3 characters.';
-                        isValid = false;
-                    }
-
-                    if (!this.form.brand || this.form.brand.trim() === '') {
-                        this.errors.brand = 'Brand is required.';
-                        isValid = false;
-                    }
-
-                    if (!this.form.category) {
-                        this.errors.category = 'Category is required.';
-                        isValid = false;
-                    }
-
-                    if (!this.form.price || parseFloat(this.form.price) <= 0) {
-                        this.errors.price = 'Price must be a positive number.';
-                        isValid = false;
-                    }
-
-                    if (this.form.stock === '' || parseInt(this.form.stock) < 0) {
-                        this.errors.stock = 'Stock must be non-negative.';
-                        isValid = false;
-                    }
-
-                    // Asset Management moved to Variants
-
-                    return isValid;
-                },
-
-                async openEdit(id) {
-                    this.errors = {};
-                    try {
-                        const res = await fetch(`/admin/products/json/${id}`);
-                        const result = await res.json();
-                        if (result.success) {
-                            const prod = result.product;
-                            this.form = {
-                                id: prod._id,
-                                name: prod.name,
-                                brand: prod.brand,
-                                category: prod.category?._id || "",
-                                price: prod.price,
-                                stock: prod.stock
-                            };
-                            this.editPreviews = prod.images || [];
-                            this.editSelectedFiles = [];
-                            this.showEditModal = true;
-                        } else {
-                            this.showError(result.message || 'Could not fetch product details.');
-                        }
-                    } catch (error) {
-                        this.showError('Could not fetch product details.');
-                    }
-                },
-
-                handleFileChange(e, isEdit = false) {
-                    const files = Array.from(e.target.files);
-                    if (files.length === 0) return;
-
-                    const currentCount = isEdit ? this.editSelectedFiles.length : 0;
-                    if (currentCount + files.length > 5) {
-                        this.showError("You can upload maximum 5 images.");
-                        e.target.value = '';
-                        return;
-                    }
-
-                    this.isEditMode = isEdit;
-                    this.fileQueue = [...files];
-                    this.processNextInQueue();
-                    e.target.value = '';
-                },
-
-                processNextInQueue() {
-                    if (this.fileQueue.length === 0) return;
-
-                    const file = this.fileQueue.shift();
-                    const reader = new FileReader();
-
-                    reader.onload = (event) => {
-                        this.showCropModal = true;
-                        setTimeout(() => {
-                            this.$refs.cropImage.src = event.target.result;
-                            if (this.cropper) this.cropper.destroy();
-                            this.cropper = new Cropper(this.$refs.cropImage, {
-                                aspectRatio: 1,
-                                viewMode: 1,
-                                autoCropArea: 1,
-                                background: false,
-                                zoomable: true
-                            });
-                        }, 100);
-                    };
-                    reader.readAsDataURL(file);
-                },
-
-                confirmCrop() {
-                    if (!this.cropper) return;
-
-                    this.cropper.getCroppedCanvas({
-                        width: 600,
-                        height: 600
-                    }).toBlob((blob) => {
-                        const imageObj = {
-                            file: blob,
-                            url: URL.createObjectURL(blob)
-                        };
-
-                        if (this.isEditMode) {
-                            this.editSelectedFiles.push(imageObj);
-                        }
-
-                        this.closeCropModal();
-
-                        if (this.fileQueue.length > 0) {
-                            setTimeout(() => this.processNextInQueue(), 300);
-                        }
-                    }, "image/jpeg", 0.9);
-                },
-
-                cancelCrop() {
-                    this.closeCropModal();
-                    this.fileQueue = [];
-                },
-
-                closeCropModal() {
-                    if (this.cropper) {
-                        this.cropper.destroy();
-                        this.cropper = null;
-                    }
-                    this.showCropModal = false;
-                },
-
-                removeFile(index, isEdit = false) {
-                    const targetArray = isEdit ? this.editSelectedFiles : [];
-                    if (targetArray[index]) {
-                        URL.revokeObjectURL(targetArray[index].url);
-                        targetArray.splice(index, 1);
-                    }
-                },
-
-                async submitForm(isEdit = false) {
-                    if (this.isSubmitting) return;
-
-                    if (!this.validate()) {
-                        return this.showError(Object.values(this.errors)[0]);
-                    }
-
-                    this.isSubmitting = true;
-                    const formData = new FormData();
-
-                    formData.append('name', this.form.name);
-                    formData.append('brand', this.form.brand);
-                    formData.append('category', this.form.category);
-                    formData.append('price', this.form.price);
-                    formData.append('stock', this.form.stock);
-
-                    // Asset Management moved to Variants
-
-                    try {
-                        const url = isEdit
-                            ? "/admin/products/update/" + this.form.id
-                            : "/admin/products/add";
-
-                        const method = isEdit ? 'PATCH' : 'POST';
-                        const res = await fetch(url, { method, body: formData });
-                        const result = await res.json();
-
-                        if (result.success) {
-                            this.showSuccess(result.message);
-                        } else {
-                            this.showError(result.message);
-                        }
-                    } catch (err) {
-                        this.showError("Something went wrong during synchronization.");
-                    } finally {
-                        this.isSubmitting = false;
-                    }
-                },
-
-                async toggleStatus(id) {
-                    const confirmed = await window.confirmAction({
-                        title: 'TOGGLE VISIBILITY?',
-                        message: 'This will change how the product appears to customers.',
-                        type: 'warning'
-                    });
-
-                    if (confirmed) {
+                    async openEdit(id) {
+                        this.isEditMode = true;
+                        this.errors = { name: '', brand: '', category: '', price: '', stock: '' };
                         try {
-                            const res = await fetch(`/admin/products/toggle-status/${id}`, { method: 'PATCH' });
+                            const res = await fetch(`/admin/products/json/${id}`);
                             const result = await res.json();
+                            if (result.success) {
+                                const prod = result.product;
+                                this.form = {
+                                    id: prod._id,
+                                    name: prod.name,
+                                    brand: prod.brand,
+                                    category: prod.category?._id || prod.category || "",
+                                    price: prod.price,
+                                    stock: prod.stock
+                                };
+                                this.showEditModal = true;
+                            } else {
+                                this.showError(result.message || 'Could not fetch product details.');
+                            }
+                        } catch (error) {
+                            this.showError('Could not fetch product details.');
+                        }
+                    },
+
+                    validate() {
+                        Object.keys(this.errors).forEach(key => this.errors[key] = '');
+                        let isValid = true;
+                        
+                        const nameVal = this.form.name ? this.form.name.trim() : '';
+                        if (!nameVal || nameVal.length < 3) {
+                            this.errors.name = 'Name must be at least 3 characters.';
+                            isValid = false;
+                        } else if (!/[a-zA-Z]/.test(nameVal)) {
+                            this.errors.name = 'Name must contain letters.';
+                            isValid = false;
+                        }
+                        
+                        const brandVal = this.form.brand ? this.form.brand.trim() : '';
+                        if (!brandVal || brandVal.length < 2) {
+                            this.errors.brand = 'Brand must be at least 2 characters.';
+                            isValid = false;
+                        } else if (!/[a-zA-Z]/.test(brandVal)) {
+                            this.errors.brand = 'Brand must contain letters.';
+                            isValid = false;
+                        }
+
+                        if (!this.form.category) { this.errors.category = 'Category required.'; isValid = false; }
+                        if (!this.form.price || parseFloat(this.form.price) <= 0) { this.errors.price = 'Price must be positive.'; isValid = false; }
+                        if (this.form.stock === '' || parseInt(this.form.stock) < 0) { this.errors.stock = 'Stock must be non-negative.'; isValid = false; }
+                        return isValid;
+                    },
+
+                    async submitForm(isEdit = false) {
+                        if (this.isSubmitting) return;
+                        if (!this.validate()) {
+                            const firstError = Object.values(this.errors).find(e => e !== '');
+                            this.showError(firstError || "Validation failed.");
+                            return;
+                        }
+
+                        this.isSubmitting = true;
+                        const formData = new FormData();
+                        Object.keys(this.form).forEach(key => formData.append(key, this.form[key]));
+
+                        try {
+                            const url = isEdit ? "/admin/products/update/" + this.form.id : "/admin/products/add";
+                            const method = isEdit ? 'PATCH' : 'POST';
+                            const res = await fetch(url, { method, body: formData });
+                            const result = await res.json();
+
                             if (result.success) {
                                 this.showSuccess(result.message);
                             } else {
                                 this.showError(result.message);
                             }
-                        } catch (error) {
-                            this.showError('Failed to toggle status.');
+                        } catch (err) {
+                            this.showError("Synchronization error.");
+                        } finally {
+                            this.isSubmitting = false;
                         }
-                    }
-                },
+                    },
 
-                async deleteProduct(id) {
-                    const confirmed = await window.confirmAction({
-                        title: 'TOGGLE PRODUCT ACCESS?',
-                        message: 'This will change the product\'s availability in the public store.',
-                        type: 'danger'
-                    });
-
-                    if (confirmed) {
-                        try {
-                            const res = await fetch(`/admin/products/delete/${id}`, { method: 'DELETE' });
-                            const resData = await res.json();
-                            if (resData.success) {
-                                this.showSuccess(resData.message);
-                            } else {
-                                this.showError(resData.message);
-                            }
-                        } catch (error) {
-                            this.showError('Failed to delete product.');
+                    async toggleStatus(id) {
+                        const confirmed = await window.confirmAction({ title: 'TOGGLE VISIBILITY?', message: 'Update product visibility?', type: 'warning' });
+                        if (confirmed) {
+                            try {
+                                const res = await fetch(`/admin/products/toggle-status/${id}`, { method: 'PATCH' });
+                                const result = await res.json();
+                                if (result.success) { this.showSuccess(result.message); }
+                                else { this.showError(result.message); }
+                            } catch (error) { this.showError('Status toggle failed.'); }
                         }
+                    },
+
+                    async deleteProduct(id) {
+                        const confirmed = await window.confirmAction({ title: 'TOGGLE PRODUCT ACCESS?', message: 'Update product availability?', type: 'danger' });
+                        if (confirmed) {
+                            try {
+                                const res = await fetch(`/admin/products/delete/${id}`, { method: 'DELETE' });
+                                const resData = await res.json();
+                                if (resData.success) { this.showSuccess(resData.message); }
+                                else { this.showError(resData.message); }
+                            } catch (error) { this.showError('Deletion failed.'); }
+                        }
+                    },
+
+                    showSuccess(message) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type: 'success' } }));
+                        setTimeout(() => window.location.reload(), 1000);
+                    },
+
+                    showError(message) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type: 'error' } }));
                     }
-                },
+                }));
+            };
 
-                showSuccess(message) {
-                    window.dispatchEvent(new CustomEvent('show-toast', {
-                        detail: { message: message, type: 'success' }
-                    }));
-                    setTimeout(() => window.location.reload(), 1500);
-                },
-
-                showError(message) {
-                    window.dispatchEvent(new CustomEvent('show-toast', {
-                        detail: { message: message, type: 'error' }
-                    }));
-                }
+            if (window.Alpine) {
+                register();
+            } else {
+                document.addEventListener('alpine:init', register);
             }
-        }
+        })();
     </script>

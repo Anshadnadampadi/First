@@ -1,7 +1,7 @@
 <!-- views/admin/marketing/coupons.ejs -->
 <%- contentFor('body') %>
 
-    <div class="space-y-10" x-data="couponManager()">
+    <div class="space-y-10" x-data="couponManager">
         <div class="flex justify-between items-end">
             <div>
                 <h1 class="text-3xl font-bold tracking-tight uppercase text-white mb-2">MARKETING OFFERS.</h1>
@@ -179,10 +179,12 @@
                     </div>
 
                     <div class="flex items-center gap-3 pt-5 border-t border-white/5">
-                        <button type="button" @click="closeModal()"
-                            class="flex-1 py-3 border border-white/10 text-white text-[10px] font-bold tracking-widest uppercase hover:bg-white/5 transition-all">Cancel</button>
-                        <button type="submit"
-                            class="flex-1 py-3 bg-accent text-black text-[10px] font-bold tracking-widest uppercase hover:bg-white transition-all btn-press shadow-[0_0_15px_rgba(255,106,0,0.3)]">Save</button>
+                        <button type="button" @click="closeModal()" :disabled="isSubmitting"
+                            class="flex-1 py-3 border border-white/10 text-white text-[10px] font-bold tracking-widest uppercase hover:bg-white/5 disabled:opacity-50 transition-all">Cancel</button>
+                        <button type="submit" :disabled="isSubmitting"
+                            class="flex-1 py-3 bg-accent text-black text-[10px] font-bold tracking-widest uppercase hover:bg-white disabled:opacity-50 transition-all btn-press shadow-[0_0_15px_rgba(255,106,0,0.3)]">
+                            Save Coupon
+                        </button>
                     </div>
                 </form>
             </div>
@@ -190,32 +192,15 @@
     </div>
 
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('couponManager', () => ({
-                showModal: false,
-                isEditing: false,
-                currentId: null,
-                formData: {
-                    code: '',
-                    discountType: 'percentage',
-                    discountValue: '',
-                    minAmount: 0,
-                    maxDiscount: '',
-                    expiryDate: '',
-                    usageLimit: 1
-                },
-                formErrors: {
-                    code: '',
-                    discountValue: '',
-                    minAmount: '',
-                    maxDiscount: '',
-                    expiryDate: '',
-                    usageLimit: ''
-                },
-                openCreateModal() {
-                    this.isEditing = false;
-                    this.currentId = null;
-                    this.formData = {
+        (() => {
+            const register = () => {
+                if (Alpine.data('couponManager')) return;
+                Alpine.data('couponManager', () => ({
+                    showModal: false,
+                    isEditing: false,
+                    isSubmitting: false,
+                    currentId: null,
+                    formData: {
                         code: '',
                         discountType: 'percentage',
                         discountValue: '',
@@ -223,164 +208,198 @@
                         maxDiscount: '',
                         expiryDate: '',
                         usageLimit: 1
-                    };
-                    this.showModal = true;
-                },
-                openEditModal(id, code, type, val, minAmt, maxDisc, expiry, limit) {
-                    this.isEditing = true;
-                    this.currentId = id;
-                    this.formData = {
-                        code: code,
-                        discountType: type,
-                        discountValue: val,
-                        minAmount: minAmt || 0,
-                        maxDiscount: maxDisc || '',
-                        expiryDate: expiry || '',
-                        usageLimit: limit || 1
-                    };
-                    Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
-                    this.showModal = true;
-                },
-                async toggleStatus(id) {
-                    try {
-                        const res = await fetch(`/admin/marketing/coupons/${id}/status`, { method: 'PATCH' });
-                        const data = await res.json();
-                        if (data.success || data.succes) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon status updated', type: 'success' } }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to update status', type: 'error' } }));
+                    },
+                    formErrors: {
+                        code: '',
+                        discountValue: '',
+                        minAmount: '',
+                        maxDiscount: '',
+                        expiryDate: '',
+                        usageLimit: ''
+                    },
+                    openCreateModal() {
+                        this.isEditing = false;
+                        this.isSubmitting = false;
+                        this.currentId = null;
+                        this.formData = {
+                            code: '',
+                            discountType: 'percentage',
+                            discountValue: '',
+                            minAmount: 0,
+                            maxDiscount: '',
+                            expiryDate: '',
+                            usageLimit: 1
+                        };
+                        Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
+                        this.showModal = true;
+                    },
+                    openEditModal(id, code, type, val, minAmt, maxDisc, expiry, limit) {
+                        this.isEditing = true;
+                        this.currentId = id;
+                        this.formData = {
+                            code: code,
+                            discountType: type,
+                            discountValue: val,
+                            minAmount: minAmt || 0,
+                            maxDiscount: maxDisc || '',
+                            expiryDate: expiry || '',
+                            usageLimit: limit || 1
+                        };
+                        Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
+                        this.showModal = true;
+                    },
+                    async toggleStatus(id) {
+                        try {
+                            const res = await fetch(`/admin/marketing/coupons/${id}/status`, { method: 'PATCH' });
+                            const data = await res.json();
+                            if (data.success || data.succes) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon status updated', type: 'success' } }));
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to update status', type: 'error' } }));
+                            }
+                        } catch (err) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
                         }
-                    } catch (err) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
-                    }
-                },
-                async deleteCoupon(id) {
-                    if (!await window.confirmAction({ title: 'Delete Coupon?', message: 'Are you sure you want to permanently delete this coupon?', confirmText: 'Delete', type: 'danger' })) return;
-                    
-                    try {
-                        const res = await fetch(`/admin/marketing/coupons/${id}`, { method: 'DELETE' });
-                        const data = await res.json();
-                        if (data.success || data.succes) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon deleted successfully', type: 'success' } }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to delete coupon', type: 'error' } }));
+                    },
+                    async deleteCoupon(id) {
+                        if (!await window.confirmAction({ title: 'Delete Coupon?', message: 'Are you sure you want to permanently delete this coupon?', confirmText: 'Delete', type: 'danger' })) return;
+                        
+                        try {
+                            const res = await fetch(`/admin/marketing/coupons/${id}`, { method: 'DELETE' });
+                            const data = await res.json();
+                            if (data.success || data.succes) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon deleted successfully', type: 'success' } }));
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to delete coupon', type: 'error' } }));
+                            }
+                        } catch (err) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
                         }
-                    } catch (err) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
-                    }
-                },
-                closeModal() {
-                    this.showModal = false;
-                },
-                validateField(field) {
-                    const v = this.formData;
-                    this.formErrors[field] = '';
+                    },
+                    closeModal() {
+                        this.showModal = false;
+                    },
+                    validateField(field) {
+                        const v = this.formData;
+                        this.formErrors[field] = '';
 
-                    if (field === "code") {
-                        if (!v.code) {
-                            this.formErrors.code = "Required";
-                        } else if (!/^[A-Z0-9]{4,15}$/.test(v.code)) {
-                            this.formErrors.code = "4–15 uppercase letters only";
-                        }
-                    }
-
-                    if (field === "discountValue") {
-                        if (!v.discountValue || v.discountValue <= 0) {
-                            this.formErrors.discountValue = "Must be > 0";
-                        } else if (v.discountType === "percentage" && v.discountValue > 100) {
-                            this.formErrors.discountValue = "Max 100%";
-                        }
-                    }
-
-                    if (field === "minAmount" && v.minAmount < 0) {
-                        this.formErrors.minAmount = "Cannot be negative";
-                    }
-
-                    if (field === "maxDiscount" && v.maxDiscount && v.maxDiscount < 0) {
-                        this.formErrors.maxDiscount = "Invalid amount";
-                    }
-
-                    if (field === "expiryDate") {
-                        if (!v.expiryDate) {
-                            this.formErrors.expiryDate = "Required";
-                        } else {
-                            const selected = new Date(v.expiryDate);
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-
-                            if (selected < today) {
-                                this.formErrors.expiryDate = "Cannot be a past date";
+                        if (field === "code") {
+                            if (!v.code) {
+                                this.formErrors.code = "Required";
+                            } else if (!/^[A-Z0-9]{4,15}$/.test(v.code)) {
+                                this.formErrors.code = "4–15 uppercase letters only";
                             }
                         }
-                    }
 
-                    if (field === "usageLimit") {
-                        if (!v.usageLimit || v.usageLimit < 1) {
-                            this.formErrors.usageLimit = "Minimum 1 required";
+                        if (field === "discountValue") {
+                            if (!v.discountValue || v.discountValue <= 0) {
+                                this.formErrors.discountValue = "Must be > 0";
+                            } else if (v.discountType === "percentage" && v.discountValue > 100) {
+                                this.formErrors.discountValue = "Max 100%";
+                            }
                         }
 
-                        if (v.usageLimit > 10000) {
-                            this.formErrors.usageLimit = "Too large";
-                        }
-                    }
-                    if (field === "maxDiscount") {
-                        if (v.maxDiscount && v.maxDiscount < 0) {
-                            this.formErrors.maxDiscount = "Cannot be negative";
+                        if (field === "minAmount" && v.minAmount < 0) {
+                            this.formErrors.minAmount = "Cannot be negative";
                         }
 
-
-                        if (v.discountType === "percentage" && !v.maxDiscount) {
-                            this.formErrors.maxDiscount = "Required for % coupons";
-                        }
-                    }
-                },
-
-                validateAll() {
-                    const fields = ["code", "discountValue", "expiryDate", "usageLimit"];
-                    fields.forEach(f => this.validateField(f));
-                    return Object.values(this.formErrors).every(e => !e);
-                },
-                async submitForm() {
-
-                    if (!this.validateAll()) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Please fix the validation errors in the form.', type: 'error' } }));
-                        return;
-                    }
-
-                    // Trim + uppercase
-                    this.formData.code = this.formData.code.trim().toUpperCase();
-
-                    // ✅ Proceed API call
-                    try {
-                        const url = this.isEditing
-                            ? `/admin/marketing/coupons/${this.currentId}`
-                            : '/admin/marketing/coupons';
-
-                        const method = this.isEditing ? 'PUT' : 'POST';
-
-                        const res = await fetch(url, {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.formData)
-                        });
-
-                        const data = await res.json();
-
-                        if (data.success || data.succes) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon saved successfully!', type: 'success' } }));
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to save coupon', type: 'error' } }));
+                        if (field === "maxDiscount" && v.maxDiscount && v.maxDiscount < 0) {
+                            this.formErrors.maxDiscount = "Invalid amount";
                         }
 
-                    } catch (err) {
-                        console.error(err);
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
-                    }
-                }
+                        if (field === "expiryDate") {
+                            if (!v.expiryDate) {
+                                this.formErrors.expiryDate = "Required";
+                            } else {
+                                const selected = new Date(v.expiryDate);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
 
-            }));
-        });
+                                if (selected < today) {
+                                    this.formErrors.expiryDate = "Cannot be a past date";
+                                }
+                            }
+                        }
+
+                        if (field === "usageLimit") {
+                            if (!v.usageLimit || v.usageLimit < 1) {
+                                this.formErrors.usageLimit = "Minimum 1 required";
+                            }
+
+                            if (v.usageLimit > 10000) {
+                                this.formErrors.usageLimit = "Too large";
+                            }
+                        }
+                        if (field === "maxDiscount") {
+                            if (v.maxDiscount && v.maxDiscount < 0) {
+                                this.formErrors.maxDiscount = "Cannot be negative";
+                            }
+
+
+                            if (v.discountType === "percentage" && !v.maxDiscount) {
+                                this.formErrors.maxDiscount = "Required for % coupons";
+                            }
+                        }
+                    },
+
+                    validateAll() {
+                        const fields = ["code", "discountValue", "expiryDate", "usageLimit"];
+                        fields.forEach(f => this.validateField(f));
+                        return Object.values(this.formErrors).every(e => !e);
+                    },
+                    async submitForm() {
+                        if (this.isSubmitting) return;
+                        if (!this.validateAll()) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Please fix the validation errors in the form.', type: 'error' } }));
+                            return;
+                        }
+
+                        this.isSubmitting = true;
+                        this.formData.code = this.formData.code.trim().toUpperCase();
+
+                        try {
+                            const url = this.isEditing
+                                ? `/admin/marketing/coupons/${this.currentId}`
+                                : '/admin/marketing/coupons';
+
+                            const method = this.isEditing ? 'PUT' : 'POST';
+
+                            const res = await fetch(url, {
+                                method,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(this.formData)
+                            });
+
+                            const data = await res.json();
+
+                            if (data.success || data.succes) {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Coupon saved successfully!', type: 'success' } }));
+                                this.closeModal();
+                                if (window.SpaNavigation) {
+                                    window.SpaNavigation.loadPage(window.location.href, false);
+                                } else {
+                                    setTimeout(() => window.location.reload(), 1000);
+                                }
+                            } else {
+                                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Failed to save coupon', type: 'error' } }));
+                                this.isSubmitting = false;
+                            }
+
+                        } catch (err) {
+                            console.error(err);
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Unexpected error occurred', type: 'error' } }));
+                            this.isSubmitting = false;
+                        }
+                    }
+                }));
+            };
+
+            if (window.Alpine) {
+                register();
+            } else {
+                document.addEventListener('alpine:init', register);
+            }
+        })();
     </script>

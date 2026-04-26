@@ -27,9 +27,8 @@ const SpaNavigation = {
     },
 
     async loadPage(url, pushState = true) {
-        this.showLoader();
-        
         try {
+            this.showLoader();
             const response = await fetch(url, {
                 headers: { 'X-SPA-Request': 'true' }
             });
@@ -37,6 +36,17 @@ const SpaNavigation = {
             if (!response.ok) throw new Error('Page load failed');
 
             const html = await response.text();
+            await this.updateContent(html, url, pushState);
+        } catch (err) {
+            console.error('SPA Load Error:', err);
+            window.location.href = url; // Fallback to full reload
+        } finally {
+            this.hideLoader();
+        }
+    },
+
+    async updateContent(html, url, pushState = true) {
+        try {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
@@ -51,7 +61,7 @@ const SpaNavigation = {
                 currentContent.innerHTML = newContent.innerHTML;
                 
                 // Refresh Breadcrumbs if any
-                const newBread = doc.querySelector('.breadcrumbs-container'); // Adjust selector as per your partial
+                const newBread = doc.querySelector('.breadcrumbs-container');
                 const oldBread = document.querySelector('.breadcrumbs-container');
                 if (newBread && oldBread) oldBread.innerHTML = newBread.innerHTML;
                 
@@ -66,21 +76,19 @@ const SpaNavigation = {
                     window.history.pushState({ url }, doc.title, url);
                 }
                 
-                // Re-trigger Alpine.js if present
-                if (window.Alpine) {
-                    window.Alpine.discoverUninitializedComponents((el) => {
-                        window.Alpine.initializeComponent(el);
-                    });
-                }
+                // Re-trigger Alpine.js v3
+                // Give it a small tick to ensure scripts are processed
+                setTimeout(() => {
+                    if (window.Alpine) {
+                        window.Alpine.initTree(currentContent);
+                    }
+                }, 50);
             } else {
-                // Fallback to full reload if structure is different
                 window.location.href = url;
             }
         } catch (err) {
-            console.error('SPA Load Error:', err);
-            window.location.href = url; // Fallback
-        } finally {
-            this.hideLoader();
+            console.error('SPA Update Error:', err);
+            window.location.href = url;
         }
     },
 
@@ -108,10 +116,6 @@ const SpaNavigation = {
         const form = e.target;
         if (form.getAttribute('data-no-spa') !== null) return;
         
-        // Optional: Check if form should be SPA-ified
-        // For now, let's only do it for searches or simple filters
-        // Complex forms with file uploads might still need standard or specialized fetch handling.
-        
         if (form.method.toLowerCase() === 'get') {
             e.preventDefault();
             const url = new URL(form.action || window.location.href);
@@ -129,7 +133,6 @@ const SpaNavigation = {
             loader.classList.remove('fade-out');
             loader.style.opacity = '1';
             loader.style.visibility = 'visible';
-            // If it was removed from DOM, re-add it (some layouts might remove it)
             if (!document.body.contains(loader)) document.body.appendChild(loader);
         }
     },
@@ -139,7 +142,6 @@ const SpaNavigation = {
         if (loader) {
             loader.classList.add('fade-out');
             setTimeout(() => {
-                // Keep it in DOM but hidden
                 loader.style.opacity = '0';
                 loader.style.visibility = 'hidden';
             }, 500);
@@ -150,13 +152,27 @@ const SpaNavigation = {
         const scripts = container.querySelectorAll('script');
         scripts.forEach(oldScript => {
             const newScript = document.createElement('script');
+            
+            // Copy all attributes
             Array.from(oldScript.attributes).forEach(attr => {
                 newScript.setAttribute(attr.name, attr.value);
             });
-            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-            oldScript.parentNode.replaceChild(newScript, oldScript);
+
+            if (oldScript.src) {
+                newScript.src = oldScript.src;
+                newScript.async = false;
+            } else {
+                newScript.textContent = oldScript.textContent;
+            }
+
+            // Remove old script and add new one to head to trigger execution
+            const parent = oldScript.parentNode;
+            if (parent) {
+                parent.removeChild(oldScript);
+            }
+            document.head.appendChild(newScript);
         });
-    }
+    },
 };
 
 window.SpaNavigation = SpaNavigation;

@@ -571,7 +571,7 @@
 
         <!-- Pagination Container (Rendered Server Side/Updated Client Side) -->
         <div class="pagination" id="pagination">
-          <!-- Rendered statically for first load, overwritten by JS if filters apply -->
+          <%- pagination %>
         </div>
 
       </div>
@@ -813,23 +813,7 @@
         renderProducts(data.products, data.wishlistedIds);
 
         const paginationContainer = document.getElementById("pagination");
-        // Create DOM-based pagination to bind events correctly
-        paginationContainer.innerHTML = '';
-
-        // We parse the HTML strings sent by backend OR just recreate them.
-        // Since backend sends strings like `<button class="pagination-link" data-page="1">1</button>`
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data.pagination;
-
-        // Re-style pagination links to current design
-        Array.from(tempDiv.children).forEach(btn => {
-          const pageNum = btn.dataset.page;
-          const a = document.createElement('a');
-          a.className = `page-link ${pageNum == currentPage ? 'active' : ''}`;
-          a.textContent = pageNum;
-          a.onclick = (e) => { e.preventDefault(); loadProducts(pageNum); };
-          paginationContainer.appendChild(a);
-        });
+        paginationContainer.innerHTML = data.pagination;
 
       } catch (err) {
         console.error(err);
