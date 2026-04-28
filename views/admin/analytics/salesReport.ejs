@@ -68,9 +68,26 @@
             </p>
         </div>
         
-        <div class="flex items-center gap-4">
+        <div class="flex flex-wrap items-center gap-4">
+            <!-- Inventory Shortcut -->
+            <a href="/admin/productManagement" class="flex items-center gap-2 px-6 py-2.5 bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest rounded-sm border border-white/5 hover:text-white transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                Inventory
+            </a>
+
+            <!-- Status Filter -->
+            <div class="bg-white/5 p-1 rounded-full flex gap-1 border border-white/5">
+                <select @change="window.location.href = `/admin/sales-report?filter=${filter}&status=${$el.value}&startDate=<%= startDate %>&endDate=<%= endDate %>`" 
+                        style="background-color: #0d0d0d; color: white;"
+                        class="bg-transparent text-[10px] font-black uppercase tracking-widest text-white/60 px-4 py-1.5 outline-none cursor-pointer hover:text-white transition-colors">
+                    <option value="Delivered" style="background-color: #0d0d0d; color: white;" <%= status === 'Delivered' ? 'selected' : '' %>>Delivered Only</option>
+                    <option value="exclude_cancelled" style="background-color: #0d0d0d; color: white;" <%= status === 'exclude_cancelled' ? 'selected' : '' %>>Exclude Cancelled</option>
+                    <option value="all" style="background-color: #0d0d0d; color: white;" <%= status === 'all' ? 'selected' : '' %>>All Orders</option>
+                </select>
+            </div>
+
             <!-- Period Filters -->
-            <div class="bg-white/5 p-1 rounded-full flex gap-1">
+            <div class="bg-white/5 p-1 rounded-full flex gap-1 border border-white/5">
                 <button @click="updateFilter('daily')" :class="filter === 'daily' ? 'active' : ''" class="filter-btn">Day</button>
                 <button @click="updateFilter('weekly')" :class="filter === 'weekly' ? 'active' : ''" class="filter-btn">Week</button>
                 <button @click="updateFilter('monthly')" :class="filter === 'monthly' ? 'active' : ''" class="filter-btn">Month</button>
@@ -86,9 +103,9 @@
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                 </button>
                 <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-[#111] border border-white/10 rounded-sm shadow-2xl z-50 overflow-hidden">
-                    <a href="/admin/sales-report/download?filter=<%= filter %>&startDate=<%= startDate %>&endDate=<%= endDate %>&format=pdf" class="block px-6 py-3 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 uppercase tracking-widest transition-colors">PDF Report</a>
-                    <a href="/admin/sales-report/download?filter=<%= filter %>&startDate=<%= startDate %>&endDate=<%= endDate %>&format=excel" class="block px-6 py-3 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 uppercase tracking-widest transition-colors">Excel Sheet</a>
-                    <a href="/admin/sales-report/download?filter=<%= filter %>&startDate=<%= startDate %>&endDate=<%= endDate %>&format=ledger" class="block px-6 py-3 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 uppercase tracking-widest transition-colors">Ledger Book</a>
+                    <a href="/admin/sales-report/download?filter=<%= filter %>&status=<%= status %>&startDate=<%= startDate %>&endDate=<%= endDate %>&format=pdf" class="block px-6 py-3 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 uppercase tracking-widest transition-colors">PDF Report</a>
+                    <a href="/admin/sales-report/download?filter=<%= filter %>&status=<%= status %>&startDate=<%= startDate %>&endDate=<%= endDate %>&format=excel" class="block px-6 py-3 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 uppercase tracking-widest transition-colors">Excel Sheet</a>
+                    <a href="/admin/sales-report/download?filter=<%= filter %>&status=<%= status %>&startDate=<%= startDate %>&endDate=<%= endDate %>&format=ledger" class="block px-6 py-3 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 uppercase tracking-widest transition-colors">Ledger Book</a>
                 </div>
             </div>
         </div>
@@ -173,20 +190,20 @@
     </div>
 
     <!-- Tables Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Coupon Usage Details -->
         <div class="report-card overflow-hidden">
             <div class="p-8 border-b border-white/5">
-                <h3 class="text-white font-bold">Coupon Usage Details</h3>
+                <h3 class="text-white font-bold text-sm">Coupon Usage</h3>
                 <p class="stat-label mt-1">Top performing promotions</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
                         <tr class="bg-white/[0.01]">
-                            <th class="table-header">Coupon Code</th>
-                            <th class="table-header text-center">Times Used</th>
-                            <th class="table-header text-right">Total Discount</th>
+                            <th class="table-header">Code</th>
+                            <th class="table-header text-center">Used</th>
+                            <th class="table-header text-right">Saved</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
@@ -194,14 +211,48 @@
                             <% couponUsage.forEach(coupon => { %>
                                 <tr class="hover:bg-white/[0.02] transition-colors">
                                     <td class="px-6 py-4">
-                                        <span class="px-3 py-1 bg-accent/10 text-accent text-[10px] font-black rounded-full uppercase tracking-widest"><%= coupon._id %></span>
+                                        <span class="px-2 py-0.5 bg-accent/10 text-accent text-[9px] font-black rounded-full uppercase tracking-widest"><%= coupon._id %></span>
                                     </td>
-                                    <td class="px-6 py-4 text-center text-xs font-bold text-white"><%= coupon.timesUsed %>x</td>
-                                    <td class="px-6 py-4 text-right text-xs font-bold text-white">₹<%= coupon.totalDiscount.toLocaleString() %></td>
+                                    <td class="px-6 py-4 text-center text-[11px] font-bold text-white"><%= coupon.timesUsed %>x</td>
+                                    <td class="px-6 py-4 text-right text-[11px] font-bold text-white">₹<%= coupon.totalDiscount.toLocaleString() %></td>
                                 </tr>
                             <% }) %>
                         <% } else { %>
-                            <tr><td colspan="3" class="px-6 py-10 text-center text-white/20 text-[10px] uppercase font-bold">No coupon data</td></tr>
+                            <tr><td colspan="3" class="px-6 py-10 text-center text-white/20 text-[9px] uppercase font-bold">No data</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Selling Brands -->
+        <div class="report-card overflow-hidden">
+            <div class="p-8 border-b border-white/5">
+                <h3 class="text-white font-bold text-sm">Top Brands</h3>
+                <p class="stat-label mt-1">Units & Revenue mix</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-white/[0.01]">
+                            <th class="table-header">Brand</th>
+                            <th class="table-header text-center">Sold</th>
+                            <th class="table-header text-right">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        <% if (topBrands && topBrands.length > 0) { %>
+                            <% topBrands.forEach(brand => { %>
+                                <tr class="hover:bg-white/[0.02] transition-colors">
+                                    <td class="px-6 py-4">
+                                        <span class="text-[11px] font-bold text-white uppercase"><%= brand._id %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-[11px] font-bold text-white"><%= brand.totalSold %>u</td>
+                                    <td class="px-6 py-4 text-right text-[11px] font-bold text-status-success">₹<%= brand.revenue.toLocaleString() %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="3" class="px-6 py-10 text-center text-white/20 text-[9px] uppercase font-bold">No data</td></tr>
                         <% } %>
                     </tbody>
                 </table>
@@ -210,32 +261,30 @@
 
         <!-- Order Discount Breakdown -->
         <div class="report-card overflow-hidden">
-            <div class="p-8 border-b border-white/5 flex justify-between items-center">
-                <div>
-                    <h3 class="text-white font-bold">Order Discount Breakdown</h3>
-                    <p class="stat-label mt-1">Coupon deductions per order</p>
-                </div>
-                <span class="px-4 py-1.5 bg-accent text-black text-[10px] font-black rounded-full uppercase tracking-widest">Saved: ₹<%= stats.totalDiscount.toLocaleString() %></span>
+            <div class="p-8 border-b border-white/5">
+                <h3 class="text-white font-bold text-sm">Recent Savings</h3>
+                <p class="stat-label mt-1">Deductions per order</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
                         <tr class="bg-white/[0.01]">
                             <th class="table-header">Order #</th>
-                            <th class="table-header">Date</th>
-                            <th class="table-header text-right">Discount</th>
+                            <th class="table-header text-right">Disc.</th>
                             <th class="table-header text-right">Final</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
                         <% orders.filter(o => o.discount > 0).slice(0, 5).forEach(order => { %>
                             <tr class="hover:bg-white/[0.02] transition-colors">
-                                <td class="px-6 py-4 text-[10px] font-mono text-white/40">#<%= order.orderId %></td>
-                                <td class="px-6 py-4 text-[10px] font-bold text-white/60 uppercase"><%= new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></td>
+                                <td class="px-6 py-4 text-[9px] font-mono text-white/40">#<%= order.orderId %></td>
                                 <td class="px-6 py-4 text-right text-[10px] font-bold text-status-danger">-₹<%= order.discount %></td>
-                                <td class="px-6 py-4 text-right text-xs font-bold text-white">₹<%= order.totalAmount.toLocaleString() %></td>
+                                <td class="px-6 py-4 text-right text-[11px] font-bold text-white">₹<%= order.totalAmount.toLocaleString() %></td>
                             </tr>
                         <% }) %>
+                        <% if (orders.filter(o => o.discount > 0).length === 0) { %>
+                            <tr><td colspan="3" class="px-6 py-10 text-center text-white/20 text-[9px] uppercase font-bold">No discounts</td></tr>
+                        <% } %>
                     </tbody>
                 </table>
             </div>

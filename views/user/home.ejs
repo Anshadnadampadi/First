@@ -57,15 +57,15 @@
         height: 580px;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding-top: 50px;
+        align-items: flex-start;
+        justify-content: flex-start;
+        text-align: left;
         transition: transform 0.5s var(--apple-easing);
     }
     .apple-grid-card:hover {
         transform: scale(1.01);
     }
-    .video-bg {
+    .apple-grid-card video {
         position: absolute;
         top: 0;
         left: 0;
@@ -73,7 +73,20 @@
         height: 100%;
         object-fit: cover;
         z-index: 0;
-        opacity: 0.8;
+    }
+    .apple-grid-card .card-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 50%);
+        z-index: 1;
+    }
+    .apple-grid-card .card-text {
+        position: relative;
+        z-index: 2;
+        padding: 40px 40px 0 40px;
     }
     .apple-section-divider {
         height: 12px;
@@ -85,16 +98,9 @@
     <!-- 1. iPhone 17 Pro Hero (Apple Style) -->
     <section class="apple-hero group">
         <video autoplay muted loop playsinline class="video-bg opacity-60">
-            <source src="/video/Introducing iPhone 17 Pro and iPhone 17 Pro Max - Vodafone Australia (1080p).mp4" type="video/mp4">
+            <source src="/video/iphone-hero.mp4" type="video/mp4">
         </video>
-        <div class="relative z-10 space-y-4">
-            <h1 class="text-5xl md:text-7xl font-bold apple-text-gradient tracking-tight">iPhone 17 Pro</h1>
-            <p class="text-2xl md:text-3xl text-white font-medium">Hello, Apple Intelligence.</p>
-            <div class="flex items-center justify-center gap-8 pt-6">
-                <a href="/products" class="apple-btn">Buy</a>
-                <a href="/catalog" class="apple-link">Learn more <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="3"></path></svg></a>
-            </div>
-        </div>
+        
     </section>
 
     <div class="apple-section-divider"></div>
@@ -102,16 +108,9 @@
     <!-- 2. Pixel 10 Pro Hero -->
     <section class="apple-hero group !justify-end !pb-[12vh] !pt-0">
         <video autoplay muted loop playsinline class="video-bg opacity-50">
-            <source src="/video/YouTube_Meet-Google-Pixel-10-Pro-With-Gemini-The_Media_Z3lqOEM6Zig_001_1080p.mp4" type="video/mp4">
+            <source src="/video/pixel-hero.mp4" type="video/mp4">
         </video>
-        <div class="relative z-10 space-y-4">
-            <h2 class="text-5xl md:text-7xl font-bold text-white tracking-tight">Pixel 10 Pro</h2>
-            <p class="text-2xl md:text-3xl text-white font-medium">Built for the Gemini era.</p>
-            <div class="flex items-center justify-center gap-8 pt-6">
-                <a href="/products" class="apple-btn">Pre-order</a>
-                <a href="/catalog" class="apple-link">Learn more <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="3"></path></svg></a>
-            </div>
-        </div>
+        
     </section>
 
     <div class="apple-section-divider"></div>
@@ -119,57 +118,71 @@
     <!-- 3. Apple Style Bento Grid (2x2) -->
     <section class="max-w-[1260px] mx-auto px-4 py-3">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <!-- Watch / Accessories -->
+
+            <!-- Watch -->
             <div class="apple-grid-card">
-                <div class="relative z-10 space-y-2">
-                    <h3 class="text-4xl font-bold text-white">Apple Watch</h3>
+                <div class="card-overlay"></div>
+                <video autoplay muted loop playsinline>
+                    <source src="/video/google-fist.mp4" type="video/mp4">
+                </video>
+                <div class="card-text space-y-2">
+                    <h3 class="text-4xl font-bold text-white">Samsung Fold</h3>
                     <p class="text-xl text-white/80">Thinner. Faster. Smarter.</p>
-                    <div class="flex items-center justify-center gap-6 pt-2">
+                    <div class="flex items-center gap-6 pt-2">
                         <a href="/catalog?category=watch" class="apple-link !text-lg">Learn more <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                         <a href="/catalog?category=watch" class="apple-link !text-lg">Buy <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                     </div>
                 </div>
-                <img src="https://images.unsplash.com/photo-1544117518-30dd5bd7a974?q=80&w=1000&auto=format&fit=crop" class="absolute bottom-0 w-[80%] h-auto object-contain opacity-60 group-hover:scale-105 transition-transform duration-700" alt="">
             </div>
 
             <!-- Gaming -->
             <div class="apple-grid-card">
-                <div class="relative z-10 space-y-2">
-                    <h3 class="text-4xl font-bold text-white">Gaming</h3>
+                <div class="card-overlay"></div>
+                <video autoplay muted loop playsinline>
+                    <source src="/video/google-second.mp4" type="video/mp4">
+                </video>
+                <div class="card-text space-y-2">
+                    <h3 class="text-4xl font-bold text-white">Google Inteligence</h3>
                     <p class="text-xl text-white/80">Console-grade performance.</p>
-                    <div class="flex items-center justify-center gap-6 pt-2">
+                    <div class="flex items-center gap-6 pt-2">
                         <a href="/catalog?category=gaming" class="apple-link !text-lg">Learn more <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                         <a href="/catalog?category=gaming" class="apple-link !text-lg">Buy <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                     </div>
                 </div>
-                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop" class="absolute bottom-0 w-full h-full object-cover opacity-20" alt="">
             </div>
 
             <!-- iPad -->
-            <div class="apple-grid-card !bg-white">
-                <div class="relative z-10 space-y-2">
-                    <h3 class="text-4xl font-bold text-black">iPad Pro</h3>
-                    <p class="text-xl text-black/60">Thinpossible.</p>
-                    <div class="flex items-center justify-center gap-6 pt-2">
+            <div class="apple-grid-card">
+                <div class="card-overlay"></div>
+                <video autoplay muted loop playsinline>
+                    <source src="/video/39529fcf-3254-40a4-920a-1aad5df5ef99.mp4" type="video/mp4">
+                </video>
+                <div class="card-text space-y-2">
+                    <h3 class="text-4xl font-bold text-white">I Phone</h3>
+                    <p class="text-xl text-white/80">Thinpossible.</p>
+                    <div class="flex items-center gap-6 pt-2">
                         <a href="/catalog?category=tablets" class="apple-link !text-lg">Learn more <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                         <a href="/catalog?category=tablets" class="apple-link !text-lg">Buy <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                     </div>
                 </div>
-                <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=1000&auto=format&fit=crop" class="absolute bottom-0 w-[70%] h-auto object-contain" alt="">
             </div>
 
             <!-- AirPods -->
             <div class="apple-grid-card">
-                <div class="relative z-10 space-y-2">
-                    <h3 class="text-4xl font-bold text-white">AirPods Pro</h3>
+                <div class="card-overlay"></div>
+                <video autoplay muted loop playsinline>
+                    <source src="/video/google-fourth.mp4" type="video/mp4">
+                </video>
+                <div class="card-text space-y-2">
+                    <h3 class="text-4xl font-bold text-white">Gaming</h3>
                     <p class="text-xl text-white/80">Rebuilt from the sound up.</p>
-                    <div class="flex items-center justify-center gap-6 pt-2">
+                    <div class="flex items-center gap-6 pt-2">
                         <a href="/catalog?category=audio" class="apple-link !text-lg">Learn more <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                         <a href="/catalog?category=audio" class="apple-link !text-lg">Buy <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"></path></svg></a>
                     </div>
                 </div>
-                <img src="https://images.unsplash.com/photo-1588423770186-80f3ef0abc39?q=80&w=1000&auto=format&fit=crop" class="absolute bottom-0 w-[60%] h-auto object-contain opacity-80" alt="">
             </div>
+
         </div>
     </section>
 

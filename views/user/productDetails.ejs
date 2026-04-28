@@ -1954,15 +1954,84 @@
     }
 
     // ── DELIVERY CHECK ────────────────────────────────────────────────────────
-    function checkDelivery() {
-      const pin = document.getElementById('pincodeInput').value;
+    async function checkDelivery() {
+      const pin = document.getElementById('pincodeInput').value.trim();
       const res = document.getElementById('deliveryResult');
-      if (pin.length < 6) { showToast('error', 'Invalid PIN', 'Please enter a 6-digit PIN code.'); return; }
-      res.style.display = 'flex';
-      res.style.alignItems = 'center';
-      res.style.gap = '8px';
-      res.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> <span style="color:var(--success);font-weight:600;">Free delivery</span> <span style="color:var(--t2);">to ${pin} by <strong style="color:var(--t1);">Tomorrow</strong></span>`;
+      const btn = document.querySelector('[onclick="checkDelivery()"]');
+      
+      if (!/^\d{6}$/.test(pin)) { 
+        showToast('error', 'Invalid PIN', 'Please enter a valid 6-digit PIN code.'); 
+        return; 
+      }
+
+      const originalBtnText = btn.innerHTML;
+      btn.innerHTML = '...';
+      btn.disabled = true;
+      res.style.display = 'block';
+      res.innerHTML = `<p style="color:var(--t3); font-size:11px; margin-bottom:5px;">Detecting region for ${pin}...</p>`;
+
+      try {
+        // Using a free Indian pincode API
+        const response = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const data = await response.json();
+
+        if (data[0].Status === "Success") {
+          const info = data[0].PostOffice[0];
+          const location = `${info.District}, ${info.State}`;
+          
+          // Save to localStorage
+          localStorage.setItem('userPincode', pin);
+          localStorage.setItem('userLocation', location);
+
+          // Simulated logic for delivery days
+          const firstDigit = parseInt(pin[0]);
+          let days = 3;
+          if (firstDigit <= 2) days = 1; // North
+          else if (firstDigit <= 4) days = 2; // West/Central
+          else if (firstDigit <= 6) days = 4; // South
+          else days = 5; // East/NE
+
+          const deliveryDate = new Date();
+          deliveryDate.setDate(deliveryDate.getDate() + days);
+          const dateStr = deliveryDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+
+          res.innerHTML = `
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:12px; background:rgba(34, 197, 94, 0.05); border:1px solid rgba(34, 197, 94, 0.2); margin-top:10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin-top:2px;">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <div>
+                <p style="color:var(--t1); font-size:13px; font-weight:700; margin-bottom:2px;">Delivering to ${location}</p>
+                <p style="color:var(--success); font-size:12px; font-weight:600;">Standard Delivery by ${dateStr}</p>
+                <p style="color:var(--t3); font-size:10px; text-transform:uppercase; letter-spacing:0.05em; margin-top:4px;">Secure checkout available for this zone</p>
+              </div>
+            </div>
+          `;
+        } else {
+          res.innerHTML = `<p style="color:var(--danger); font-size:12px; font-weight:600;">Invalid pincode or service unavailable.</p>`;
+        }
+      } catch (err) {
+        console.error(err);
+        res.innerHTML = `<p style="color:var(--t2); font-size:12px;">Free delivery to ${pin} available. Check at checkout.</p>`;
+      } finally {
+        btn.innerHTML = originalBtnText;
+        btn.disabled = false;
+      }
     }
+
+    // Initialize Pincode from storage
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedPin = localStorage.getItem('userPincode');
+      if (savedPin) {
+        const input = document.getElementById('pincodeInput');
+        if (input) {
+          input.value = savedPin;
+          // We don't auto-check to avoid unnecessary API calls, or we can if desired.
+          // checkDelivery(); 
+        }
+      }
+    });
 
     // ── STICKY BAR ────────────────────────────────────────────────────────────
     window.addEventListener('scroll', () => {

@@ -118,3 +118,17 @@ export const verifyTopupPayment = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
+export const getTopupFailure = (req, res) => {
+    const { amount } = req.query;
+    res.render("user/topup-failure", {
+        title: "Top-up Failed",
+        amount: amount || 0,
+        razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+        user: req.session.user,
+        breadcrumbs: [
+            { label: 'Account', url: '/profile' },
+            { label: 'Wallet', url: '/account/wallet' },
+            { label: 'Failure', url: '#' }
+        ]
+    });
+};

@@ -53,12 +53,15 @@
                     <% if (addresses && addresses.length > 0) { %>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                             <% addresses.forEach((addr, idx) => { %>
-                                <label class="cursor-pointer group">
-                                    <input type="radio" x-model="orderData.addressId" value="<%= addr._id %>" class="peer sr-only">
-                                    <div class="bg-black/50 border border-white/10 p-6 peer-checked:border-accent peer-checked:bg-accent/[0.05] relative transition-all duration-300 h-full overflow-hidden hover:border-white/30">
+                                <label class="cursor-pointer group block h-full">
+                                    <input type="radio" x-model="orderData.addressId" value="<%= addr._id %>" class="sr-only">
+                                    <div @click="orderData.addressId = '<%= addr._id %>'"
+                                         :class="orderData.addressId === '<%= addr._id %>' ? 'border-accent bg-accent/[0.05]' : 'border-white/10 bg-black/50'"
+                                         class="p-6 relative transition-all duration-300 h-full overflow-hidden hover:border-white/30 border">
                                         
                                         <!-- Active Indicator Accent bar -->
-                                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent transform -translate-x-full peer-checked:translate-x-0 transition-transform duration-300"></div>
+                                        <div :class="orderData.addressId === '<%= addr._id %>' ? 'translate-x-0' : '-translate-x-full'"
+                                             class="absolute left-0 top-0 bottom-0 w-1 bg-accent transform transition-transform duration-300"></div>
 
                                         <div class="flex justify-between items-start mb-3">
                                             <div class="flex items-center gap-2">
@@ -66,9 +69,11 @@
                                                 <span class="px-2 py-[2px] bg-white/10 text-white/70 text-[8px] font-black tracking-[0.2em] rounded-sm uppercase"><%= addr.type %></span>
                                             </div>
                                             <div class="flex items-center gap-3">
-                                                <button type="button" @click.stop="openAddressModal('edit', addresses.find(a => a._id === '<%= addr._id %>'))" class="text-white/40 hover:text-accent text-[10px] uppercase font-bold tracking-widest uppercase transition-colors relative z-20">Edit</button>
-                                                <div class="w-4 h-4 rounded-full border border-white/30 peer-checked:border-accent flex items-center justify-center flex-shrink-0 transition-colors">
-                                                    <div class="w-2 h-2 rounded-full bg-accent scale-0 peer-checked:scale-100 transition-transform duration-300"></div>
+                                                <button type="button" @click.stop="openAddressModal('edit', addresses.find(a => a._id === '<%= addr._id %>'))" class="text-white/40 hover:text-accent text-[10px] uppercase font-bold tracking-widest transition-colors relative z-20">Edit</button>
+                                                <div :class="orderData.addressId === '<%= addr._id %>' ? 'border-accent' : 'border-white/30'"
+                                                     class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors">
+                                                    <div :class="orderData.addressId === '<%= addr._id %>' ? 'scale-100' : 'scale-0'"
+                                                         class="w-2 h-2 rounded-full bg-accent transition-transform duration-300"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -354,7 +359,7 @@
                 </button>
             </div>
 
-            <form @submit.prevent="saveAddress" class="space-y-8">
+            <form @submit.prevent="saveAddress" method="POST" data-no-spa class="space-y-8">
                 <!-- Address Type -->
                 <div class="space-y-4">
                     <label class="text-[10px] font-bold uppercase text-white/40 tracking-widest ml-1">Location Type</label>
@@ -453,11 +458,17 @@
                     </div>
                 </div>
 
+                <!-- General Error Display -->
+                <div x-show="addressErrors.general" x-transition
+                     class="p-4 bg-status-danger/10 border border-status-danger/20 text-status-danger text-[10px] font-bold uppercase tracking-widest">
+                    <p x-text="addressErrors.general"></p>
+                </div>
+
                 <div class="pt-10 flex gap-4">
                     <button type="submit" 
                             :disabled="addressSaving"
                             class="flex-1 bg-accent text-black font-bold py-5 text-sm tracking-[0.2em] uppercase hover:bg-white transition-all disabled:opacity-50"
-                            x-text="addressSaving ? 'SAVING...' : (addressMode === 'add' ? 'SAVE ADDRESS' : 'UPDATE ADDRESS')"></button>
+                            x-text="addressSaving ? 'COMMITTING...' : (addressMode === 'add' ? 'SECURE POINT' : 'REDEFINE POINT')"></button>
                     <button type="button" 
                             @click="addressModalOpen = false"
                             class="px-10 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:border-white transition-all">
@@ -600,11 +611,16 @@
                             ? 'Full name must be 2 to 80 characters and start with a letter' : '';
                         break;
                     case 'phone':
-                        this.addressErrors.phone = !/^\+?[0-9()\-\s]{7,20}$/.test(val) 
-                            ? 'Enter a valid phone number (7-20 digits)' : '';
+                        if (!val) {
+                            this.addressErrors.phone = 'Phone number is required';
+                        } else if (!/^[6-9]\d{9}$/.test(val)) {
+                            this.addressErrors.phone = 'Enter a valid 10-digit mobile number';
+                        } else {
+                            this.addressErrors.phone = '';
+                        }
                         break;
                     case 'addr1':
-                        this.addressErrors.addr1 = !/^[A-Za-z0-9][A-Za-z0-9\s,./#'()-]{2,119}$/.test(val) 
+                        this.addressErrors.addr1 = !/^[A-Za-z0-9][A-Za-z0-9\s,./#'()-]{4,119}$/.test(val) 
                             ? 'Address must be 5 to 120 characters' : '';
                         break;
                     case 'city':
@@ -627,9 +643,14 @@
             },
 
             validateAddressForm() {
+                // Initialize all error keys
+                this.addressErrors = { name: '', phone: '', addr1: '', city: '', state: '', zip: '', country: '', general: '' };
+                
                 const fields = ['name', 'phone', 'addr1', 'city', 'state', 'zip', 'country'];
                 fields.forEach(f => this.validateAddressField(f));
-                return !Object.values(this.addressErrors).some(error => error !== '');
+                
+                const hasErrors = Object.values(this.addressErrors).some(error => error && error.length > 0);
+                return !hasErrors;
             },
 
             async saveAddress() {
@@ -653,8 +674,12 @@
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Address ${this.addressMode === 'add' ? 'saved' : 'updated'} successfully`, type: 'success' } }));
                         setTimeout(() => window.location.reload(), 1000); 
                     } else {
-                        this.addressErrors = result.errors || {};
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: result.message || 'Validation failed on server', type: 'error' } }));
+                        if (result.errors) {
+                            this.addressErrors = result.errors;
+                        } else {
+                            this.addressErrors = { general: result.message || 'Validation failed on server' };
+                        }
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: result.message || 'Validation failed. Check your entries.', type: 'error' } }));
                     }
                 } catch(error) {
                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Network error. Please try again.', type: 'error' } }));

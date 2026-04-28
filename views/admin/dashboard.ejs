@@ -250,7 +250,7 @@
             </div>
 
             <div class="mt-8 text-center">
-                <a href="/admin/inventory" class="inline-block px-10 py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent transition-all">View Inventory</a>
+                <a href="/admin/productManagement" class="inline-block px-10 py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent transition-all">View Inventory</a>
             </div>
         </div>
     </div>
@@ -270,11 +270,8 @@
                 <% stats.topProducts.slice(0, 5).forEach(product => { %>
                     <div class="flex items-center justify-between group">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-white/5 rounded-lg overflow-hidden border border-white/5">
-                                <img src="/uploads/<%= product.image %>" class="w-full h-full object-cover" alt="<%= product.name %>">
-                            </div>
                             <div>
-                                <p class="text-xs font-bold text-white uppercase truncate max-w-[200px]"><%= product.name %></p>
+                                <p class="text-xs font-bold text-white uppercase truncate max-w-[250px]"><%= product.name %></p>
                                 <span class="text-[9px] font-black text-status-success uppercase tracking-widest px-2 py-0.5 bg-status-success/10 rounded-full">Popular</span>
                             </div>
                         </div>

@@ -1,75 +1,81 @@
 <!-- views/partials/footer.ejs -->
-<footer class="bg-[#050505] border-t border-white/5 pt-24 pb-12">
-    <div class="max-w-[1200px] mx-auto px-6 lg:px-8">
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-12 mb-20">
-            <!-- Branding & About -->
-            <div class="col-span-2 space-y-6">
-                <a href="/" class="text-white font-black tracking-[0.3em] text-2xl">STARZO</a>
-                <p class="text-white/30 text-[13px] leading-relaxed max-w-xs">
-                    India's leading destination for premium mobile hardware and official accessories. Delivering excellence since 2024.
-                </p>
-                <div class="flex gap-4 pt-2">
-                    <a href="#" class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-accent hover:border-accent transition-all text-xs font-bold">IG</a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-accent hover:border-accent transition-all text-xs font-bold">X</a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-accent hover:border-accent transition-all text-xs font-bold">FB</a>
-                </div>
-            </div>
-
-            <!-- Shop -->
+<footer class="bg-black text-white pt-16 pb-12 mt-20 border-t border-zinc-800">
+    <div class="max-w-[1200px] mx-auto px-6">
+        <!-- 4-Column Table-like Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <!-- Column 1: Shop -->
             <div class="space-y-6">
-                <h4 class="text-white text-[11px] font-black uppercase tracking-[0.2em]">Shop</h4>
+                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Shop</h4>
                 <ul class="space-y-3">
-                    <li><a href="/phones" class="text-white/40 hover:text-white text-[13px] transition-colors">All Phones</a></li>
-                    <li><a href="/catalog?category=flagship" class="text-white/40 hover:text-white text-[13px] transition-colors">Flagships</a></li>
-                    <li><a href="/catalog?category=gaming" class="text-white/40 hover:text-white text-[13px] transition-colors">Gaming</a></li>
-                    <li><a href="/deals" class="text-white/40 hover:text-white text-[13px] transition-colors">Special Offers</a></li>
+                    <li><a href="/phones" class="text-sm text-zinc-400 hover:text-white transition-colors">All Phones</a></li>
+                    <li><a href="/catalog?category=flagship" class="text-sm text-zinc-400 hover:text-white transition-colors">Flagships</a></li>
+                    <li><a href="/catalog?category=gaming" class="text-sm text-zinc-400 hover:text-white transition-colors">Gaming</a></li>
+                    <li><a href="/deals" class="text-sm text-zinc-400 hover:text-white transition-colors">Special Offers</a></li>
+                    <li><a href="/catalog" class="text-sm text-zinc-400 hover:text-white transition-colors">Accessories</a></li>
                 </ul>
             </div>
 
-            <!-- Account -->
+            <!-- Column 2: Account -->
             <div class="space-y-6">
-                <h4 class="text-white text-[11px] font-black uppercase tracking-[0.2em]">Account</h4>
+                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Account</h4>
                 <ul class="space-y-3">
-                    <li><a href="/account" class="text-white/40 hover:text-white text-[13px] transition-colors">Profile</a></li>
-                    <li><a href="/account/orders" class="text-white/40 hover:text-white text-[13px] transition-colors">My Orders</a></li>
-                    <li><a href="/wallet" class="text-white/40 hover:text-white text-[13px] transition-colors">Wallet</a></li>
-                    <li><a href="/cart" class="text-white/40 hover:text-white text-[13px] transition-colors">Shopping Bag</a></li>
+                    <li><a href="/account" class="text-sm text-zinc-400 hover:text-white transition-colors">Manage Account</a></li>
+                    <li><a href="/account/orders" class="text-sm text-zinc-400 hover:text-white transition-colors">My Orders</a></li>
+                    <li><a href="/wallet" class="text-sm text-zinc-400 hover:text-white transition-colors">Wallet</a></li>
+                    <li><a href="/cart" class="text-sm text-zinc-400 hover:text-white transition-colors">Shopping Bag</a></li>
+                    <li><a href="/account/addresses" class="text-sm text-zinc-400 hover:text-white transition-colors">Addresses</a></li>
                 </ul>
             </div>
 
-            <!-- Support -->
+            <!-- Column 3: Support -->
             <div class="space-y-6">
-                <h4 class="text-white text-[11px] font-black uppercase tracking-[0.2em]">Support</h4>
+                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Support</h4>
                 <ul class="space-y-3">
-                    <li><a href="/support" class="text-white/40 hover:text-white text-[13px] transition-colors">Help Center</a></li>
-                    <li><a href="/shipping-policy" class="text-white/40 hover:text-white text-[13px] transition-colors">Shipping Info</a></li>
-                    <li><a href="/return-policy" class="text-white/40 hover:text-white text-[13px] transition-colors">Returns</a></li>
-                    <li><a href="/support" class="text-white/40 hover:text-white text-[13px] transition-colors">Contact Us</a></li>
+                    <li><a href="/support" class="text-sm text-zinc-400 hover:text-white transition-colors">Contact Us</a></li>
+                    <li><a href="/support" class="text-sm text-zinc-400 hover:text-white transition-colors">User Guide</a></li>
+                    <li><a href="/support" class="text-sm text-zinc-400 hover:text-white transition-colors">Help</a></li>
+                    <li><a href="/shipping-policy" class="text-sm text-zinc-400 hover:text-white transition-colors">Shipping Info</a></li>
+                    <li><a href="/return-policy" class="text-sm text-zinc-400 hover:text-white transition-colors">Returns</a></li>
                 </ul>
             </div>
 
-            <!-- Newsltter -->
-            <div class="col-span-2 md:col-span-1 space-y-6">
-                <h4 class="text-white text-[11px] font-black uppercase tracking-[0.2em]">Updates</h4>
-                <p class="text-white/30 text-[12px]">Be the first to know about flagship launches.</p>
-                <form class="space-y-3">
-                    <input type="email" placeholder="Email Address" class="bg-white/5 border border-white/10 px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent w-full rounded-sm">
-                    <button class="bg-white text-black hover:bg-accent transition-all w-full py-2.5 text-[10px] font-black uppercase tracking-widest rounded-sm">Subscribe</button>
-                </form>
+            <!-- Column 4: Company -->
+            <div class="space-y-6">
+                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Company</h4>
+                <ul class="space-y-3">
+                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">About Starzo</a></li>
+                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">Media Kit</a></li>
+                    <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Careers</a></li>
+                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">Newsletters</a></li>
+                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">Partnerships</a></li>
+                </ul>
             </div>
         </div>
 
-        <!-- Bottom bar -->
-        <div class="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div class="flex flex-col md:flex-row items-center gap-4 md:gap-8 text-center md:text-left">
-                <p class="text-white/20 text-[10px] font-bold tracking-widest uppercase">© 2026 STARZO MOBILES INC.</p>
-                <div class="flex gap-6">
-                    <a href="/privacy-policy" class="text-white/20 hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">Privacy</a>
-                    <a href="/terms" class="text-white/20 hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">Terms</a>
-                    <a href="/shipping-policy" class="text-white/20 hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">Shipping</a>
+        <!-- Bottom Section -->
+        <div class="pt-8 border-t border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="flex flex-col gap-4 items-center md:items-start">
+                <div class="flex gap-6 text-xs font-medium text-zinc-500">
+                    <a href="/terms" class="hover:text-white transition-colors">Terms & Conditions</a>
+                    <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="/support" class="hover:text-white transition-colors">Security</a>
+                </div>
+                <p class="text-xs text-zinc-600">© 2026 Starzo Mobiles Inc. All rights reserved.</p>
+            </div>
+
+            <!-- Social & Apps -->
+            <div class="flex flex-col items-center md:items-end gap-6">
+                <div class="flex gap-4">
+                    <a href="#" class="hover:opacity-80 transition-opacity"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" class="h-8" alt=""></a>
+                    <a href="#" class="hover:opacity-80 transition-opacity"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" class="h-8" alt=""></a>
+                </div>
+                <div class="flex gap-5 text-zinc-500">
+                    <a href="#" class="hover:text-white transition-colors text-lg"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="hover:text-white transition-colors text-lg"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="hover:text-white transition-colors text-lg"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="hover:text-white transition-colors text-lg"><i class="fab fa-youtube"></i></a>
                 </div>
             </div>
-            <p class="text-white/10 text-[9px] font-medium tracking-tighter uppercase">Crafted for Excellence in India</p>
         </div>
     </div>
 </footer>

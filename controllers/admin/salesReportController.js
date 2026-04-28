@@ -4,12 +4,12 @@ import ExcelJS from 'exceljs';
 
 export const getSalesReportPage = async (req, res) => {
     try {
-        const { filter = 'daily', startDate, endDate, page = 1 } = req.query;
+        const { filter = 'daily', startDate, endDate, page = 1, status = 'Delivered' } = req.query;
         const limit = 10;
-        const { orders, stats, period, totalPages, currentPage, previousRevenue, couponUsage } = await getSalesReportService(filter, startDate, endDate, page, limit);
+        const { orders, stats, period, totalPages, currentPage, previousRevenue, couponUsage, topBrands } = await getSalesReportService(filter, startDate, endDate, page, limit, status);
 
         // Build query string for pagination links
-        const queryParams = new URLSearchParams({ filter });
+        const queryParams = new URLSearchParams({ filter, status });
         if (startDate) queryParams.append('startDate', startDate);
         if (endDate) queryParams.append('endDate', endDate);
 
@@ -19,7 +19,9 @@ export const getSalesReportPage = async (req, res) => {
             stats,
             previousRevenue,
             couponUsage,
+            topBrands,
             filter,
+            status,
             startDate,
             endDate,
             period,
@@ -39,8 +41,8 @@ export const getSalesReportPage = async (req, res) => {
 
 export const downloadSalesReport = async (req, res) => {
     try {
-        const { filter = 'daily', startDate, endDate, format = 'pdf' } = req.query;
-        const { orders, stats, period } = await getSalesReportService(filter, startDate, endDate);
+        const { filter = 'daily', startDate, endDate, format = 'pdf', status = 'Delivered' } = req.query;
+        const { orders, stats, period } = await getSalesReportService(filter, startDate, endDate, null, null, status);
 
         if (format === 'pdf') {
             await generatePDFReport(res, orders, stats, period, filter);

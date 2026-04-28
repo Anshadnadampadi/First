@@ -69,6 +69,10 @@
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Razorpay -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
 </head>
 <body class="bg-black text-white overflow-x-hidden">
     <%- include('../partials/toast') %>
@@ -261,7 +265,12 @@
                         theme: { color: '#ff6a00' }
                     };
                     this.closeModal();
-                    new Razorpay(options).open();
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', (response) => {
+                        this.isProcessing = false;
+                        window.location.href = `/account/wallet/topup/failure?amount=${this.topupAmount}&error=${encodeURIComponent(response.error.description)}`;
+                    });
+                    rzp.open();
                 },
 
                 async verifyTopup(r) {

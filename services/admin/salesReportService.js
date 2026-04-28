@@ -1,11 +1,18 @@
 import Order from '../../models/order/order.js';
 
-export const getSalesReportService = async (filter, startDate, endDate, page = null, limit = null) => {
-    let matchCondition = { orderStatus: 'Delivered' }; // Sales usually count delivered orders
+export const getSalesReportService = async (filter, startDate, endDate, page = null, limit = null, status = 'Delivered') => {
+    let matchCondition = {};
+    
+    if (status === 'Delivered') {
+        matchCondition.orderStatus = 'Delivered';
+    } else if (status === 'exclude_cancelled') {
+        matchCondition.orderStatus = { $nin: ['Cancelled', 'Returned'] };
+    }
+    // if status === 'all', no orderStatus condition added
 
     const now = new Date();
     let start, end;
-
+    // ... rest of date logic remains the same ...
     if (filter === 'daily') {
         start = new Date(now.setHours(0, 0, 0, 0));
         end = new Date(now.setHours(23, 59, 59, 999));
@@ -28,7 +35,6 @@ export const getSalesReportService = async (filter, startDate, endDate, page = n
         end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
     } else {
-        // Fallback to daily if filter is invalid or missing
         start = new Date(now.setHours(0, 0, 0, 0));
         end = new Date(now.setHours(23, 59, 59, 999));
     }
@@ -52,19 +58,19 @@ export const getSalesReportService = async (filter, startDate, endDate, page = n
         ordersQuery = ordersQuery.skip(skip).limit(parseInt(limit));
     }
 
-    const [orders, totalOrders, stats, prevStats, couponUsage] = await Promise.all([
+    const [orders, totalOrders, stats, prevStats, couponUsage, topBrands] = await Promise.all([
         ordersQuery,
         Order.countDocuments(matchCondition),
         Order.aggregate([
             { $match: matchCondition },
-            { $unwind: "$items" },
+            { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
             {
                 $group: {
                     _id: null,
-                    totalSales: { $addToSet: "$_id" }, // Count unique orders
+                    totalSales: { $addToSet: "$_id" }, 
                     totalRevenue: { $sum: "$totalAmount" },
                     totalDiscount: { $sum: "$discount" },
-                    totalProductsSold: { $sum: "$items.qty" }
+                    totalProductsSold: { $sum: { $ifNull: ["$items.qty", 0] } }
                 }
             },
             {
@@ -96,6 +102,28 @@ export const getSalesReportService = async (filter, startDate, endDate, page = n
             },
             { $sort: { timesUsed: -1 } },
             { $limit: 5 }
+        ]),
+        Order.aggregate([
+            { $match: matchCondition },
+            { $unwind: "$items" },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "items.product",
+                    foreignField: "_id",
+                    as: "productDetails"
+                }
+            },
+            { $unwind: "$productDetails" },
+            {
+                $group: {
+                    _id: "$productDetails.brand",
+                    totalSold: { $sum: "$items.qty" },
+                    revenue: { $sum: { $multiply: ["$items.qty", "$items.price"] } }
+                }
+            },
+            { $sort: { totalSold: -1 } },
+            { $limit: 5 }
         ])
     ]);
 
@@ -107,6 +135,7 @@ export const getSalesReportService = async (filter, startDate, endDate, page = n
         stats: reportStats,
         previousRevenue,
         couponUsage,
+        topBrands,
         period: { start, end },
         totalPages: limit ? Math.ceil(totalOrders / limit) : 1,
         totalOrders,

@@ -85,7 +85,7 @@
                 </button>
             </div>
 
-            <form @submit.prevent="saveAddress" class="space-y-8">
+            <form @submit.prevent="saveAddress" method="POST" data-no-spa class="space-y-8">
                 <!-- Address Type -->
                 <div class="space-y-4">
                     <label class="text-[10px] font-bold uppercase text-white/40 tracking-widest ml-1">Location Type</label>
@@ -177,6 +177,12 @@
                     </div>
                 </div>
 
+                <!-- General Error Display -->
+                <div x-show="errors.general" x-transition
+                     class="p-4 bg-status-danger/10 border border-status-danger/20 text-status-danger text-[10px] font-bold uppercase tracking-widest">
+                    <p x-text="errors.general"></p>
+                </div>
+
                 <div class="flex items-center gap-4 pt-6">
                     <input type="checkbox" x-model="form.default" id="set-default" 
                            class="w-5 h-5 bg-black border-black-border border rounded-sm text-accent focus:ring-accent focus:ring-offset-black">
@@ -187,7 +193,7 @@
                     <button type="submit" 
                             :disabled="saving"
                             class="flex-1 bg-accent text-black font-bold py-5 text-sm tracking-[0.2em] uppercase hover:bg-white transition-all btn-press disabled:opacity-50"
-                            x-text="saving ? 'COMMITTING...' : (mode === 'add' ? 'SAVE LOGIC' : 'UPDATE LOGIC')"></button>
+                            x-text="saving ? 'COMMITTING...' : (mode === 'add' ? 'SECURE POINT' : 'REDEFINE POINT')"></button>
                     <button type="button" 
                             @click="modalOpen = false"
                             class="px-10 border border-black-border text-white text-[10px] font-bold uppercase tracking-widest hover:border-white transition-all">
@@ -269,11 +275,16 @@ function addressManager() {
                         ? 'Full name must be 2 to 80 characters and start with a letter' : '';
                     break;
                 case 'phone':
-                    this.errors.phone = !/^\+?[0-9()\-\s]{7,20}$/.test(val) 
-                        ? 'Enter a valid phone number (7-20 digits)' : '';
+                    if (!val) {
+                        this.errors.phone = 'Phone number is required';
+                    } else if (!/^[6-9]\d{9}$/.test(val)) {
+                        this.errors.phone = 'Enter a valid 10-digit phone number';
+                    } else {
+                        this.errors.phone = '';
+                    }
                     break;
                 case 'addr1':
-                    this.errors.addr1 = !/^[A-Za-z0-9][A-Za-z0-9\s,./#'()-]{2,119}$/.test(val) 
+                    this.errors.addr1 = !/^[A-Za-z0-9][A-Za-z0-9\s,./#'()-]{4,119}$/.test(val) 
                         ? 'Address must be 5 to 120 characters' : '';
                     break;
                 case 'city':
@@ -296,9 +307,12 @@ function addressManager() {
         },
 
         validateForm() {
+            // Initialize all error keys for better reactivity
+            this.errors = { name: '', phone: '', addr1: '', city: '', state: '', zip: '', country: '', general: '' };
             const fields = ['name', 'phone', 'addr1', 'city', 'state', 'zip', 'country'];
             fields.forEach(f => this.validateField(f));
-            return !Object.values(this.errors).some(error => error !== '');
+            const hasErrors = Object.values(this.errors).some(error => error && error.length > 0);
+            return !hasErrors;
         },
 
         async saveAddress() {
@@ -327,9 +341,15 @@ function addressManager() {
                     }));
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    this.errors = result.errors || {};
+                    // Map errors correctly
+                    if (result.errors) {
+                        this.errors = result.errors;
+                    } else {
+                        this.errors = { general: result.message || 'Validation failed on server' };
+                    }
+                    
                     window.dispatchEvent(new CustomEvent('show-toast', { 
-                        detail: { message: result.message || 'Validation failed on server', type: 'error' } 
+                        detail: { message: result.message || 'Validation failed. Check your entries.', type: 'error' } 
                     }));
                 }
             } catch (err) {
