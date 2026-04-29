@@ -96,16 +96,16 @@ export const checkBlocked = async (req, res, next) => {
 
                 // Recursive cleanup protocol: Logout then Destroy
                 const cleanup = () => {
-                   if (req.session) {
-                       req.session.destroy((err) => {
-                           if (err) console.error("Session cleanup failure:", err);
-                           res.clearCookie('userSid', { path: '/' });
-                           res.clearCookie('adminSid', { path: '/admin' });
-                           return res.redirect('/auth/login?error=blocked');
-                       });
-                   } else {
-                       return res.redirect('/auth/login?error=blocked');
-                   }
+                    if (req.session) {
+                        req.session.destroy((err) => {
+                            if (err) console.error("Session cleanup failure:", err);
+                            res.clearCookie('userSid', { path: '/' });
+                            res.clearCookie('adminSid', { path: '/admin' });
+                            return handleUnauthorized(req, res, "Your account has been restricted. Please contact support.");
+                        });
+                    } else {
+                        return handleUnauthorized(req, res, "Your account has been restricted. Please contact support.");
+                    }
                 };
 
                 if (typeof req.logout === 'function') {

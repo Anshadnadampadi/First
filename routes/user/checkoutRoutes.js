@@ -1,5 +1,5 @@
 import express from 'express';
-import { getCheckout, placeOrder, verifyPayment, getOrderSuccess, validateCoupon, removeCoupon, getPaymentFailure } from '../../controllers/user/checkoutController.js';
+import { getCheckout, placeOrder, verifyPayment, getOrderSuccess, validateCoupon, removeCoupon, getPaymentFailure, retryPayment } from '../../controllers/user/checkoutController.js';
 import { ensureLoggedIn } from '../../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -24,5 +24,8 @@ router.get('/payment-failure', ensureLoggedIn, getPaymentFailure);
 
 // Order Success Page
 router.get('/success/:orderId', ensureLoggedIn, getOrderSuccess);
+
+// Retry payment for pending orders
+router.post('/retry-payment', ensureLoggedIn, retryPayment);
 
 export default router;

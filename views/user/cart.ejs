@@ -1,7 +1,7 @@
 <!-- views/user/cart.ejs -->
 <%- contentFor('body') %>
 
-    <div class="min-h-screen bg-black py-24" x-data="cartManager()">
+    <div id="cart-container" class="min-h-screen bg-black py-24" x-data="cartManager()">
         <div class="max-w-screen-xl mx-auto px-6 lg:px-8">
             <header class="mb-16">
                 <h1 class="text-white text-display font-bold tracking-tight uppercase font-display">Shopping Cart</h1>
@@ -366,19 +366,20 @@
                     body: JSON.stringify({ itemId, change })
                 });
                 const data = await res.json();
+                console.log('Update Qty Response:', data);
 
-                if (data.success) {
+                if (data && data.success) {
                     const itemDiv = document.getElementById('item-' + itemId);
                     itemDiv.querySelector('.qty').textContent = data.newQty;
                     
                     const priceEl = document.getElementById('item-total-' + itemId);
-                    priceEl.textContent = `₹${data.itemTotal.toLocaleString()}`;
+                    priceEl.textContent = `₹${(data.itemTotal || 0).toLocaleString()}`;
 
                     // Update Alpine state
-                    const alpineNode = document.querySelector('[x-data]');
+                    const alpineNode = document.getElementById('cart-container');
                     if (alpineNode && window.Alpine) {
                         const alpineData = Alpine.$data(alpineNode);
-                        alpineData.subtotal = data.cartSubtotal;
+                        alpineData.subtotal = data.cartSubtotal || 0;
                         
                         // If coupon was applied, re-validate it
                         if(alpineData.discount > 0) {
@@ -390,11 +391,13 @@
                     }
                 } 
                 else {
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message || 'Error updating quantity', type: 'error' } }));
+                    const errorMsg = (data && data.message) ? data.message : 'Error updating quantity';
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: errorMsg, type: 'error' } }));
                 }
             } catch (err) {
-                console.error(err);
-                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Server connection failed', type: 'error' } }));
+                console.error('Update Qty Error:', err);
+                const toastMsg = err.name === 'SyntaxError' ? 'Invalid server response' : 'Server connection failed';
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: toastMsg, type: 'error' } }));
             }
         }
 
@@ -421,7 +424,7 @@
                         document.getElementById('item-' + itemId).remove();
                         
                         // Update Alpine state
-                        const alpineNode = document.querySelector('[x-data]');
+                        const alpineNode = document.getElementById('cart-container');
                         if (alpineNode && window.Alpine) {
                             const alpineData = Alpine.$data(alpineNode);
                             alpineData.subtotal = data.cartSubtotal;

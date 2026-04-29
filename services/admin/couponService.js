@@ -109,10 +109,7 @@ export const updateCouponService = async (id, data) => {
     const coupon = await Coupon.findById(id);
     if (!coupon) throw new Error("Coupon not found");
 
-    //  Prevent editing used coupons (important)
-    if (coupon.usedBy?.length > 0) {
-        throw new Error("Cannot edit a used coupon");
-    }
+    const isUsed = coupon.usedBy && coupon.usedBy.length > 0;
 
     let {
         code,
@@ -127,75 +124,97 @@ export const updateCouponService = async (id, data) => {
     // 🧹 Normalize
     code = code?.trim().toUpperCase();
 
+    // 🔒 If used, prevent changing core offer details
+    if (isUsed) {
+        if (code !== undefined && code !== coupon.code) throw new Error("Cannot change the code of a used coupon");
+        if (discountType !== undefined && discountType !== coupon.discountType) throw new Error("Cannot change the discount type of a used coupon");
+        if (discountValue !== undefined && Number(discountValue) !== coupon.discountValue) throw new Error("Cannot change the discount value of a used coupon");
+    }
+
     // ✅ Code validation
-    if (!code || !/^[A-Z0-9]{4,15}$/.test(code)) {
+    if (code && !/^[A-Z0-9]{4,15}$/.test(code)) {
         throw new Error("Invalid coupon code (4–15 uppercase chars)");
     }
 
     // ✅ Type
-    if (!["fixed", "percentage"].includes(discountType)) {
+    if (discountType && !["fixed", "percentage"].includes(discountType)) {
         throw new Error("Invalid discount type");
     }
 
     // ✅ Discount
-    discountValue = Number(discountValue);
-    if (!discountValue || discountValue <= 0) {
-        throw new Error("Discount must be greater than 0");
-    }
-
-    if (discountType === "percentage" && discountValue > 100) {
-        throw new Error("Percentage cannot exceed 100");
+    if (discountValue !== undefined) {
+        discountValue = Number(discountValue);
+        if (discountValue <= 0) {
+            throw new Error("Discount must be greater than 0");
+        }
+        const currentType = discountType || coupon.discountType;
+        if (currentType === "percentage" && discountValue > 100) {
+            throw new Error("Percentage cannot exceed 100");
+        }
     }
 
     // ✅ Min amount
-    minAmount = Number(minAmount || 0);
-    if (minAmount < 0) {
-        throw new Error("Minimum amount cannot be negative");
+    if (minAmount !== undefined) {
+        minAmount = Number(minAmount);
+        if (minAmount < 0) {
+            throw new Error("Minimum amount cannot be negative");
+        }
     }
 
     // ✅ Max discount
-    if (maxDiscount !== undefined && maxDiscount !== "") {
-        maxDiscount = Number(maxDiscount);
-        if (maxDiscount < 0) {
-            throw new Error("Max discount cannot be negative");
+    if (maxDiscount !== undefined) {
+        if (maxDiscount !== "" && maxDiscount !== null) {
+            maxDiscount = Number(maxDiscount);
+            if (maxDiscount < 0) {
+                throw new Error("Max discount cannot be negative");
+            }
+        } else {
+            maxDiscount = null;
         }
-    } else {
-        maxDiscount = null;
     }
 
-    if (discountType === "percentage" && !maxDiscount) {
+    const currentType = discountType || coupon.discountType;
+    const currentMaxDiscount = maxDiscount !== undefined ? maxDiscount : coupon.maxDiscount;
+
+    if (currentType === "percentage" && !currentMaxDiscount) {
         throw new Error("Max discount required for percentage coupons");
     }
 
     // ✅ Expiry
-    const expiry = new Date(expiryDate);
-    expiry.setHours(23, 59, 59, 999); // Set to end of day
-
-    const now = new Date();
-    // Allow today, but not past days
-    if (!expiryDate || isNaN(expiry.getTime()) || expiry < now) {
-        throw new Error("Expiry must be today or a future date");
+    let expiry = coupon.expiryDate;
+    if (expiryDate) {
+        expiry = new Date(expiryDate);
+        expiry.setHours(23, 59, 59, 999);
+        const now = new Date();
+        if (isNaN(expiry.getTime()) || expiry < now) {
+            throw new Error("Expiry must be today or a future date");
+        }
     }
 
     // ✅ Usage limit
-    usageLimit = Number(usageLimit);
-    if (!usageLimit || usageLimit < 1) {
-        throw new Error("Usage limit must be at least 1");
+    if (usageLimit !== undefined) {
+        usageLimit = Number(usageLimit);
+        if (usageLimit < 1) {
+            throw new Error("Usage limit must be at least 1");
+        }
     }
 
     // ✅ Unique
-    const existing = await Coupon.findOne({ code, _id: { $ne: id } });
-    if (existing) {
-        throw new Error("Coupon already exists");
+    if (code) {
+        const existing = await Coupon.findOne({ code, _id: { $ne: id } });
+        if (existing) {
+            throw new Error("Coupon already exists");
+        }
     }
 
-    coupon.code = code;
-    coupon.discountType = discountType;
-    coupon.discountValue = discountValue;
-    coupon.minAmount = minAmount;
-    coupon.maxDiscount = maxDiscount;
-    coupon.expiryDate = expiry;
-    coupon.usageLimit = usageLimit;
+    // Apply updates
+    if (code !== undefined) coupon.code = code;
+    if (discountType !== undefined) coupon.discountType = discountType;
+    if (discountValue !== undefined) coupon.discountValue = discountValue;
+    if (minAmount !== undefined) coupon.minAmount = minAmount;
+    if (maxDiscount !== undefined) coupon.maxDiscount = maxDiscount;
+    if (expiryDate !== undefined) coupon.expiryDate = expiry;
+    if (usageLimit !== undefined) coupon.usageLimit = usageLimit;
 
     await coupon.save();
     return coupon;

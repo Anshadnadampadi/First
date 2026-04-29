@@ -121,7 +121,7 @@
                 <p class="text-[10px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-4">Management</p>
                 <div class="space-y-1">
                     <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-2.5 text-sm nav-item rounded-sm <%= typeof title !== 'undefined' && title === 'Admin Dashboard' ? 'bg-white/10 text-white' : '' %>">
-                        <span class="w-4 h-4 opacity-50">📊</span>
+                        <span class="w-4 h-4 opacity-50">🏠</span>
                         Dashboard
                     </a>
                     
@@ -163,7 +163,7 @@
                         Customers
                     </a>
                     <a href="/admin/sales-report" class="flex items-center gap-3 px-4 py-2.5 text-sm nav-item rounded-sm <%= typeof title !== 'undefined' && title === 'Sales Report' ? 'bg-white/10 text-white' : '' %>">
-                        <span class="w-4 h-4 opacity-50">📊</span>
+                        <span class="w-4 h-4 opacity-50">📈</span>
                         Sales Report
                     </a>
                 </div>
@@ -172,11 +172,11 @@
             <div class="px-6 mb-4">
                 <p class="text-[10px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-4">Marketing</p>
                 <div class="space-y-1">
-                    <a href="/admin/marketing/coupons" class="flex items-center gap-3 px-4 py-2.5 text-sm nav-item rounded-sm">
+                    <a href="/admin/marketing/coupons" class="flex items-center gap-3 px-4 py-2.5 text-sm nav-item rounded-sm <%= typeof title !== 'undefined' && title === 'Coupons' ? 'bg-white/10 text-white' : '' %>">
                         <span class="w-4 h-4 opacity-50">🎟️</span>
                         Coupons
                     </a>
-                    <a href="/admin/marketing/banners" class="flex items-center gap-3 px-4 py-2.5 text-sm nav-item rounded-sm">
+                    <a href="/admin/marketing/banners" class="flex items-center gap-3 px-4 py-2.5 text-sm nav-item rounded-sm <%= typeof title !== 'undefined' && title === 'Banners' ? 'bg-white/10 text-white' : '' %>">
                         <span class="w-4 h-4 opacity-50">🖼️</span>
                         Banners
                     </a>

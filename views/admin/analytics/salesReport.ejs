@@ -353,10 +353,10 @@
         new Chart(revCtx, {
             type: 'line',
             data: {
-                labels: <%- JSON.stringify(orders.reverse().map(o => new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))) %>,
+                labels: <%- JSON.stringify(chartData.labels) %>,
                 datasets: [{
                     label: 'Revenue',
-                    data: <%- JSON.stringify(orders.map(o => o.totalAmount)) %>,
+                    data: <%- JSON.stringify(chartData.data) %>,
                     borderColor: '#ff6a00',
                     borderWidth: 3,
                     tension: 0.4,

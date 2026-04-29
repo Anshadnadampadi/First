@@ -87,4 +87,17 @@ const productSchema = new mongoose.Schema({
 ]
  
 }, { timestamps: true })
+
+productSchema.pre('save', async function() {
+    if (this.variants && this.variants.length > 0) {
+        const activeVariants = this.variants.filter(v => !v.isDeleted);
+        if (activeVariants.length > 0) {
+            this.price = activeVariants[0].price;
+            this.stock = activeVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+        } else {
+            this.stock = 0;
+        }
+    }
+});
+
 export default mongoose.models.Product || mongoose.model("Product", productSchema);

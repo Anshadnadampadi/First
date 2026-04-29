@@ -11,6 +11,7 @@ export const getBestOfferForProduct = async (product) => {
     const offers = await Offer.find({
         isActive: true,
         expiryDate: { $gt: now },
+        startDate: { $lte: now },
         $or: [
             { type: 'Product', productId: product._id },
             { type: 'Category', categoryId: product.category }
@@ -52,7 +53,8 @@ export const applyOffersToProducts = async (products) => {
     const now = new Date();
     const activeOffers = await Offer.find({
         isActive: true,
-        expiryDate: { $gt: now }
+        expiryDate: { $gt: now },
+        startDate: { $lte: now }
     });
 
     return products.map(product => {

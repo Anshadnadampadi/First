@@ -31,6 +31,11 @@ const offerSchema = new mongoose.Schema({
         ref: 'Category',
         default: null
     },
+    startDate: {
+        type: Date,
+        required: true,
+        default: Date.now
+    },
     expiryDate: {
         type: Date,
         required: true

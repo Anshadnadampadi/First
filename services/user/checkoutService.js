@@ -35,12 +35,17 @@ export const placeOrderService = async (userId, orderData) => {
         return { success: false, message: 'Address not found or unauthorized.', status: 404 };
     }
 
+    const originalSubtotal = cart.originalSubtotal || cart.subtotal || 0;
     let subtotal = cart.subtotal || 0;
     let tax = Math.floor(subtotal * 0.18); 
     let shippingFee = subtotal > 500 ? 0 : 50; 
     
     let discount = 0;
     let appliedCoupon = null;
+
+    // Safety limit: Total discount (Offer + Coupon) cannot exceed 50% of original price
+    const MAX_TOTAL_DISCOUNT_PERCENT = 50; 
+    const currentOfferDiscount = Math.max(0, originalSubtotal - subtotal);
 
     if (couponCode) {
         const coupon = await Coupon.findOne({ 
@@ -49,17 +54,24 @@ export const placeOrderService = async (userId, orderData) => {
         });
 
         if (coupon && new Date(coupon.expiryDate) > new Date()) {
-            // Re-validate basic constraints
             const hasUsed = coupon.usedBy.some(id => id.toString() === userId.toString());
             if (subtotal >= coupon.minAmount && !hasUsed && coupon.usedBy.length < coupon.usageLimit) {
+                let potentialCouponDiscount = 0;
                 if (coupon.discountType === 'percentage') {
-                    discount = Math.floor((subtotal) * (coupon.discountValue / 100));
-                    if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-                        discount = coupon.maxDiscount;
+                    potentialCouponDiscount = Math.floor((subtotal) * (coupon.discountValue / 100));
+                    if (coupon.maxDiscount && potentialCouponDiscount > coupon.maxDiscount) {
+                        potentialCouponDiscount = coupon.maxDiscount;
                     }
                 } else {
-                    discount = coupon.discountValue;
+                    potentialCouponDiscount = coupon.discountValue;
                 }
+
+                // Check against safety limit
+                const maxAllowedTotalDiscount = Math.floor(originalSubtotal * (MAX_TOTAL_DISCOUNT_PERCENT / 100));
+                const remainingDiscountGap = Math.max(0, maxAllowedTotalDiscount - currentOfferDiscount);
+
+                // Cap the coupon discount if it exceeds the remaining gap
+                discount = Math.min(potentialCouponDiscount, remainingDiscountGap);
                 appliedCoupon = coupon;
             }
         }
@@ -112,7 +124,7 @@ export const placeOrderService = async (userId, orderData) => {
         },
         subtotal, tax, shippingFee, discount, totalAmount, couponCode, paymentMethod,
         paymentStatus: paymentMethod === 'WALLET' ? 'Paid' : 'Pending', 
-        orderStatus: 'Processing'
+        orderStatus: paymentMethod === 'ONLINE PAYMENT' ? 'Pending' : 'Confirmed'
     });
 
     // If Wallet payment, deduct balance
@@ -197,6 +209,7 @@ export const verifyPaymentService = async (paymentData) => {
         const order = await Order.findOne({ orderId: orderId });
         if (order) {
             order.paymentStatus = 'Paid';
+            order.orderStatus = 'Confirmed';
             order.razorpayPaymentId = razorpay_payment_id;
             order.razorpaySignature = razorpay_signature;
             await order.save();
@@ -218,4 +231,42 @@ export const verifyPaymentService = async (paymentData) => {
     }
 
     return { success: false, message: 'Payment verification failed.' };
+};
+
+export const retryPaymentService = async (orderId, userId) => {
+    const order = await Order.findOne({ orderId: orderId, user: userId });
+    
+    if (!order) {
+        throw new Error("Order not found");
+    }
+
+    if (order.orderStatus !== 'Pending') {
+        throw new Error(`Order cannot be paid. Status: ${order.orderStatus}`);
+    }
+
+    if (order.paymentMethod !== 'ONLINE PAYMENT') {
+        throw new Error("Only online payments can be retried");
+    }
+
+    // Create a NEW Razorpay order for the retry
+    const options = {
+        amount: Math.round(order.totalAmount * 100),
+        currency: "INR",
+        receipt: order.orderId,
+    };
+
+    try {
+        const razorpayOrder = await razorpay.orders.create(options);
+        order.razorpayOrderId = razorpayOrder.id;
+        await order.save();
+
+        return {
+            success: true,
+            orderId: order.orderId,
+            razorpayOrder: razorpayOrder
+        };
+    } catch (err) {
+        console.error("Retry Payment Error:", err);
+        throw new Error("Failed to initiate payment retry");
+    }
 };

@@ -64,6 +64,11 @@ const SpaNavigation = {
                 const newBread = doc.querySelector('.breadcrumbs-container');
                 const oldBread = document.querySelector('.breadcrumbs-container');
                 if (newBread && oldBread) oldBread.innerHTML = newBread.innerHTML;
+
+                // Refresh Sidebar Nav to update active states
+                const newNav = doc.querySelector('aside nav');
+                const oldNav = document.querySelector('aside nav');
+                if (newNav && oldNav) oldNav.innerHTML = newNav.innerHTML;
                 
                 // Re-initialize scripts in new content
                 this.executeScripts(currentContent);
@@ -77,10 +82,9 @@ const SpaNavigation = {
                 }
                 
                 // Re-trigger Alpine.js v3
-                // Give it a small tick to ensure scripts are processed
                 setTimeout(() => {
                     if (window.Alpine) {
-                        window.Alpine.initTree(currentContent);
+                        window.Alpine.initTree(document.body);
                     }
                 }, 50);
             } else {

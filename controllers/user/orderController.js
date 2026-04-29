@@ -39,7 +39,8 @@ export const getUserOrders = async (req, res) => {
             breadcrumbs: [
                 { label: 'Profile', url: '/profile' },
                 { label: 'Orders', url: '/account/orders' }
-            ]
+            ],
+            razorpayKeyId: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
         console.error('Error fetching user orders:', error);
@@ -67,7 +68,8 @@ export const getUserOrderDetails = async (req, res) => {
                 { label: 'Profile', url: '/profile' },
                 { label: 'Orders', url: '/account/orders' },
                 { label: `Order #${order.orderId}`, url: `/account/orders/${order._id}` }
-            ]
+            ],
+            razorpayKeyId: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
         console.error('Error fetching user order details:', error);
@@ -174,18 +176,13 @@ export const downloadInvoice = async (req, res) => {
 
         doc.pipe(res);
 
-        // --- Original Invoice Logic (Immutable) ---
-        // We use all items to represent the purchase at the time it was made
+        // --- Order Values (Use stored values for consistency) ---
         const originalItems = order.items; 
-        const originalSubtotal = originalItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        const originalTax = Math.floor(originalSubtotal * 0.18);
-        
-        // Calculate original discount (proportionally if needed, but here we just take the stored discount if the subtotal matches)
-        // Since we want the "Original" invoice, we should ideally show what was actually paid at checkout.
-        // If the order has a discount, we show it.
+        const originalSubtotal = order.subtotal || 0;
+        const originalTax = order.tax || 0;
         const originalDiscount = order.discount || 0;
         const originalShipping = order.shippingFee || 0;
-        const originalTotal = originalSubtotal + originalTax + originalShipping - originalDiscount;
+        const originalTotal = order.totalAmount || (originalSubtotal + originalTax + originalShipping - originalDiscount);
 
         // --- Colors & Branding ---
         const accentColor = '#ff6a00';
@@ -250,7 +247,14 @@ export const downloadInvoice = async (req, res) => {
             if (!isEven) doc.rect(50, currentY, 500, 25).fill(lightGray);
             
             doc.fillColor(textColor);
-            const description = `${item.product ? item.product.name : 'Product'} ${(typeof item.variant === 'object' && item.variant !== null) ? '(' + [item.variant.storage, item.variant.color].filter(Boolean).join(' ') + ')' : ''}`;
+            
+            let variantStr = '';
+            if (typeof item.variant === 'string') {
+                variantStr = item.variant;
+            } else if (typeof item.variant === 'object' && item.variant !== null) {
+                variantStr = [item.variant.storage, item.variant.color, item.variant.ram].filter(Boolean).join(' / ');
+            }
+            const description = `${item.product ? item.product.name : 'Product'} ${variantStr ? '(' + variantStr + ')' : ''}`;
             
             doc.text(description, 60, currentY + 8, { width: 230 });
             doc.text(`₹${item.price.toLocaleString()}`, 300, currentY + 8, { width: 80, align: 'right' });

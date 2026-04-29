@@ -22,6 +22,12 @@ import nocache from "nocache"
 import { checkBlocked } from "./middlewares/authMiddleware.js";
 import expressEjsLayouts from 'express-ejs-layouts';
 import { setViewLocals } from "./middlewares/viewMiddleware.js";
+import { reclaimStockFromPendingOrders } from "./services/common/orderCleanupService.js";
+
+// Run order cleanup every 10 minutes
+setInterval(() => {
+    reclaimStockFromPendingOrders(30);
+}, 10 * 60 * 1000);
 
 const PORT = process.env.PORT || 7000
 

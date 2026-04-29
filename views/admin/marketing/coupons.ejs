@@ -320,9 +320,9 @@
                             if (!v.expiryDate) {
                                 this.formErrors.expiryDate = "Required";
                             } else {
-                                const selected = new Date(v.expiryDate);
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
+                                // Timezone-agnostic comparison (YYYY-MM-DD strings)
+                                const selected = v.expiryDate;
+                                const today = new Date().toISOString().split('T')[0];
 
                                 if (selected < today) {
                                     this.formErrors.expiryDate = "Cannot be a past date";

@@ -80,9 +80,13 @@ async function addToCartFromCard(productId, name) {
         const data = await response.json();
         if (data.success) {
             dispatchGlobalToast('success', 'Added to cart', name);
-            const badge = document.getElementById('cart-badge');
-            if (badge && data.cartCount !== undefined) {
-                badge.textContent = data.cartCount;
+            const cartBadge = document.getElementById('cart-badge');
+            if (cartBadge && data.cartCount !== undefined) {
+                cartBadge.textContent = data.cartCount;
+            }
+            const wishlistBadge = document.getElementById('wishlist-badge');
+            if (wishlistBadge && data.wishlistCount !== undefined) {
+                wishlistBadge.textContent = data.wishlistCount;
             }
         } else {
             if (data.message && data.message.toLowerCase().includes('login')) {
@@ -160,9 +164,13 @@ async function moveToCart(productId, color = "", storage = "", ram = "", btnElem
         const data = await response.json();
         if (data.success) {
             dispatchGlobalToast('success', 'Added to cart', '');
-            const badge = document.getElementById('cart-badge');
-            if(badge && data.cartCount !== undefined) {
-                 badge.textContent = data.cartCount;
+            const cartBadge = document.getElementById('cart-badge');
+            if(cartBadge && data.cartCount !== undefined) {
+                 cartBadge.textContent = data.cartCount;
+            }
+            const wishlistBadge = document.getElementById('wishlist-badge');
+            if (wishlistBadge && data.wishlistCount !== undefined) {
+                wishlistBadge.textContent = data.wishlistCount;
             }
             if(btnElement) {
                 const card = btnElement.closest('.bg-black-card');

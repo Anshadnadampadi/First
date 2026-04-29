@@ -6,7 +6,7 @@ export const getSalesReportPage = async (req, res) => {
     try {
         const { filter = 'daily', startDate, endDate, page = 1, status = 'Delivered' } = req.query;
         const limit = 10;
-        const { orders, stats, period, totalPages, currentPage, previousRevenue, couponUsage, topBrands } = await getSalesReportService(filter, startDate, endDate, page, limit, status);
+        const { orders, stats, period, totalPages, currentPage, previousRevenue, couponUsage, topBrands, chartData } = await getSalesReportService(filter, startDate, endDate, page, limit, status);
 
         // Build query string for pagination links
         const queryParams = new URLSearchParams({ filter, status });
@@ -20,6 +20,7 @@ export const getSalesReportPage = async (req, res) => {
             previousRevenue,
             couponUsage,
             topBrands,
+            chartData,
             filter,
             status,
             startDate,

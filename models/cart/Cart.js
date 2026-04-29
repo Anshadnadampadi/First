@@ -21,6 +21,10 @@ const cartItemSchema = new mongoose.Schema({
     price: {
         type: Number,
         required: true
+    },
+    originalPrice: {
+        type: Number,
+        required: true
     }
 });
 const cartSchema = new mongoose.Schema({
@@ -32,6 +36,11 @@ const cartSchema = new mongoose.Schema({
     },
     items: [cartItemSchema],
     subtotal: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    originalSubtotal: {
         type: Number,
         required: true,
         default: 0
@@ -55,8 +64,10 @@ const cartSchema = new mongoose.Schema({
 cartSchema.pre("save", async function() {
     if (this.items && this.items.length > 0) {
         this.subtotal = this.items.reduce((total, item) => total + (item.price * item.qty), 0);
+        this.originalSubtotal = this.items.reduce((total, item) => total + ((item.originalPrice || item.price) * item.qty), 0);
     } else {
         this.subtotal = 0;
+        this.originalSubtotal = 0;
     }
 });
 

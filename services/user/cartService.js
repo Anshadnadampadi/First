@@ -1,5 +1,6 @@
 import Cart from "../../models/cart/Cart.js";
 import Product from "../../models/product/Product.js";
+import Wishlist from "../../models/wishlist/wishlist.js";
 import { isSameVariant, findMatchingVariant, getVariantDisplayString } from "../../utils/productHelpers.js";
 import * as offerService from "../common/offerService.js";
 
@@ -14,7 +15,15 @@ export const getCartData = async (userId) => {
         const updatedItems = [];
         for (const item of cart.items) {
             const product = item.product;
-            if (!product) return { ...item, isUnavailable: true };
+            if (!product) {
+                updatedItems.push({ 
+                    ...item, 
+                    isUnavailable: true,
+                    displayImage: '/images/placeholder.jpg',
+                    variantDisplay: getVariantDisplayString(item.variant)
+                });
+                continue;
+            }
 
             const isProductUnavailable = product.isBlocked || !product.isListed;
             let isVariantUnavailable = false;
@@ -49,10 +58,19 @@ export const getCartData = async (userId) => {
                 }
             }
 
+            // ── Base Price Extraction ──
+            let basePrice = product.price || 0;
+            if (product.variants?.length > 0 && item.variant) {
+                const matched = findMatchingVariant(product.variants, item.variant);
+                if (matched) {
+                    basePrice = matched.price || 0;
+                }
+            }
+
             // ── Offer Calculation ──
             const { discountedPrice } = await offerService.getBestOfferForProduct({
                 ...product,
-                price: item.price // Use the base price of the item/variant
+                price: basePrice // Use the true base price
             });
 
             updatedItems.push({ 
@@ -63,14 +81,21 @@ export const getCartData = async (userId) => {
                 isOutOfStock: currentStock <= 0,
                 insufficientStock: item.qty > currentStock,
                 availableStock: currentStock,
-                price: discountedPrice // Use discounted price
+                price: discountedPrice, // Use discounted price
+                originalPrice: basePrice
             });
         }
         cart.items = updatedItems;
-        // Recalculate subtotal with discounted prices
+        // Recalculate subtotals
+        cart.originalSubtotal = updatedItems.reduce((total, item) => {
+            const originalPrice = item.product?.variants?.length > 0 && item.variant 
+                ? (findMatchingVariant(item.product.variants, item.variant)?.price || item.product.price)
+                : (item.product?.price || 0);
+            return total + (originalPrice * item.qty);
+        }, 0);
         cart.subtotal = updatedItems.reduce((total, item) => total + (item.price * item.qty), 0);
     } else if (!cart) {
-        cart = { items: [], subtotal: 0 };
+        cart = { items: [], subtotal: 0, originalSubtotal: 0 };
     }
 
     return cart;
@@ -144,7 +169,7 @@ export const addItemToCart = async (userId, { productId, variant, qty = 1 }) => 
         }
         cart = new Cart({
             userId,
-            items: [{ product: productId, variant: targetVariant, qty, price }]
+            items: [{ product: productId, variant: targetVariant, qty, price: finalPrice, originalPrice: price }]
         });
     } else {
         // Check if item with SAME product AND SAME variant already exists
@@ -167,17 +192,40 @@ export const addItemToCart = async (userId, { productId, variant, qty = 1 }) => 
 
             cart.items[itemIndex].qty = newQty;
             cart.items[itemIndex].price = finalPrice; // Update price with offer
+            cart.items[itemIndex].originalPrice = price;
         } else {
             // Add new item if no match found
             if (qty > MAX_PER_USER_LIMIT) {
                 throw new Error(`Limit reached: Maximum ${MAX_PER_USER_LIMIT} units allowed`);
             }
-            cart.items.push({ product: productId, variant: targetVariant, qty, price: finalPrice });
+            cart.items.push({ product: productId, variant: targetVariant, qty, price: finalPrice, originalPrice: price });
         }
     }
 
     await cart.save();
-    return cart.items.length;
+
+    // 🕊️ Remove from Wishlist automatically if it exists there
+    try {
+        const wishlist = await Wishlist.findOne({ userId });
+        if (wishlist) {
+            const initialCount = wishlist.items.length;
+            wishlist.items = wishlist.items.filter(item => 
+                !(item.productId.toString() === productId.toString() && isSameVariant(item.variant, targetVariant))
+            );
+            if (wishlist.items.length !== initialCount) {
+                await wishlist.save();
+            }
+        }
+    } catch (wishlistErr) {
+        // We don't want to fail the cart addition if wishlist removal fails
+        console.error("Failed to remove from wishlist during cart add:", wishlistErr);
+    }
+
+    const wishlist = await Wishlist.findOne({ userId });
+    return {
+        cartCount: cart.items.length,
+        wishlistCount: wishlist ? wishlist.items.length : 0
+    };
 };
 
 export const updateItemQty = async (userId, { itemId, change }) => {
@@ -202,30 +250,48 @@ export const updateItemQty = async (userId, { itemId, change }) => {
     }
 
     const MAX_PER_USER_LIMIT = 5;
-    if (newQty > MAX_PER_USER_LIMIT) {
+    if (changeNum > 0 && newQty > MAX_PER_USER_LIMIT) {
         throw new Error(`Cannot exceed maximum limit of ${MAX_PER_USER_LIMIT}`);
     }
 
-    // Stock check for specific variant
-    let stock = item.product.stock || 0;
-    const productVariants = item.product.variants;
+    // Stock & Price check for specific variant
+    let stock = 0;
+    let basePrice = 0;
+    if (item.product) {
+        stock = item.product.stock || 0;
+        basePrice = item.product.price || 0;
+        const productVariants = item.product.variants;
 
-    if (productVariants?.length > 0) {
-        const matched = findMatchingVariant(productVariants, item.variant);
-        if (!matched && item.variant) {
-            // The variant this item was referencing has been soft-deleted
-            throw new Error("This item's variant is no longer available. Please remove it from your cart.");
-        }
-        if (matched) {
-            stock = matched.stock;
+        if (productVariants?.length > 0) {
+            const matched = findMatchingVariant(productVariants, item.variant);
+            if (!matched && item.variant) {
+                // The variant this item was referencing has been soft-deleted
+                throw new Error("This item's variant is no longer available. Please remove it from your cart.");
+            }
+            if (matched) {
+                stock = matched.stock;
+                basePrice = matched.price || 0;
+            }
         }
     }
-    
-    if (newQty > stock) {
+
+    if (changeNum > 0 && newQty > stock) {
         throw new Error("Cannot exceed available stock");
     }
 
+    // Recalculate best offer with current base price
+    let discountedPrice = basePrice;
+    if (item.product) {
+        const offerResult = await offerService.getBestOfferForProduct({
+            ...item.product.toObject(),
+            price: basePrice
+        });
+        discountedPrice = offerResult.discountedPrice;
+    }
+
     item.qty = newQty;
+    item.price = discountedPrice || basePrice; // Update price in cart to reflect current offer
+    item.originalPrice = basePrice;
     await cart.save();
 
     // Verify issues after update
@@ -244,8 +310,8 @@ export const updateItemQty = async (userId, { itemId, change }) => {
 
     return {
         newQty: item.qty,
-        itemTotal: item.qty * item.price,
-        cartSubtotal: cart.subtotal,
+        itemTotal: item.qty * (item.price || 0),
+        cartSubtotal: cart.subtotal || 0,
         hasIssues,
         itemStatus: {
             isUnavailable: !item.product || item.product.isBlocked || !item.product.isListed,
@@ -282,7 +348,7 @@ export const removeItem = async (userId, itemId) => {
     });
 
     return {
-        cartSubtotal: cart.subtotal,
+        cartSubtotal: cart.subtotal || 0,
         isEmpty: cart.items.length === 0,
         hasIssues
     };

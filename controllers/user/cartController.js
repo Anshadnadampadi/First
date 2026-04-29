@@ -37,12 +37,13 @@ export const addToCart = async (req, res) => {
             return res.status(401).json({ success: false, message: "Please login to add to cart" });
         }
 
-        const cartCount = await cartService.addItemToCart(req.session.user, req.body);
+        const { cartCount, wishlistCount } = await cartService.addItemToCart(req.session.user, req.body);
 
         return res.status(200).json({ 
             success: true, 
             message: "Added to cart successfully",
-            cartCount
+            cartCount,
+            wishlistCount
         });
 
     } catch (error) {

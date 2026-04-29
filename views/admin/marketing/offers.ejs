@@ -36,16 +36,16 @@
 
                     <div class="pt-8 border-t border-white/5 flex justify-between items-center">
                         <div>
-                            <p class="text-white/20 text-[8px] uppercase tracking-widest mb-1">Expires On</p>
+                            <p class="text-white/20 text-[8px] uppercase tracking-widest mb-1">Duration</p>
                             <p class="text-white text-[10px] font-bold uppercase">
-                                <%= new Date(offer.expiryDate).toLocaleDateString() %>
+                                <%= new Date(offer.startDate).toLocaleDateString() %> - <%= new Date(offer.expiryDate).toLocaleDateString() %>
                             </p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2 mt-6 pt-6 border-t border-white/5">
                         <button
-                            @click="openEditModal('<%= offer._id %>', '<%= offer.name %>', '<%= offer.type %>', '<%= offer.discountType %>', <%= offer.discountValue %>, '<%= offer.productId ? offer.productId._id : `` %>', '<%= offer.categoryId ? offer.categoryId._id : `` %>', '<%= offer.expiryDate ? new Date(offer.expiryDate).toISOString().split(`T`)[0] : `` %>')"
+                            @click="openEditModal('<%= offer._id %>', '<%= offer.name %>', '<%= offer.type %>', '<%= offer.discountType %>', <%= offer.discountValue %>, '<%= offer.productId ? offer.productId._id : `` %>', '<%= offer.categoryId ? offer.categoryId._id : `` %>', '<%= offer.startDate ? new Date(offer.startDate).toISOString().split(`T`)[0] : `` %>', '<%= offer.expiryDate ? new Date(offer.expiryDate).toISOString().split(`T`)[0] : `` %>')"
                             class="flex-1 py-3 bg-white/5 text-white/70 hover:bg-white hover:text-black text-[10px] font-bold tracking-widest uppercase transition-all">
                             Edit
                         </button>
@@ -153,6 +153,14 @@
                         </div>
 
                         <div class="space-y-1">
+                            <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Start Date</label>
+                            <input type="date" x-model="formData.startDate" @change="validateField('startDate')"
+                                @blur="validateField('startDate')" :class="formErrors.startDate ? 'border-status-danger' : 'border-white/10'"
+                                class="w-full bg-black px-3 py-2 text-white text-xs border">
+                            <p x-show="formErrors.startDate" class="text-status-danger text-[10px] mt-1" x-text="formErrors.startDate"></p>
+                        </div>
+
+                        <div class="space-y-1">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Expiry Date</label>
                             <input type="date" x-model="formData.expiryDate" @change="validateField('expiryDate')"
                                 @blur="validateField('expiryDate')" :class="formErrors.expiryDate ? 'border-status-danger' : 'border-white/10'"
@@ -197,11 +205,13 @@
                         discountValue: '',
                         productId: '',
                         categoryId: '',
+                        startDate: new Date().toISOString().split('T')[0],
                         expiryDate: ''
                     },
                     formErrors: {
                         name: '',
                         discountValue: '',
+                        startDate: '',
                         expiryDate: '',
                         productId: '',
                         categoryId: ''
@@ -218,12 +228,13 @@
                             discountValue: '',
                             productId: '',
                             categoryId: '',
+                            startDate: new Date().toISOString().split('T')[0],
                             expiryDate: ''
                         };
                         Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
                         this.showModal = true;
                     },
-                    openEditModal(id, name, type, dType, val, pId, cId, expiry) {
+                    openEditModal(id, name, type, dType, val, pId, cId, start, expiry) {
                         this.isEditing = true;
                         this.currentId = id;
                         this.formData = {
@@ -233,6 +244,7 @@
                             discountValue: val,
                             productId: pId || '',
                             categoryId: cId || '',
+                            startDate: start || '',
                             expiryDate: expiry || ''
                         };
                         Object.keys(this.formErrors).forEach(k => this.formErrors[k] = '');
@@ -287,14 +299,24 @@
                             }
                         }
 
+                        if (field === "startDate") {
+                            if (!v.startDate) {
+                                this.formErrors.startDate = "Required";
+                            } else {
+                                const selected = new Date(v.startDate);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                if (selected < today && !this.isEditing) this.formErrors.startDate = "Cannot be a past date";
+                            }
+                        }
+
                         if (field === "expiryDate") {
                             if (!v.expiryDate) {
                                 this.formErrors.expiryDate = "Required";
                             } else {
                                 const selected = new Date(v.expiryDate);
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                if (selected < today) this.formErrors.expiryDate = "Cannot be a past date";
+                                const start = new Date(v.startDate || Date.now());
+                                if (selected < start) this.formErrors.expiryDate = "Must be after start date";
                             }
                         }
 
@@ -307,7 +329,7 @@
                         }
                     },
                     validateAll() {
-                        const fields = ["name", "discountValue", "expiryDate", "productId", "categoryId"];
+                        const fields = ["name", "discountValue", "startDate", "expiryDate", "productId", "categoryId"];
                         fields.forEach(f => this.validateField(f));
                         return Object.values(this.formErrors).every(e => !e);
                     },

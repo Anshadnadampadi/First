@@ -233,15 +233,6 @@ export const getChartData = async (req, res) => {
         let data = [];
 
         if (filter === 'yearly') {
-            const currentYear = new Date().getFullYear();
-            const yearlyData = await Order.aggregate([
-                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(currentYear - 5, 0, 1) } } },
-                { $group: { _id: { $year: "$createdAt" }, total: { $sum: "$totalAmount" } } },
-                { $sort: { "_id": 1 } }
-            ]);
-            labels = yearlyData.map(d => d._id.toString());
-            data = yearlyData.map(d => d.total);
-        } else if (filter === 'monthly') {
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const currentYear = new Date().getFullYear();
             const monthlyData = await Order.aggregate([
@@ -252,6 +243,37 @@ export const getChartData = async (req, res) => {
             labels = months;
             data = new Array(12).fill(0);
             monthlyData.forEach(d => { data[d._id - 1] = d.total; });
+        } else if (filter === 'monthly') {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const monthlyData = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: startOfMonth } } },
+                { $group: { _id: { $dayOfMonth: "$createdAt" }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+            data = new Array(daysInMonth).fill(0);
+            monthlyData.forEach(d => { data[d._id - 1] = d.total; });
+        } else if (filter === 'weekly') {
+            const last7Days = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } },
+                { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = last7Days.map(d => d._id);
+            data = last7Days.map(d => d.total);
+        } else if (filter === 'daily') {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            const dailyData = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: startOfDay } } },
+                { $group: { _id: { $hour: "$createdAt" }, total: { $sum: "$totalAmount" } } },
+                { $sort: { "_id": 1 } }
+            ]);
+            labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            data = new Array(24).fill(0);
+            dailyData.forEach(d => { data[d._id] = d.total; });
         } else if (filter === 'custom' && startDate && endDate) {
             const start = new Date(startDate);
             start.setHours(0, 0, 0, 0);
@@ -265,14 +287,14 @@ export const getChartData = async (req, res) => {
             ]);
             labels = customData.map(d => d._id);
             data = customData.map(d => d.total);
-        } else { // daily/weekly
-            const last7Days = await Order.aggregate([
-                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } },
+        } else { // default to last 30 days
+            const last30Days = await Order.aggregate([
+                { $match: { orderStatus: 'Delivered', createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } },
                 { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, total: { $sum: "$totalAmount" } } },
                 { $sort: { "_id": 1 } }
             ]);
-            labels = last7Days.map(d => d._id);
-            data = last7Days.map(d => d.total);
+            labels = last30Days.map(d => d._id);
+            data = last30Days.map(d => d.total);
         }
 
         res.json({ success: true, labels, data });
@@ -331,6 +353,7 @@ export const getAdminManagement = async (req, res) => {
         const clearSearchUrl = `/admin/customers?${clearParams.toString()}`;
 
         res.render('admin/customers', {
+            title: 'Customers',
             msg,
             icon,
             customers: data.users,

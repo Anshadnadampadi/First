@@ -1517,6 +1517,9 @@
     const wishlistedKeys = <%- JSON.stringify(wishlistedIds || []) %>;
 
     let qty = 1;
+    let maxStock = <%= (defaultVariant ? defaultVariant.stock : product.stock) || 10 %>;
+    maxStock = Math.min(10, maxStock); // Global cap of 10
+
     function checkCurrentWishlist() {
         const selectedColor = document.getElementById('selectedColor')?.textContent?.trim() || "";
         const selectedStorage = document.getElementById('selectedStorage')?.textContent?.trim() || "";
@@ -1754,6 +1757,13 @@
             btn.style.cursor = 'pointer';
             if (btn.classList.contains('btn-primary')) btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Add to Cart';
           });
+
+          // Sync maxStock and Qty
+          maxStock = Math.min(10, match.stock);
+          if (qty > maxStock) {
+            qty = Math.max(1, maxStock);
+            document.getElementById('qtyDisplay').textContent = qty;
+          }
         } else {
           if (badge) {
             badge.innerHTML = match.isDeleted ? `● UNAVAILABLE` : `● OUT OF STOCK`;
@@ -1770,6 +1780,10 @@
             btn.style.cursor = 'not-allowed';
             if (btn.classList.contains('btn-primary')) btn.innerHTML = match.isDeleted ? 'Unavailable' : 'Out of Stock';
           });
+
+          maxStock = 0;
+          qty = 1;
+          document.getElementById('qtyDisplay').textContent = qty;
         }
 
         // Update images dynamically
@@ -1811,7 +1825,8 @@
 
     // ── QUANTITY ──────────────────────────────────────────────────────────────
     function adjustQty(delta) {
-      qty = Math.max(1, Math.min(10, qty + delta));
+      if (maxStock <= 0) return;
+      qty = Math.max(1, Math.min(maxStock, qty + delta));
       document.getElementById('qtyDisplay').textContent = qty;
     }
 

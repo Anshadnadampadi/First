@@ -126,6 +126,39 @@ export const getSalesReportService = async (filter, startDate, endDate, page = n
             { $limit: 5 }
         ])
     ]);
+    
+    // ── Chart Data Aggregation ──
+    let chartGroup = {};
+    if (filter === 'daily') {
+        chartGroup = { $hour: "$createdAt" };
+    } else if (filter === 'weekly' || filter === 'monthly' || filter === 'custom') {
+        chartGroup = { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } };
+    } else if (filter === 'yearly') {
+        chartGroup = { $month: "$createdAt" };
+    }
+
+    const chartAggregation = await Order.aggregate([
+        { $match: matchCondition },
+        { $group: { _id: chartGroup, total: { $sum: "$totalAmount" } } },
+        { $sort: { "_id": 1 } }
+    ]);
+
+    let chartLabels = [];
+    let chartValues = [];
+
+    if (filter === 'daily') {
+        chartLabels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+        chartValues = new Array(24).fill(0);
+        chartAggregation.forEach(d => { chartValues[d._id] = d.total; });
+    } else if (filter === 'yearly') {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        chartLabels = months;
+        chartValues = new Array(12).fill(0);
+        chartAggregation.forEach(d => { chartValues[d._id - 1] = d.total; });
+    } else {
+        chartLabels = chartAggregation.map(d => d._id);
+        chartValues = chartAggregation.map(d => d.total);
+    }
 
     const reportStats = stats.length > 0 ? stats[0] : { totalSales: 0, totalRevenue: 0, totalDiscount: 0, totalProductsSold: 0 };
     const previousRevenue = prevStats.length > 0 ? prevStats[0].totalRevenue : 0;
@@ -137,8 +170,11 @@ export const getSalesReportService = async (filter, startDate, endDate, page = n
         couponUsage,
         topBrands,
         period: { start, end },
+        chartData: { labels: chartLabels, data: chartValues },
         totalPages: limit ? Math.ceil(totalOrders / limit) : 1,
         totalOrders,
         currentPage: page ? parseInt(page) : 1
     };
 };
+
+

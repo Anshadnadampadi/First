@@ -34,37 +34,46 @@ export const applyCouponService = async (userId, code) => {
         throw new Error("Cart is empty");
     }
 
-    // Calculate cart total
-    let cartTotal = 0;
-
-    cart.items.forEach(item => {
-        cartTotal += item.qty * item.price;
-    });
+    // ── Discount Calculation with Safety Limit ──
+    const cartTotal = cart.subtotal || 0;
+    const originalTotal = cart.originalSubtotal || cartTotal;
+    const currentOfferDiscount = Math.max(0, originalTotal - cartTotal);
+    
+    // Safety limit: Total discount (Offer + Coupon) cannot exceed 50% of original price
+    const MAX_TOTAL_DISCOUNT_PERCENT = 50; 
+    const maxAllowedTotalDiscount = Math.floor(originalTotal * (MAX_TOTAL_DISCOUNT_PERCENT / 100));
+    const remainingDiscountGap = Math.max(0, maxAllowedTotalDiscount - currentOfferDiscount);
 
     // Minimum amount check
     if (cartTotal < coupon.minAmount) {
         throw new Error(`Minimum purchase ₹${coupon.minAmount} required`);
     }
 
-    // Calculate discount
-    let discount = 0;
-
+    let potentialDiscount = 0;
     if (coupon.discountType === "percentage") {
-        discount = (cartTotal * coupon.discountValue) / 100;
+        potentialDiscount = Math.floor((cartTotal * coupon.discountValue) / 100);
     } else {
-        discount = coupon.discountValue;
+        potentialDiscount = coupon.discountValue;
     }
 
-    // Max discount cap
-    if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-        discount = coupon.maxDiscount;
+    // Max discount cap defined on the coupon itself
+    if (coupon.maxDiscount && potentialDiscount > coupon.maxDiscount) {
+        potentialDiscount = coupon.maxDiscount;
     }
 
-    const finalAmount = cartTotal - discount;
+    // ENFORCE GLOBAL OVER-DISCOUNTING LIMIT
+    const finalDiscount = Math.min(potentialDiscount, remainingDiscountGap);
 
-    // Save coupon in cart (IMPORTANT 🔥)
+    if (finalDiscount < potentialDiscount && finalDiscount === remainingDiscountGap) {
+        // Optional: We could inform the user that the discount was capped, 
+        // but for now we just apply the maximum allowed.
+    }
+
+    const finalAmount = cartTotal - finalDiscount;
+
+    // Save coupon in cart
     cart.coupon = coupon._id;
-    cart.discount = discount;
+    cart.discount = finalDiscount;
     cart.finalAmount = finalAmount;
 
     await cart.save();

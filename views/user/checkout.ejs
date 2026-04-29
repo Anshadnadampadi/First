@@ -502,7 +502,7 @@
             subtotal: baseSubtotal,
             shippingFee: baseSubtotal > 500 ? 0 : 50,
             tax: Math.floor(baseSubtotal * 0.18),
-            discount: <%= (cart && cart.discount) ? cart.discount : 0 %>,
+            discount: 0,
             
             get totalAmount() {
                 return Math.max(0, this.subtotal + this.tax + this.shippingFee - this.discount);
@@ -554,7 +554,7 @@
             orderData: {
                 addressId: userAddresses.length > 0 ? (userAddresses.find(a => a.default) ? userAddresses.find(a => a.default)._id : userAddresses[0]._id) : '',
                 paymentMethod: 'CASH ON DELIVERY',
-                couponCode: '<%= (cart && cart.coupon) ? cart.coupon.code : "" %>'
+                couponCode: ''
             },
 
             // Address overlay functionality
@@ -674,6 +674,11 @@
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Address ${this.addressMode === 'add' ? 'saved' : 'updated'} successfully`, type: 'success' } }));
                         setTimeout(() => window.location.reload(), 1000); 
                     } else {
+                        if (result.redirect) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: result.message, type: 'error' }}));
+                            setTimeout(() => window.location.href = result.redirect, 2000);
+                            return;
+                        }
                         if (result.errors) {
                             this.addressErrors = result.errors;
                         } else {
@@ -734,6 +739,11 @@
                             setTimeout(() => window.location.href = '/checkout/success/' + data.orderId, 1200);
                         }
                     } else {
+                        if (data.redirect) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message, type: 'error' }}));
+                            setTimeout(() => window.location.href = data.redirect, 2000);
+                            return;
+                        }
                         throw new Error(data.message || 'Order could not be placed.');
                     }
                 } catch(error) {
