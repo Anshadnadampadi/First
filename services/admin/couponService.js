@@ -99,17 +99,26 @@ export const createCouponService = async (data) => {
 };
 
 export const getCouponService = async (query) => {
-
     const { search = "", page = 1, limit = 10 } = query;
-
     const filter = {
         code: { $regex: search, $options: "i" }
     };
 
-    return await Coupon.find(filter)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(Number(limit));
+    const skip = (Number(page) - 1) * Number(limit);
+    const [coupons, totalCoupons] = await Promise.all([
+        Coupon.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Number(limit)),
+        Coupon.countDocuments(filter)
+    ]);
+
+    return {
+        coupons,
+        totalPages: Math.ceil(totalCoupons / limit),
+        totalCoupons,
+        currentPage: Number(page)
+    };
 };
 
 export const updateCouponService = async (id, data) => {

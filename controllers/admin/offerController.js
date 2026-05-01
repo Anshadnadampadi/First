@@ -10,7 +10,7 @@ import Category from "../../models/category/category.js";
 
 export const getOfferPage = async (req, res) => {
     try {
-        const { offers, totalPages, currentPage } = await getOffersService(req.query);
+        const { offers, totalPages, currentPage, totalOffers } = await getOffersService(req.query);
         const products = await Product.find({ isListed: true }).select('name');
         const categories = await Category.find({ isUnlisted: false }).select('name');
 
@@ -19,8 +19,10 @@ export const getOfferPage = async (req, res) => {
             offers,
             totalPages,
             currentPage,
+            totalOffers,
             products,
-            categories
+            categories,
+            query: req.query
         });
 
     } catch (err) {

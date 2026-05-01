@@ -3,11 +3,15 @@ import { createCouponService, getCouponService, toggleCouponStatusService, updat
 
 export const getCouponPage = async (req, res) => {
     try {
-        const coupons = await getCouponService(req.query);
+        const { coupons, totalPages, currentPage, totalCoupons } = await getCouponService(req.query);
 
         res.render("admin/marketing/coupons", {
             title: 'Coupons',
-            coupons
+            coupons,
+            totalPages,
+            currentPage,
+            totalCoupons,
+            query: req.query
         });
 
     } catch (err) {

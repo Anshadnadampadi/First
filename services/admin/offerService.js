@@ -51,8 +51,27 @@ export const createOfferService = async (data) => {
         throw new Error("Expiry date must be in the future");
     }
 
-    //  Unique Offer Check (Optional: Allow multiple but maybe warn or just take best)
-    // For now, let's just create it. The 'best offer' logic handles overlaps.
+    //  Duplicate Name Check (Case-insensitive)
+    const duplicateName = await Offer.findOne({ 
+        name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } 
+    });
+    if (duplicateName) {
+        throw new Error("An offer with this name already exists");
+    }
+
+    //  Overlap Check (One active offer per product/category)
+    const overlapFilter = { isActive: true };
+    if (type === 'Product') {
+        overlapFilter.productId = productId;
+    } else {
+        overlapFilter.categoryId = categoryId;
+    }
+
+    const existingOffer = await Offer.findOne(overlapFilter);
+    if (existingOffer) {
+        const target = type === 'Product' ? "this product" : "this category";
+        throw new Error(`An active offer is already running for ${target}`);
+    }
 
     return await Offer.create({
         name: name.trim(),
@@ -118,6 +137,39 @@ export const updateOfferService = async (id, data) => {
         offer.productId = null;
     }
 
+    // Duplicate Checks for Update
+    if (name) {
+        const duplicateName = await Offer.findOne({ 
+            name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+            _id: { $ne: id }
+        });
+        if (duplicateName) throw new Error("An offer with this name already exists");
+    }
+
+    // Overlap Check for Update (If changing product/category or making it active)
+    const currentType = type || offer.type;
+    const currentProductId = productId || offer.productId;
+    const currentCategoryId = categoryId || offer.categoryId;
+    
+    const overlapFilter = { 
+        isActive: true, 
+        _id: { $ne: id }
+    };
+    
+    if (currentType === 'Product' && currentProductId) {
+        overlapFilter.productId = currentProductId;
+    } else if (currentType === 'Category' && currentCategoryId) {
+        overlapFilter.categoryId = currentCategoryId;
+    }
+
+    if (overlapFilter.productId || overlapFilter.categoryId) {
+        const existingOffer = await Offer.findOne(overlapFilter);
+        if (existingOffer) {
+            const target = currentType === 'Product' ? "this product" : "this category";
+            throw new Error(`An active offer is already running for ${target}`);
+        }
+    }
+
     if (expiryDate) {
         const expiry = new Date(expiryDate);
         expiry.setHours(23, 59, 59, 999);
@@ -132,10 +184,26 @@ export const toggleOfferStatusService = async (id) => {
     const offer = await Offer.findById(id);
     if (!offer) throw new Error("Offer not found");
 
+    if (!offer.isActive) {
+        // We are enabling it, so check for overlaps
+        const overlapFilter = { 
+            isActive: true, 
+            _id: { $ne: id }
+        };
+        if (offer.type === 'Product') overlapFilter.productId = offer.productId;
+        else overlapFilter.categoryId = offer.categoryId;
+
+        const existing = await Offer.findOne(overlapFilter);
+        if (existing) {
+            const target = offer.type === 'Product' ? "product" : "category";
+            throw new Error(`Cannot enable. Another active offer exists for this ${target}.`);
+        }
+    }
+
     offer.isActive = !offer.isActive;
     await offer.save();
     return offer;
-};
+}
 
 export const deleteOfferService = async (id) => {
     const offer = await Offer.findById(id);
