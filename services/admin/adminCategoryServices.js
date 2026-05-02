@@ -5,7 +5,7 @@ import { commonCache, CACHE_KEYS } from "../common/cacheService.js";
 
 export const getCategoryManagementData = async (query) => {
     const page = parseInt(query.page) || 1;
-    const limit = 4;
+    const limit = 5;
     const skip = (page - 1) * limit;
     const searchQuery = query.search || "";
 

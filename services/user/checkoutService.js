@@ -37,8 +37,6 @@ export const placeOrderService = async (userId, orderData) => {
 
     const originalSubtotal = cart.originalSubtotal || cart.subtotal || 0;
     let subtotal = cart.subtotal || 0;
-    let tax = Math.floor(subtotal * 0.18); 
-    let shippingFee = subtotal > 500 ? 0 : 50; 
     
     let discount = 0;
     let appliedCoupon = null;
@@ -53,29 +51,56 @@ export const placeOrderService = async (userId, orderData) => {
             isActive: true
         });
 
-        if (coupon && new Date(coupon.expiryDate) > new Date()) {
-            const hasUsed = coupon.usedBy.some(id => id.toString() === userId.toString());
-            if (subtotal >= coupon.minAmount && !hasUsed && coupon.usedBy.length < coupon.usageLimit) {
-                let potentialCouponDiscount = 0;
-                if (coupon.discountType === 'percentage') {
-                    potentialCouponDiscount = Math.floor((subtotal) * (coupon.discountValue / 100));
-                    if (coupon.maxDiscount && potentialCouponDiscount > coupon.maxDiscount) {
-                        potentialCouponDiscount = coupon.maxDiscount;
-                    }
-                } else {
-                    potentialCouponDiscount = coupon.discountValue;
-                }
-
-                // Check against safety limit
-                const maxAllowedTotalDiscount = Math.floor(originalSubtotal * (MAX_TOTAL_DISCOUNT_PERCENT / 100));
-                const remainingDiscountGap = Math.max(0, maxAllowedTotalDiscount - currentOfferDiscount);
-
-                // Cap the coupon discount if it exceeds the remaining gap
-                discount = Math.min(potentialCouponDiscount, remainingDiscountGap);
-                appliedCoupon = coupon;
+        if (coupon) {
+            // 1. Expiry Check
+            if (new Date(coupon.expiryDate) < new Date()) {
+                return { success: false, message: 'This coupon has expired.', status: 400 };
             }
+
+            // 2. Minimum Amount Check (Against current subtotal after offers)
+            if (subtotal < coupon.minAmount) {
+                return { success: false, message: `Minimum purchase of ₹${coupon.minAmount} required for this coupon.`, status: 400 };
+            }
+
+            // 3. Usage Check
+            const hasUsed = coupon.usedBy.some(id => id.toString() === userId.toString());
+            if (hasUsed) {
+                return { success: false, message: 'You have already used this coupon.', status: 400 };
+            }
+            if (coupon.usedBy.length >= coupon.usageLimit) {
+                return { success: false, message: 'Coupon usage limit reached.', status: 400 };
+            }
+
+            // 4. Calculate Discount
+            let potentialCouponDiscount = 0;
+            if (coupon.discountType === 'percentage') {
+                potentialCouponDiscount = Math.floor(subtotal * (coupon.discountValue / 100));
+                if (coupon.maxDiscount && potentialCouponDiscount > coupon.maxDiscount) {
+                    potentialCouponDiscount = coupon.maxDiscount;
+                }
+            } else {
+                potentialCouponDiscount = coupon.discountValue;
+            }
+
+            // 5. Apply Safety Limit (Offer + Coupon <= 50%)
+            const maxAllowedTotalDiscount = Math.floor(originalSubtotal * (MAX_TOTAL_DISCOUNT_PERCENT / 100));
+            const remainingDiscountGap = Math.max(0, maxAllowedTotalDiscount - currentOfferDiscount);
+            
+            discount = Math.min(potentialCouponDiscount, remainingDiscountGap);
+            appliedCoupon = coupon;
+
+            if (discount <= 0 && potentialCouponDiscount > 0) {
+                return { success: false, message: 'Coupon cannot be applied due to existing heavy offers on items.', status: 400 };
+            }
+        } else {
+            return { success: false, message: 'Invalid or inactive coupon code.', status: 400 };
         }
     }
+    
+    // Final check: Calculate tax and total correctly
+    const totalTaxable = Math.max(0, subtotal - discount);
+    const tax = Math.floor(totalTaxable * 0.18); 
+    const shippingFee = subtotal > 500 ? 0 : 50; 
     
     let totalAmount = Math.max(0, subtotal + tax + shippingFee - discount);
     const orderId = `ORD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;

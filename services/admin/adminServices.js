@@ -9,9 +9,9 @@ import User from "../../models/user/User.js";
 // services/adminService.js
 
 export const adminLogin = async ({ email, password }) => {
-    console.log('Admin')
+   
     const admin = await User.findOne({ email, isAdmin: true });
-    console.log(admin)
+    
 
     if (admin) {
         const isMatch = await bcrypt.compare(password, admin.password);

@@ -5,50 +5,58 @@ let activeIndex = -1;
 for(let i=stages.length-1; i>=0; i--) {
     if(stages[i].active) { activeIndex = i; break; }
 }
-// Calculate progress percentage accurately based on spacing
-const progressPercent = activeIndex === -1 ? 0 : (activeIndex / (stages.length - 1)) * 100;
-%>
 
-<% 
-const sideOffset = 100 / (stages.length * 2); 
+const totalStages = stages.length;
+// Side offset to center the dots within their flex-1 containers
+const sideOffset = (100 / totalStages) / 2;
 const totalLineWidth = 100 - (sideOffset * 2);
 %>
 
-<!-- Connecting Line Base -->
-<div class="absolute top-[35px] left-[<%= sideOffset %>%] right-[<%= sideOffset %>%] h-1 bg-white/5 rounded-full z-0 hidden sm:block"></div>
+<div class="relative py-4">
+    <!-- Connecting Line Base (Grey) -->
+    <div class="absolute top-6 left-[<%= sideOffset %>%] right-[<%= sideOffset %>%] h-0.5 bg-white/5 z-0 hidden sm:block"></div>
+    
+    <!-- Active Connecting Line (Accent) -->
+    <% if (activeIndex > 0) { %>
+        <div class="absolute top-6 left-[<%= sideOffset %>%] h-0.5 bg-accent z-0 hidden sm:block transition-all duration-1000 shadow-[0_0_15px_rgba(255,106,0,0.4)]" 
+             style="width: <%= (activeIndex / (totalStages - 1)) * totalLineWidth %>%;"></div>
+    <% } %>
 
-<!-- Active Connecting Line -->
-<div class="absolute top-[35px] left-[<%= sideOffset %>%] h-1 bg-accent rounded-full z-0 hidden sm:block transition-all duration-1000 shadow-[0_0_15px_rgba(255,106,0,0.6)]" style="width: calc(<%= totalLineWidth %>% * <%= activeIndex / Math.max(1, stages.length - 1) %>);"></div>
-
-<div class="flex flex-col sm:flex-row justify-between relative z-10 w-full gap-8 sm:gap-0">
-    <% stages.forEach((stage, index) => { %>
-        <div class="flex flex-row sm:flex-col items-center sm:text-center flex-1 relative group">
-            
-            <!-- Vertical line mapping for mobile -->
-            <% if (index !== stages.length - 1) { %>
-                <div class="absolute left-[1.4rem] top-12 bottom-[-2rem] w-[2px] bg-white/5 sm:hidden z-0"></div>
-                <% if (stage.active && stages[index+1].active) { %>
-                    <div class="absolute left-[1.4rem] top-12 bottom-[-2rem] w-[2px] bg-accent sm:hidden z-0 shadow-[0_0_10px_rgba(255,106,0,0.5)]"></div>
+    <div class="flex flex-col sm:flex-row justify-between relative z-10 w-full">
+        <% stages.forEach((stage, index) => { %>
+            <div class="flex flex-row sm:flex-col items-start sm:items-center flex-1 relative group mb-8 sm:mb-0">
+                
+                <!-- Vertical line for mobile -->
+                <% if (index !== stages.length - 1) { %>
+                    <div class="absolute left-6 top-12 bottom-[-2rem] w-[1px] bg-white/5 sm:hidden z-0"></div>
+                    <% if (stage.active && stages[index+1].active) { %>
+                        <div class="absolute left-6 top-12 bottom-[-2rem] w-[1px] bg-accent sm:hidden z-0 shadow-[0_0_10px_rgba(255,106,0,0.3)]"></div>
+                    <% } %>
                 <% } %>
-            <% } %>
 
-            <!-- Icon / Dot -->
-            <div class="w-12 h-12 rounded-full border-[3px] border-[#0a0a0a] flex items-center justify-center flex-shrink-0 <%= stage.active ? (stage.color ? 'bg-status-danger' : 'bg-accent shadow-[0_0_20px_rgba(255,106,0,0.4)]') : 'bg-[#1a1a1a]' %> mb-4 sm:mx-auto transition-transform duration-300 group-hover:scale-110 z-10 mr-4 sm:mr-0">
-                <% if(stage.active) { %>
-                    <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                <% } else { %>
-                    <div class="w-2.5 h-2.5 bg-white/20 rounded-full"></div>
-                <% } %>
+                <!-- Dot / Icon -->
+                <div class="w-12 h-12 rounded-full border-[4px] border-[#0a0a0a] flex items-center justify-center flex-shrink-0 <%= stage.active ? (stage.color ? 'bg-status-danger' : 'bg-accent shadow-[0_0_20px_rgba(255,106,0,0.3)]') : 'bg-[#1a1a1a]' %> sm:mb-6 transition-all duration-300 group-hover:scale-110 z-10 mr-6 sm:mr-0">
+                    <% if(stage.active) { %>
+                        <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                    <% } else { %>
+                        <div class="w-2 h-2 bg-white/10 rounded-full"></div>
+                    <% } %>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex flex-col sm:items-center text-left sm:text-center w-full px-2">
+                    <p class="<%= stage.active ? (stage.color || 'text-white') : 'text-white/30' %> text-[10px] font-black uppercase tracking-[0.2em] mb-2 transition-colors"><%= stage.name %></p>
+                    <p class="text-white/20 text-[9px] hidden sm:block mb-3 font-bold uppercase tracking-widest leading-tight h-8"><%= stage.desc %></p>
+                    
+                    <% if (stage.date && stage.active) { %>
+                        <div class="inline-flex flex-col items-center">
+                            <span class="px-2 py-1 bg-accent/5 border border-accent/10 rounded-sm text-accent text-[9px] font-mono font-bold tracking-tighter">
+                                <%= new Date(stage.date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }) %>
+                            </span>
+                        </div>
+                    <% } %>
+                </div>
             </div>
-            
-            <!-- Text Details -->
-            <div class="flex flex-col sm:items-center w-full">
-                <p class="<%= stage.active ? (stage.color || 'text-white') : 'text-white/40' %> text-xs font-bold uppercase tracking-wider mb-1 transition-colors"><%= stage.name %></p>
-                <p class="text-white/30 text-[10px] hidden sm:block mb-1.5 font-medium"><%= stage.desc %></p>
-                <% if (stage.date && stage.active) { %>
-                    <span class="inline-block bg-white/5 px-2 py-1 rounded text-accent text-[9px] font-mono tracking-widest"><%= new Date(stage.date).toLocaleDateString() %></span>
-                <% } %>
-            </div>
-        </div>
-    <% }) %>
+        <% }) %>
+    </div>
 </div>

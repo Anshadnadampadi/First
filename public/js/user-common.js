@@ -217,10 +217,23 @@ async function moveAllToCart(btnElement = null) {
         });
         const data = await response.json();
         if (data.success) {
-            dispatchGlobalToast('success', 'Added to cart', 'All items moved');
+            // Update Navbar Badges
+            const cartBadge = document.getElementById('cart-badge');
+            if (cartBadge && data.cartCount !== undefined) {
+                cartBadge.textContent = data.cartCount;
+            }
+            const wishlistBadge = document.getElementById('wishlist-badge');
+            if (wishlistBadge && data.wishlistCount !== undefined) {
+                wishlistBadge.textContent = data.wishlistCount;
+            }
+
+            dispatchGlobalToast(data.failedCount > 0 ? 'info' : 'success', 
+                data.failedCount > 0 ? 'Partial Success' : 'Added to cart', 
+                data.message);
+
             setTimeout(() => {
                 window.location.reload();
-            }, 500); 
+            }, 1000); 
         } else {
             if (btnElement) {
                 btnElement.disabled = false;
@@ -234,5 +247,6 @@ async function moveAllToCart(btnElement = null) {
             btnElement.disabled = false;
             btnElement.innerHTML = oldHtml;
         }
+        dispatchGlobalToast('error', 'Network Error', 'Something went wrong');
     }
 }

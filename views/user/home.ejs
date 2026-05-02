@@ -98,7 +98,7 @@
     <!-- 1. iPhone 17 Pro Hero (Apple Style) -->
     <section class="apple-hero group">
         <video autoplay muted loop playsinline class="video-bg opacity-60">
-            <source src="/video/iphone-hero.mp4" type="video/mp4">
+            <source src="<%= videoMap['hero_video_iphone_hero'] || '/video/iphone-hero.mp4' %>" type="video/mp4">
         </video>
         
     </section>
@@ -108,7 +108,7 @@
     <!-- 2. Pixel 10 Pro Hero -->
     <section class="apple-hero group !justify-end !pb-[12vh] !pt-0">
         <video autoplay muted loop playsinline class="video-bg opacity-50">
-            <source src="/video/pixel-hero.mp4" type="video/mp4">
+            <source src="<%= videoMap['hero_video_pixel_hero'] || '/video/pixel-hero.mp4' %>" type="video/mp4">
         </video>
         
     </section>
@@ -123,7 +123,7 @@
             <div class="apple-grid-card">
                 <div class="card-overlay"></div>
                 <video autoplay muted loop playsinline>
-                    <source src="/video/google-fist.mp4" type="video/mp4">
+                    <source src="<%= videoMap['hero_video_watch_hero'] || '/video/google-fist.mp4' %>" type="video/mp4">
                 </video>
                 <div class="card-text space-y-2">
                     <h3 class="text-4xl font-bold text-white">Samsung Fold</h3>
@@ -139,7 +139,7 @@
             <div class="apple-grid-card">
                 <div class="card-overlay"></div>
                 <video autoplay muted loop playsinline>
-                    <source src="/video/google-second.mp4" type="video/mp4">
+                    <source src="<%= videoMap['hero_video_gaming_hero'] || '/video/google-second.mp4' %>" type="video/mp4">
                 </video>
                 <div class="card-text space-y-2">
                     <h3 class="text-4xl font-bold text-white">Google Inteligence</h3>
@@ -155,7 +155,7 @@
             <div class="apple-grid-card">
                 <div class="card-overlay"></div>
                 <video autoplay muted loop playsinline>
-                    <source src="/video/39529fcf-3254-40a4-920a-1aad5df5ef99.mp4" type="video/mp4">
+                    <source src="<%= videoMap['hero_video_tablet_hero'] || '/video/39529fcf-3254-40a4-920a-1aad5df5ef99.mp4' %>" type="video/mp4">
                 </video>
                 <div class="card-text space-y-2">
                     <h3 class="text-4xl font-bold text-white">I Phone</h3>
@@ -171,7 +171,7 @@
             <div class="apple-grid-card">
                 <div class="card-overlay"></div>
                 <video autoplay muted loop playsinline>
-                    <source src="/video/google-fourth.mp4" type="video/mp4">
+                    <source src="<%= videoMap['hero_video_audio_hero'] || '/video/google-fourth.mp4' %>" type="video/mp4">
                 </video>
                 <div class="card-text space-y-2">
                     <h3 class="text-4xl font-bold text-white">Gaming</h3>

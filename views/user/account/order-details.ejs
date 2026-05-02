@@ -380,16 +380,23 @@
     }
 
     async function confirmCancelItem(orderId, itemId, productName) {
-        const confirmed = await window.confirmAction({
+        const reason = await window.confirmAction({
             title: 'Cancel Item?',
-            message: `Are you sure you want to cancel ${productName}? This part of your order will be terminated.`,
+            message: `Are you sure you want to cancel <span class="text-white font-black">${productName}</span>? This specific item will be removed from your order.`,
             type: 'danger',
+            hasInput: true,
+            inputLabel: 'Reason for cancellation',
+            inputPlaceholder: 'Please specify why you are cancelling this item...',
             confirmText: 'Confirm Cancellation',
-            cancelText: 'Keep Item'
+            cancelText: 'Keep Item',
+            inputValidator: (value) => {
+                if (!value || value.trim().length < 5) {
+                    return 'Please provide a reason with at least 5 characters';
+                }
+            }
         });
 
-        if (confirmed) {
-            const reason = 'Item cancelled by user';
+        if (reason) {
             try {
                 const response = await fetch('/account/orders/cancel-item', {
                     method: 'POST',

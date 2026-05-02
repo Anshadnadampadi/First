@@ -193,34 +193,43 @@
 
                         <div class="space-y-1" x-show="formData.type === 'Product'">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Product</label>
-                            <select x-model="formData.productId" class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
+                            <select x-model="formData.productId" @change="validateField('productId')"
+                                class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
                                 <option value="">-- Select --</option>
                                 <% products.forEach(p => { %> <option value="<%= p._id %>"><%= p.name %></option> <% }) %>
                             </select>
+                            <p x-show="formErrors.productId" class="text-status-danger text-[10px] mt-1" x-text="formErrors.productId"></p>
                         </div>
 
                         <div class="space-y-1" x-show="formData.type === 'Category'">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Category</label>
-                            <select x-model="formData.categoryId" class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
+                            <select x-model="formData.categoryId" @change="validateField('categoryId')"
+                                class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
                                 <option value="">-- Select --</option>
                                 <% categories.forEach(c => { %> <option value="<%= c._id %>"><%= c.name %></option> <% }) %>
                             </select>
+                            <p x-show="formErrors.categoryId" class="text-status-danger text-[10px] mt-1" x-text="formErrors.categoryId"></p>
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Discount Value</label>
                             <input type="number" x-model="formData.discountValue" @input="validateField('discountValue')"
                                 class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none transition-all">
+                            <p x-show="formErrors.discountValue" class="text-status-danger text-[10px] mt-1" x-text="formErrors.discountValue"></p>
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Start Date</label>
-                            <input type="date" x-model="formData.startDate" class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
+                            <input type="date" x-model="formData.startDate" @change="validateField('startDate')"
+                                class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
+                            <p x-show="formErrors.startDate" class="text-status-danger text-[10px] mt-1" x-text="formErrors.startDate"></p>
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[9px] font-bold tracking-widest uppercase text-white/40">Expiry Date</label>
-                            <input type="date" x-model="formData.expiryDate" class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
+                            <input type="date" x-model="formData.expiryDate" @change="validateField('expiryDate')"
+                                class="w-full bg-black border border-white/10 px-4 py-3 text-white text-xs focus:border-accent outline-none">
+                            <p x-show="formErrors.expiryDate" class="text-status-danger text-[10px] mt-1" x-text="formErrors.expiryDate"></p>
                         </div>
                     </div>
 
@@ -248,11 +257,12 @@
                     currentTab: 'live',
                     search: '',
                     formData: { name: '', type: 'Product', discountType: 'percentage', discountValue: '', productId: '', categoryId: '', startDate: new Date().toISOString().split('T')[0], expiryDate: '' },
-                    formErrors: { name: '', discountValue: '', productId: '', categoryId: '' },
+                    formErrors: { name: '', discountValue: '', productId: '', categoryId: '', startDate: '', expiryDate: '' },
                     openCreateModal() {
                         this.isEditing = false;
                         this.currentId = null;
                         this.formData = { name: '', type: 'Product', discountType: 'percentage', discountValue: '', productId: '', categoryId: '', startDate: new Date().toISOString().split('T')[0], expiryDate: '' };
+                        this.formErrors = { name: '', discountValue: '', productId: '', categoryId: '', startDate: '', expiryDate: '' };
                         this.showModal = true;
                     },
                     async confirmDelete(id, name) {
@@ -286,11 +296,47 @@
                         this.isEditing = true;
                         this.currentId = id;
                         this.formData = { name, type, discountType: dType, discountValue: val, productId: pId, categoryId: cId, startDate: start, expiryDate: expiry };
+                        this.formErrors = { name: '', discountValue: '', productId: '', categoryId: '', startDate: '', expiryDate: '' };
                         this.showModal = true;
                     },
                     closeModal() { this.showModal = false; },
-                    validateField(f) { /* Basic validation logic same as before but streamlined */ },
+                    validateField(f) {
+                        this.formErrors[f] = '';
+                        if (f === 'name') {
+                            if (!this.formData.name.trim()) this.formErrors.name = 'Offer name is required';
+                            else if (this.formData.name.length < 3) this.formErrors.name = 'Name must be at least 3 characters';
+                        }
+                        if (f === 'discountValue') {
+                            const val = parseFloat(this.formData.discountValue);
+                            if (isNaN(val) || val <= 0) this.formErrors.discountValue = 'Value must be greater than 0';
+                            else if (this.formData.discountType === 'percentage' && val > 100) this.formErrors.discountValue = 'Percentage cannot exceed 100%';
+                        }
+                        if (f === 'productId' && this.formData.type === 'Product') {
+                            if (!this.formData.productId) this.formErrors.productId = 'Please select a product';
+                        }
+                        if (f === 'categoryId' && this.formData.type === 'Category') {
+                            if (!this.formData.categoryId) this.formErrors.categoryId = 'Please select a category';
+                        }
+                        if (f === 'startDate') {
+                            if (!this.formData.startDate) this.formErrors.startDate = 'Start date is required';
+                        }
+                        if (f === 'expiryDate') {
+                            if (!this.formData.expiryDate) this.formErrors.expiryDate = 'Expiry date is required';
+                            else if (this.formData.startDate && new Date(this.formData.expiryDate) <= new Date(this.formData.startDate)) {
+                                this.formErrors.expiryDate = 'Expiry must be after start date';
+                            }
+                        }
+                        return !this.formErrors[f];
+                    },
+                    validateAll() {
+                        let isValid = true;
+                        ['name', 'discountValue', 'productId', 'categoryId', 'startDate', 'expiryDate'].forEach(f => {
+                            if (!this.validateField(f)) isValid = false;
+                        });
+                        return isValid;
+                    },
                     async submitForm() {
+                        if (!this.validateAll()) return;
                         this.isSubmitting = true;
                         try {
                             const res = await fetch(this.isEditing ? `/admin/marketing/offers/update/${this.currentId}` : '/admin/marketing/offers/create', {
@@ -298,6 +344,7 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify(this.formData)
                             });
+                            const data = await res.json();
                             if (data.success) {
                                 window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Offer saved successfully!', type: 'success' } }));
                                 if (window.SpaNavigation) {
@@ -308,6 +355,8 @@
                             } else {
                                 window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message, type: 'error' } }));
                             }
+                        } catch (err) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to save offer', type: 'error' } }));
                         } finally { this.isSubmitting = false; }
                     }
                 }));

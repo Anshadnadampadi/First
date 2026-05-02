@@ -10,12 +10,26 @@ import { sendOtpService, verifyOtpService, forgotPasswordService, resendOtpServi
 import product from "../../models/product/product.js";
 
 
+import Settings from "../../models/admin/Settings.js";
+
 export const getHome = async (req, res) => {
     try {
         const { msg, icon } = req.query;
-        res.render("user/home", { msg: msg || null, icon: icon || null });
+
+        // Fetch hero video settings
+        const videoSettings = await Settings.find({ key: { $regex: /^hero_video_/ } }).lean();
+        const videoMap = videoSettings.reduce((acc, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+        }, {});
+
+        res.render("user/home", { 
+            msg: msg || null, 
+            icon: icon || null,
+            videoMap 
+        });
     } catch (error) {
-        console.log(error);
+        console.error("Home Controller Error:", error);
         res.status(500).send("Server Error");
     }
 };

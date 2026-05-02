@@ -1,0 +1,143 @@
+<%- include('../../partials/nav-admin') %>
+
+<main class="ml-64 pt-20 px-8 pb-12 min-h-screen bg-black text-white" x-data="videoManager()">
+    <!-- Header -->
+    <div class="mb-12">
+        <h1 class="text-display font-bold tracking-tighter mb-2">Video <span class="text-accent">Protocols</span></h1>
+        <p class="text-text-secondary max-w-2xl">Manage high-fidelity video assets for the homepage hero sections via Cloudinary.</p>
+    </div>
+
+    <!-- Video Slots Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="slot in videoSlots" :key="slot.id">
+            <div class="bg-black-surface border border-white/5 rounded-2xl overflow-hidden group hover:border-accent/30 transition-all duration-500">
+                <!-- Video Preview -->
+                <div class="aspect-video bg-black relative group-hover:scale-[1.02] transition-transform duration-700">
+                    <template x-if="videoMap['hero_video_' + slot.id]">
+                        <video autoplay muted loop playsinline class="w-full h-full object-cover">
+                            <source :src="videoMap['hero_video_' + slot.id]" type="video/mp4">
+                        </video>
+                    </template>
+                    <template x-if="!videoMap['hero_video_' + slot.id]">
+                        <div class="w-full h-full flex flex-col items-center justify-center text-white/20 border-b border-white/5">
+                            <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-width="1.5"></path>
+                            </svg>
+                            <span class="text-[10px] uppercase tracking-widest">No Active Video</span>
+                        </div>
+                    </template>
+                    
+                    <!-- Overlay Controls -->
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                        <label class="cursor-pointer bg-white text-black px-6 py-2.5 rounded-full text-xs font-bold hover:bg-accent hover:text-white transition-colors">
+                            <span x-text="videoMap['hero_video_' + slot.id] ? 'REPLACE' : 'UPLOAD'"></span>
+                            <input type="file" class="hidden" accept="video/*" @change="uploadVideo($event, slot.id)">
+                        </label>
+                        <template x-if="videoMap['hero_video_' + slot.id]">
+                            <button @click="deleteVideo(slot.id)" class="w-10 h-10 flex items-center justify-center rounded-full bg-status-danger text-white hover:scale-110 transition-transform">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"></path></svg>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div x-show="uploadingSlot === slot.id" class="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+                        <div class="h-full bg-accent transition-all duration-300" :style="`width: ${uploadProgress}%`"></div >
+                    </div>
+                </div>
+
+                <!-- Info -->
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold tracking-tight" x-text="slot.name"></h3>
+                        <span class="text-[9px] px-2 py-1 bg-accent/10 text-accent rounded-md border border-accent/20 font-bold uppercase tracking-widest">SLOT: <span x-text="slot.id"></span></span>
+                    </div>
+                    <p class="text-xs text-text-secondary leading-relaxed mb-6" x-text="slot.desc"></p>
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full" :class="videoMap['hero_video_' + slot.id] ? 'bg-status-success' : 'bg-white/10'"></div>
+                        <span class="text-[10px] text-white/40 uppercase tracking-widest" x-text="videoMap['hero_video_' + slot.id] ? 'Streaming via Cloudinary' : 'Offline / Standard Files'"></span>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</main>
+
+<script>
+function videoManager() {
+    return {
+        videoSlots: [
+            { id: 'iphone_hero', name: 'iPhone 17 Pro Hero', desc: 'The primary video displayed at the very top of the homepage.' },
+            { id: 'pixel_hero', name: 'Pixel 10 Pro Hero', desc: 'The second large-format hero video in the landing sequence.' },
+            { id: 'watch_hero', name: 'Samsung Fold Slot', desc: 'Featured bento grid video (Watch/Fold category).' },
+            { id: 'gaming_hero', name: 'Google Inteligence', desc: 'Featured bento grid video (Gaming/AI category).' },
+            { id: 'tablet_hero', name: 'I Phone Slim', desc: 'Featured bento grid video (Tablets/Slim phones).' },
+            { id: 'audio_hero', name: 'Audio/General', desc: 'Featured bento grid video (AirPods/Accessories).' }
+        ],
+        videoMap: <%- JSON.stringify(videoMap) %>,
+        uploadingSlot: null,
+        uploadProgress: 0,
+
+        async uploadVideo(event, slot) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 50 * 1024 * 1024) {
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Video exceeds 50MB limit', type: 'error' } }));
+                return;
+            }
+
+            this.uploadingSlot = slot;
+            this.uploadProgress = 10;
+
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('slot', slot);
+
+            try {
+                this.uploadProgress = 30;
+                const res = await fetch('/admin/marketing/videos/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                this.uploadProgress = 80;
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.videoMap['hero_video_' + slot] = data.url;
+                    this.uploadProgress = 100;
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Video synchronized successfully', type: 'success' } }));
+                } else {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.message, type: 'error' } }));
+                }
+            } catch (err) {
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Network protocol failure', type: 'error' } }));
+            } finally {
+                setTimeout(() => {
+                    this.uploadingSlot = null;
+                    this.uploadProgress = 0;
+                }, 1000);
+            }
+        },
+
+        async deleteVideo(slot) {
+            if (!confirm('Remove this video mapping? Site will revert to fallback files.')) return;
+
+            try {
+                const res = await fetch(`/admin/marketing/videos/delete/${slot}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    delete this.videoMap['hero_video_' + slot];
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Video mapping deleted', type: 'success' } }));
+                }
+            } catch (err) {
+                window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Deletion protocol failed', type: 'error' } }));
+            }
+        }
+    }
+}
+</script>

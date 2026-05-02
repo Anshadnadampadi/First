@@ -134,10 +134,10 @@ export const profileUpdateValidate = joi.object({
             'string.pattern.base': 'Please enter a valid 10-digit phone number.'
         }),
     city: joi.string()
-        .required()
+        .allow('', null)
+        .optional()
         .messages({
-            'string.empty': 'Please select a city from the dropdown.',
-            'any.required': 'City is a required field.'
+            'string.base': 'City must be a string.'
         }),
     bio: joi.string()
         .allow('', null)
@@ -147,10 +147,9 @@ export const profileUpdateValidate = joi.object({
         }),
     gender: joi.string()
         .valid('Male', 'Female', 'Other', 'Prefer not to say')
-        .required()
+        .allow('', null)
+        .optional()
         .messages({
-            'string.empty': 'Please select your gender.',
-            'any.required': 'Gender is a required field.',
             'any.only': 'Please select a valid gender option.'
         }),
     dob: joi.date()

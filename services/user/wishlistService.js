@@ -227,7 +227,7 @@ export const moveAllToCart = async (userId) => {
     let successCount = 0;
     let errors = [];
 
-    // Use a copy to iterate while we might be modifying the original (though we clear it at the end)
+    // Use a copy to iterate because cartService.addItemToCart will modify the DB wishlist items
     const itemsToMove = [...wishlist.items];
 
     for (const item of itemsToMove) {
@@ -239,17 +239,25 @@ export const moveAllToCart = async (userId) => {
             });
             successCount++;
         } catch (err) {
+            // Log individual item failures but continue moving others
             errors.push(`${item.productId}: ${err.message}`);
         }
     }
 
-    // Clear wishlist items that were successfully moved (or just clear all as per Flipkart style)
-    wishlist.items = [];
-    await wishlist.save();
+    // Fetch final counts after all operations are complete
+    const [finalWishlist, finalCart] = await Promise.all([
+        Wishlist.findOne({ userId }).select("items").lean(),
+        Cart.findOne({ userId }).select("items").lean()
+    ]);
 
     return { 
         success: true, 
-        message: `Moved ${successCount} items to your cart`,
-        failedCount: errors.length
+        message: successCount > 0 
+            ? `Successfully moved ${successCount} items to cart` 
+            : "No items could be moved to cart",
+        successCount,
+        failedCount: errors.length,
+        wishlistCount: finalWishlist?.items?.length || 0,
+        cartCount: finalCart?.items?.length || 0
     };
 };
