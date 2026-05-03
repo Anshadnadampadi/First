@@ -19,6 +19,8 @@ import {
 } from "../../controllers/admin/product/adminProductController.js";
 import { uploadProductImage } from "../../middlewares/uploadMiddleware.js";
 import { loadProductListing, getProductDetailsPage } from "../../controllers/user/product/productController.js";
+import { submitReview, getReviews } from "../../controllers/user/product/reviewController.js";
+import { ensureLoggedIn } from "../../middlewares/authMiddleware.js";
 
 
 
@@ -44,6 +46,8 @@ router.delete("/products/variant/delete-asset/:id/:index/:imgIndex", deleteVaria
 
 router.get("/products", loadProductListing);
 router.get("/products/:id", getProductDetailsPage)
+router.post("/products/:id/review", ensureLoggedIn, submitReview);
+router.get("/products/:id/reviews", getReviews);
 
 
 export default router;

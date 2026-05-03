@@ -30,9 +30,8 @@ export const getSalesReportPage = async (req, res) => {
             currentPage,
             query: queryParams.toString(),
             breadcrumbs: [
-                { label: 'Dashboard', url: '/admin/dashboard' },
                 { label: 'Sales Report', url: '/admin/sales-report' }
-            ]
+            ],
         });
     } catch (error) {
         console.error('Error in getSalesReportPage:', error);

@@ -14,7 +14,6 @@ export const getSettings = async (req, res) => {
             title: 'Settings',
             admin,
             breadcrumbs: [
-                { label: 'Dashboard', url: '/admin/dashboard' },
                 { label: 'Settings', url: '/admin/settings/general' }
             ]
         });

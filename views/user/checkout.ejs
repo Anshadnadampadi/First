@@ -6,26 +6,26 @@
     <div class="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-accent/5 to-transparent pointer-events-none"></div>
     <div class="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-    <div class="max-w-screen-xl mx-auto px-6 lg:px-8 relative z-10">
+    <div class="max-w-screen-xl mx-auto px-6 lg:px-8 relative z-10" x-show="!isVerifyingPayment">
         
         <!-- Premium Step Indicator -->
-        <div class="flex items-center justify-center mb-16 max-w-2xl mx-auto">
-            <template x-for="(step, index) in ['Shipping', 'Review Details', 'Payment']" :key="index">
+        <div class="flex items-center justify-center mb-12 lg:mb-16 max-w-2xl mx-auto px-2">
+            <template x-for="(step, index) in ['Shipping', 'Review', 'Payment']" :key="index">
                 <div class="flex items-center w-full relative">
                     <!-- Connector line -->
-                    <div x-show="index > 0" class="absolute left-[-50%] right-[50%] h-[2px] top-4 -z-10"
+                    <div x-show="index > 0" class="absolute left-[-50%] right-[50%] h-[1.5px] top-3.5 lg:top-4 -z-10"
                          :class="currentStep >= index ? 'bg-accent shadow-[0_0_10px_rgba(255,106,0,0.5)]' : 'bg-white/10'"></div>
                     
                     <div class="flex flex-col items-center w-full">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 cursor-pointer text-xs font-black font-mono border-2 bg-[#050505]"
+                        <div class="w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center transition-all duration-500 cursor-pointer text-[10px] lg:text-xs font-black font-mono border-2 bg-[#050505]"
                              @click="if(currentStep > index) currentStep = index"
                              :class="currentStep > index ? 'border-accent text-accent shadow-[0_0_15px_rgba(255,106,0,0.4)]' :
                                     currentStep === index ? 'border-accent bg-accent text-black scale-110 shadow-[0_0_20px_rgba(255,106,0,0.6)]' :
                                     'border-white/20 text-white/40'">
                              <span x-show="currentStep <= index" x-text="index + 1"></span>
-                             <svg x-show="currentStep > index" class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                             <svg x-show="currentStep > index" class="w-3.5 h-3.5 lg:w-4 lg:h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                         </div>
-                        <span class="text-[9px] mt-4 font-black uppercase tracking-[0.2em] transition-colors"
+                        <span class="text-[8px] lg:text-[9px] mt-3 lg:mt-4 font-black uppercase tracking-[0.15em] lg:tracking-[0.2em] transition-colors whitespace-nowrap"
                               :class="currentStep === index ? 'text-white' : 'text-white/40'" x-text="step">
                         </span>
                     </div>
@@ -347,6 +347,24 @@
         </div>
     </div>
 
+    <!-- Full Screen Payment Processing Overlay -->
+    <div x-show="isVerifyingPayment" x-cloak class="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center">
+        <div class="relative flex flex-col items-center">
+            <!-- Pulsing background glow -->
+            <div class="absolute inset-0 bg-accent/20 blur-[100px] rounded-full w-64 h-64 -z-10 animate-pulse"></div>
+            
+            <svg class="animate-spin w-16 h-16 text-accent mb-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <h2 class="text-white text-2xl md:text-3xl font-black tracking-[0.2em] uppercase mb-4 text-center">Processing Payment</h2>
+            <p class="text-white/50 text-xs md:text-sm font-mono uppercase tracking-widest text-center max-w-sm leading-relaxed">
+                Please do not close this window or press back. We are securely verifying your transaction.
+            </p>
+        </div>
+    </div>
+
     <!-- Address Slide-over Modal -->
     <div x-show="addressModalOpen" 
          x-cloak
@@ -360,11 +378,11 @@
              x-transition:leave="transition ease-in duration-300"
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="translate-x-full"
-             class="w-full max-w-xl bg-black border-l border-white/10 h-full overflow-y-auto p-12 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
+             class="w-full max-w-xl bg-black border-l border-white/10 h-full overflow-y-auto p-6 lg:p-12 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
             
-            <div class="flex justify-between items-center mb-16">
-                <h2 class="text-white text-2xl font-bold uppercase tracking-tight" x-text="addressMode === 'add' ? 'NEW ADDRESS' : 'EDIT ADDRESS'"></h2>
-                <button @click="addressModalOpen = false" class="text-white/20 hover:text-white transition-colors">
+            <div class="flex justify-between items-center mb-10 lg:mb-16">
+                <h2 class="text-white text-lg lg:text-2xl font-bold uppercase tracking-tight" x-text="addressMode === 'add' ? 'NEW ADDRESS' : 'EDIT ADDRESS'"></h2>
+                <button @click="addressModalOpen = false" class="text-white/40 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -505,6 +523,7 @@
         return {
             currentStep: 0,
             isSubmitting: false,
+            isVerifyingPayment: false,
             addresses: userAddresses,
             hasCartIssues: hasCartIssues,
             walletBalance: <%= walletBalance %>,
@@ -752,7 +771,7 @@
                             this.initiateRazorpay(data);
                         } else {
                             window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Order placed successfully. Redirecting...', type: 'success' }}));
-                            setTimeout(() => window.location.href = '/checkout/success/' + data.orderId, 1200);
+                            setTimeout(() => window.location.href = '/checkout/success/' + data.orderId, 500);
                         }
                     } else {
                         if (data.redirect) {
@@ -812,6 +831,7 @@
             },
 
             async verifyOnlinePayment(razorpayResponse, orderId) {
+                this.isVerifyingPayment = true;
                 try {
                     const res = await fetch('/checkout/verify-payment', {
                         method: 'POST',
@@ -824,13 +844,14 @@
                     const data = await res.json();
                     if(data.success) {
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Payment verified! Order completed.', type: 'success' }}));
-                        setTimeout(() => window.location.href = '/checkout/success/' + orderId, 1000);
+                        setTimeout(() => window.location.href = '/checkout/success/' + orderId, 500);
                     } else {
                         throw new Error(data.message || 'Payment verification failed.');
                     }
                 } catch(error) {
                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: error.message, type: 'error' }}));
                     this.isSubmitting = false;
+                    this.isVerifyingPayment = false;
                 }
             }
         }

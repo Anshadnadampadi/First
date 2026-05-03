@@ -55,8 +55,19 @@ router.use("/", adminSettingsRoutes);
 
 // Dashboard & Users
 router.get('/dashboard', getAdminDashboard);
-router.get('/notifications', (req, res) => res.render('admin/notifications/index', { title: 'System Protocol' }));
-router.get('/marketing/banners', (req, res) => res.render('admin/marketing/banners', { title: 'Banners' }));
+router.get('/notifications', (req, res) => res.render('admin/notifications/index', { 
+    title: 'System Protocol',
+    breadcrumbs: [
+        { label: 'System Protocol', url: '/admin/notifications' }
+    ]
+}));
+router.get('/marketing/banners', (req, res) => res.render('admin/marketing/banners', { 
+    title: 'Banners',
+    breadcrumbs: [
+        { label: 'Marketing', url: '#' },
+        { label: 'Banners', url: '/admin/marketing/banners' }
+    ]
+}));
 router.get('/customers', getAdminManagement);
 
 router.post('/block/:id', postBlock);

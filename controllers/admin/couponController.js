@@ -11,7 +11,11 @@ export const getCouponPage = async (req, res) => {
             totalPages,
             currentPage,
             totalCoupons,
-            query: req.query
+            query: req.query,
+            breadcrumbs: [
+                { label: 'Marketing', url: '#' },
+                { label: 'Coupons', url: '/admin/marketing/coupons' }
+            ]
         });
 
     } catch (err) {

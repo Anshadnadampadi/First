@@ -6,7 +6,7 @@
         --apple-easing: cubic-bezier(0.4, 0, 0.2, 1);
     }
     .apple-hero {
-        height: 100vh;
+        height: 60vh;
         width: 100%;
         position: relative;
         overflow: hidden;
@@ -16,8 +16,25 @@
         align-items: center;
         justify-content: flex-start;
         text-align: center;
-        padding-top: 12vh;
     }
+
+    @media (min-width: 768px) {
+        .apple-hero {
+            height: 100vh;
+            padding-top: 12vh;
+        }
+    }
+
+    .video-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+    }
+
     .apple-text-gradient {
         background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%);
         -webkit-background-clip: text;
@@ -54,13 +71,19 @@
         border-radius: 28px;
         overflow: hidden;
         position: relative;
-        height: 580px;
+        height: 400px;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         justify-content: flex-start;
         text-align: left;
         transition: transform 0.5s var(--apple-easing);
+    }
+
+    @media (min-width: 768px) {
+        .apple-grid-card {
+            height: 580px;
+        }
     }
     .apple-grid-card:hover {
         transform: scale(1.01);

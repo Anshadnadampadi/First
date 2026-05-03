@@ -8,7 +8,6 @@ export const getProductManagement = async (req, res) => {
             title: 'Product Management',
             ...data,
             breadcrumbs: [
-                { label: 'Admin', url: '/admin/dashboard' },
                 { label: 'Products', url: '/admin/productManagement' }
             ],
             msg: msg || null,

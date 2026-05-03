@@ -8,7 +8,6 @@ export const getCategories = async (req, res) => {
         res.render('admin/categoryManagement', { 
             ...data,
             breadcrumbs: [
-                { label: 'Admin', url: '/admin/dashboard' },
                 { label: 'Categories', url: '/admin/categories' }
             ],
             msg: msg || null,

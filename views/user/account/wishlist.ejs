@@ -43,18 +43,37 @@
         </div>
     </div>
     <script>
-        function addToWishlist() {
-            fetch('/wishlist/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: "PRODUCT_ID",
-                    color: "Black",
-                    storage: "128GB",
-                    ram: "8GB"
-                })
-            })
-                .then(res => res.json())
-                .then(data => alert(data.message));
+        async function moveAllToCart() {
+            const confirmed = await window.confirmAction({
+                title: 'Move All to Cart?',
+                message: 'This will attempt to move all items in your wishlist to the cart.',
+                confirmText: 'Move All',
+                type: 'info'
+            });
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch('/wishlist/move-all-to-cart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { 
+                        detail: { message: data.message || 'All items moved to cart.', type: 'success' } 
+                    }));
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    window.dispatchEvent(new CustomEvent('show-toast', { 
+                        detail: { message: data.error || 'Failed to move items.', type: 'error' } 
+                    }));
+                }
+            } catch (err) {
+                console.error(err);
+                window.dispatchEvent(new CustomEvent('show-toast', { 
+                    detail: { message: 'Server connection failed.', type: 'error' } 
+                }));
+            }
         }
     </script>

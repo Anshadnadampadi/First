@@ -34,7 +34,10 @@ export const getAllTickets = async (req, res) => {
             tickets,
             currentPage: page,
             totalPages,
-            filters: { status, category, priority, search }
+            filters: { status, category, priority, search },
+            breadcrumbs: [
+                { label: 'Support', url: '/admin/support' }
+            ]
         });
     } catch (error) {
         console.error("Error fetching admin tickets:", error);
@@ -55,7 +58,11 @@ export const getTicketDetails = async (req, res) => {
 
         res.render("admin/support/details", {
             title: `Ticket Details - ${ticket.ticketId}`,
-            ticket
+            ticket,
+            breadcrumbs: [
+                { label: 'Support', url: '/admin/support' },
+                { label: `Ticket #${ticket.ticketId}`, url: `/admin/support/ticket/${ticket._id}` }
+            ]
         });
     } catch (error) {
         console.error("Error fetching admin ticket details:", error);

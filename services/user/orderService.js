@@ -14,7 +14,14 @@ export const getUserOrdersService = async (userId, search, status, page, limit) 
 
     // Status Filter
     if (status && status !== 'all') {
-        filter.orderStatus = status;
+        const s = status.toLowerCase();
+        if (s === 'processing') {
+            filter['items.status'] = { $in: ['Ordered', 'Shipped', 'Pending', 'Processing', 'Confirmed'] };
+        } else if (s === 'returned') {
+            filter['items.status'] = { $in: ['Returned', 'Return Requested', 'Return Approved', 'Return Picked'] };
+        } else {
+            filter['items.status'] = new RegExp(`^${status}$`, 'i');
+        }
     }
 
     if (search) {

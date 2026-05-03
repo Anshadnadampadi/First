@@ -216,7 +216,6 @@ export const getAdminDashboard = async (req, res) => {
             title: 'Admin Dashboard', 
             stats, 
             breadcrumbs: [
-                { label: 'Admin', url: '/admin/dashboard' },
                 { label: 'Dashboard', url: '/admin/dashboard' }
             ],
             msg: msg || null, 
@@ -415,7 +414,6 @@ export const getAdminManagement = async (req, res) => {
             sortOrder,
             query: queryString,
             breadcrumbs: [
-                { label: 'Admin', url: '/admin/dashboard' },
                 { label: 'Customers', url: '/admin/customers' }
             ],
             clearSearchUrl

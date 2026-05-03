@@ -34,7 +34,6 @@ export const getOrders = async (req, res) => {
             status,
             query: queryString,
             breadcrumbs: [
-                { label: 'Dashboard', url: '/admin/dashboard' },
                 { label: 'Orders', url: '/admin/orders' }
             ]
         });
@@ -60,7 +59,6 @@ export const getOrderDetails = async (req, res) => {
             title: `Order #${order.orderId}`,
             order,
             breadcrumbs: [
-                { label: 'Dashboard', url: '/admin/dashboard' },
                 { label: 'Orders', url: '/admin/orders' },
                 { label: `Order #${order.orderId}`, url: `/admin/orders/${order._id}` }
             ]

@@ -492,22 +492,46 @@
     /* ── SPEC TABLE ── */
     .spec-row {
       display: flex;
+      flex-direction: column;
       border-bottom: 1px solid rgba(255, 255, 255, .04);
     }
 
+    @media (min-width: 768px) {
+      .spec-row {
+        flex-direction: row;
+      }
+    }
+
     .spec-key {
-      width: 200px;
+      width: 100%;
       flex-shrink: 0;
-      padding: 12px 0;
+      padding: 12px 0 4px 0;
       color: var(--t2);
-      font-size: 13px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    @media (min-width: 768px) {
+      .spec-key {
+        width: 200px;
+        padding: 12px 0;
+        font-size: 13px;
+      }
     }
 
     .spec-val {
       flex: 1;
-      padding: 12px 16px;
+      padding: 4px 0 12px 0;
       color: var(--t1);
-      font-size: 13px;
+      font-size: 14px;
+    }
+
+    @media (min-width: 768px) {
+      .spec-val {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
     }
 
     /* ── TOAST ── */
@@ -688,11 +712,11 @@
         </div>
 
         <!-- Main Image -->
-        <div class="gallery-main" id="mainGallery">
-          <img id="mainImg" src="<%= defaultImage || '/images/placeholder.jpg' %>" alt="<%= product.name %>">
+        <div class="gallery-main" id="mainGallery" style="position:relative;">
+          <img id="mainImg" src="<%= defaultImage || '/images/placeholder.jpg' %>" alt="<%= product.name %>" onclick="openFsCarousel()" style="cursor:zoom-in;">
           <!-- Zoom hint -->
           <div
-            style="position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,.7);padding:6px 10px;font-size:11px;color:var(--t2);display:flex;align-items:center;gap:6px;">
+            style="position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,.7);padding:6px 10px;font-size:11px;color:var(--t2);display:flex;align-items:center;gap:6px;z-index:10;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
@@ -701,13 +725,21 @@
             </svg>
             Hover to zoom
           </div>
+
+          <!-- Carousel Controls -->
+          <button id="prevImgBtn" onclick="prevImage(event)" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,0.1);width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;z-index:10;transition:background .2s, transform 0.2s;" onmouseover="this.style.background='rgba(0,0,0,.8)';this.style.transform='translateY(-50%) scale(1.05)';" onmouseout="this.style.background='rgba(0,0,0,.6)';this.style.transform='translateY(-50%) scale(1)';">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button id="nextImgBtn" onclick="nextImage(event)" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,0.1);width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;z-index:10;transition:background .2s, transform 0.2s;" onmouseover="this.style.background='rgba(0,0,0,.8)';this.style.transform='translateY(-50%) scale(1.05)';" onmouseout="this.style.background='rgba(0,0,0,.6)';this.style.transform='translateY(-50%) scale(1)';">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
         </div>
 
         <!-- Thumbnails -->
         <div id="galleryThumbnails" class="grid grid-cols-5 gap-2 mt-3">
           <% if (initialImages && initialImages.length> 0) { %>
             <% initialImages.forEach((img, index)=> { %>
-              <div class="gallery-thumb <%= index === 0 ? 'active' : '' %>" onclick="changeImg(this,'<%= img %>')">
+              <div class="gallery-thumb <%= index === 0 ? 'active' : '' %>" onclick="changeImg(<%= index %>)">
                 <img src="<%= img %>" alt="<%= product.name %>">
               </div>
               <% }) %>
@@ -719,7 +751,7 @@
           <div style="display:flex;gap:32px;border-bottom:1px solid var(--border);margin-bottom:32px;">
             <button class="tab-btn active" onclick="switchTab(this,'overview')">Overview</button>
             <button class="tab-btn" onclick="switchTab(this,'specs')">Specifications</button>
-            <button class="tab-btn" onclick="switchTab(this,'reviews')">Reviews (247)</button>
+            <button id="reviewTabBtn" class="tab-btn" onclick="switchTab(this,'reviews')">Reviews</button>
             <button class="tab-btn" onclick="switchTab(this,'inbox')">In the Box</button>
           </div>
 
@@ -881,96 +913,41 @@
           <!-- REVIEWS TAB -->
           <div id="tab-reviews" class="tab-content" style="display:none;">
             <!-- Rating summary -->
-            <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-8 md:gap-12 mb-10 items-start">
-              <div style="text-align:center;">
-                <div class="font-syne" style="font-size:64px;font-weight:800;line-height:1;color:var(--accent);">4.6
+            <div class="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 md:gap-12 mb-10 items-start">
+              <div style="text-align:center; padding: 30px; background: rgba(255,255,255,0.02); border-radius: 20px;">
+                <div id="avgRatingValue" class="font-syne" style="font-size:64px;font-weight:800;line-height:1;color:var(--accent);">0.0</div>
+                <div id="avgRatingStars" style="display:flex;justify-content:center;gap:3px;margin:10px 0 6px; color: var(--accent);">
+                  <!-- Stars injected here -->
                 </div>
-                <div style="display:flex;justify-content:center;gap:3px;margin:10px 0 6px;">
-                  <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
-                    class="star">★</span><span class="star" style="opacity:.5;">★</span>
-                </div>
-                <div style="font-size:12px;color:var(--t2);">247 reviews</div>
+                <div id="totalReviewCount" style="font-size:12px;color:var(--t2);">0 reviews</div>
+                
+                <% if (locals.user) { %>
+                    <% if (canReview) { %>
+                    <button onclick="openReviewModal()" class="btn-primary mt-6 !text-[11px] !py-3 w-full">Write a Review</button>
+                    <% } else { %>
+                    <div class="mt-6 p-4 border border-border bg-card/30 rounded-lg text-center">
+                        <p class="text-[9px] text-accent uppercase tracking-[0.2em] font-bold mb-2">Verified Only</p>
+                        <p class="text-[11px] text-t2 leading-relaxed">Only customers who have purchased and received this product can leave a review.</p>
+                    </div>
+                    <% } %>
+                <% } else { %>
+                <a href="/auth/login" class="btn-ghost mt-6 !text-[11px] !py-3 w-full block">Login to Review</a>
+                <% } %>
               </div>
-              <div style="display:flex;flex-direction:column;gap:8px;padding-top:8px;">
-                <div style="display:flex;align-items:center;gap:12px;"><span
-                    style="font-size:12px;color:var(--t2);width:14px;">5</span>
-                  <div class="rating-bar" style="flex:1;">
-                    <div class="rating-bar-fill" style="width:72%;"></div>
-                  </div><span style="font-size:12px;color:var(--t2);width:30px;text-align:right;">72%</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;"><span
-                    style="font-size:12px;color:var(--t2);width:14px;">4</span>
-                  <div class="rating-bar" style="flex:1;">
-                    <div class="rating-bar-fill" style="width:18%;"></div>
-                  </div><span style="font-size:12px;color:var(--t2);width:30px;text-align:right;">18%</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;"><span
-                    style="font-size:12px;color:var(--t2);width:14px;">3</span>
-                  <div class="rating-bar" style="flex:1;">
-                    <div class="rating-bar-fill" style="width:6%;"></div>
-                  </div><span style="font-size:12px;color:var(--t2);width:30px;text-align:right;">6%</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;"><span
-                    style="font-size:12px;color:var(--t2);width:14px;">2</span>
-                  <div class="rating-bar" style="flex:1;">
-                    <div class="rating-bar-fill" style="width:2%;"></div>
-                  </div><span style="font-size:12px;color:var(--t2);width:30px;text-align:right;">2%</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;"><span
-                    style="font-size:12px;color:var(--t2);width:14px;">1</span>
-                  <div class="rating-bar" style="flex:1;">
-                    <div class="rating-bar-fill" style="width:2%;"></div>
-                  </div><span style="font-size:12px;color:var(--t2);width:30px;text-align:right;">2%</span>
-                </div>
+
+              <div id="ratingBreakdown" style="display:flex;flex-direction:column;gap:12px;padding-top:8px;">
+                <!-- Bars injected here -->
               </div>
             </div>
+
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px;">
-              <button class="btn-ghost" style="font-size:11px;">Most Helpful</button>
-              <button class="btn-ghost" style="font-size:11px;">Most Recent</button>
-              <button class="btn-ghost" style="font-size:11px;">With Photos</button>
+              <button class="btn-ghost active" style="font-size:11px;">Most Recent</button>
               <button class="btn-ghost" style="font-size:11px;">Verified Only</button>
             </div>
-            <!-- Review cards -->
-            <div style="display:flex;flex-direction:column;gap:16px;">
-              <div class="review-card">
-                <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div
-                      style="width:36px;height:36px;border-radius:50%;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);">
-                      R</div>
-                    <div>
-                      <div style="font-size:14px;font-weight:600;">Rahul M.</div>
-                      <div style="font-size:11px;color:var(--t2);">Verified Purchase · 2 weeks ago</div>
-                    </div>
-                  </div>
-                  <div style="display:flex;gap:2px;"><span class="star">★</span><span class="star">★</span><span
-                      class="star">★</span><span class="star">★</span><span class="star">★</span></div>
-                </div>
-                <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Camera system is absolutely insane</div>
-                <p style="font-size:13px;color:var(--t2);line-height:1.7;">The 200MP sensor paired with the 100× Space
-                  Zoom is genuinely mind-blowing. I've been shooting RAW and the level of detail you can pull out is
-                  something I'd expect from a DSLR. Battery easily lasts the full day with heavy usage. The titanium
-                  frame feels incredibly premium.</p>
-              </div>
-              <div class="review-card">
-                <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div
-                      style="width:36px;height:36px;border-radius:50%;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);">
-                      P</div>
-                    <div>
-                      <div style="font-size:14px;font-weight:600;">Priya K.</div>
-                      <div style="font-size:11px;color:var(--t2);">Verified Purchase · 1 month ago</div>
-                    </div>
-                  </div>
-                  <div style="display:flex;gap:2px;"><span class="star">★</span><span class="star">★</span><span
-                      class="star">★</span><span class="star">★</span><span class="star empty">★</span></div>
-                </div>
-                <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Worth every rupee</div>
-                <p style="font-size:13px;color:var(--t2);line-height:1.7;">Switched from iPhone 15 Pro Max and I don't
-                  regret it one bit. The S Pen is something unique and actually useful for note-taking and sketching.
-                  Display is the best I've ever seen on a phone.</p>
-              </div>
+
+            <!-- Review cards list -->
+            <div id="reviewsList" style="display:flex;flex-direction:column;gap:16px;">
+              <div class="text-center py-10 text-zinc-500">Loading reviews...</div>
             </div>
           </div>
 
@@ -1022,12 +999,11 @@
         <!-- Rating row -->
         <div
           style="display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:20px;">
-          <div style="display:flex;gap:2px;">
-            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
-              class="star">★</span><span class="star" style="opacity:.5;">★</span>
+          <div style="display:flex;gap:2px; color:var(--accent);" id="summaryStars">
+            <!-- Stars injected here -->
           </div>
           <a href="#" onclick="switchTab(document.querySelector('[onclick*=reviews]'),'reviews')"
-            style="font-size:13px;color:var(--t2);text-decoration:none;">4.6 (247 reviews)</a>
+            style="font-size:13px;color:var(--t2);text-decoration:none;" id="summaryRatingText">0.0 (0 reviews)</a>
           <span style="color:var(--border);">|</span>
           <span id="stockStatusBadge" style="font-size:12px;color:var(--success);font-weight:600;">
             <% if ((defaultVariant ? defaultVariant.stock : product.stock)> 0) { %>● IN STOCK<% } else { %><span
@@ -1114,13 +1090,13 @@
                   <span
                     style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t2);">Color</span>
                   <span id="selectedColor" style="font-size:13px;color:var(--t1);font-weight:600;text-transform:capitalize;">
-                    <%= defaultVariant ? defaultVariant.color : uniqueColors[0] %>
+                    <%= defaultVariant ? (defaultVariant.color || '').trim() : uniqueColors[0] %>
                   </span>
                 </div>
                 <div style="display:flex;gap:10px;" id="colorSwatches">
                   <% uniqueColors.forEach((color, i)=> { %>
                     <button
-                      class="color-swatch <%= (defaultVariant && color === defaultVariant.color) ? 'active' : '' %>"
+                      class="color-swatch <%= (defaultVariant && color.toLowerCase() === (defaultVariant.color || '').trim().toLowerCase()) ? 'active' : '' %>"
                       style="background:<%= getHexForColor(color) %>; <%= color.toLowerCase().includes('white') ? 'border:1px solid var(--border);' : '' %>"
                       onclick="selectColor(this,'<%= color %>')" title="<%= color %>"></button>
                     <% }) %>
@@ -1135,13 +1111,13 @@
                       <span
                         style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t2);">Storage</span>
                       <span id="selectedStorage" style="font-size:13px;color:var(--t1);font-weight:500;">
-                        <%= defaultVariant ? defaultVariant.storage : uniqueStorages[0] %>
+                        <%= defaultVariant ? (defaultVariant.storage || '').trim() : uniqueStorages[0] %>
                       </span>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;" id="storagePills">
                       <% uniqueStorages.forEach((storage, i)=> { %>
                         <button
-                          class="variant-pill <%= (defaultVariant && storage === defaultVariant.storage) ? 'active' : '' %>"
+                          class="variant-pill <%= (defaultVariant && storage.toLowerCase() === (defaultVariant.storage || '').trim().toLowerCase()) ? 'active' : '' %>"
                           onclick="selectStorage(this,'<%= storage %>')">
                           <%= storage %>
                         </button>
@@ -1157,13 +1133,13 @@
                       <span
                         style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t2);">RAM</span>
                       <span id="selectedRam" style="font-size:13px;color:var(--t1);font-weight:500;">
-                        <%= defaultVariant ? defaultVariant.ram : uniqueRams[0] %>
+                        <%= defaultVariant ? (defaultVariant.ram || '').trim() : uniqueRams[0] %>
                       </span>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ramPills">
                       <% uniqueRams.forEach((ram, i) => { %>
                         <button
-                          class="variant-pill <%= (defaultVariant && ram === defaultVariant.ram) ? 'active' : '' %>"
+                          class="variant-pill <%= (defaultVariant && ram.toLowerCase() === (defaultVariant.ram || '').trim().toLowerCase()) ? 'active' : '' %>"
                           onclick="selectRam(this,'<%= ram %>')">
                           <%= ram %>
                         </button>
@@ -1497,8 +1473,8 @@
   <div class="sticky-pdp" id="stickyBar">
     <div class="max-w-[1400px] w-full mx-auto px-4 sm:px-8 py-3 flex items-center justify-between">
       <div>
-        <div style="font-size:12px;color:var(--t2);">Samsung Galaxy S25 Ultra</div>
-        <div class="font-mono" style="font-size:20px;font-weight:700;" id="stickyPrice">₹1,09,999</div>
+        <div style="font-size:12px;color:var(--t2);"><%= product.name %></div>
+        <div class="font-mono" style="font-size:20px;font-weight:700;" id="stickyPrice">₹<%= typeof initialDiscounted !== 'undefined' ? initialDiscounted.toLocaleString() : (product.price || 0).toLocaleString() %></div>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn-secondary" style="padding:12px 24px;">Wishlist</button>
@@ -1513,6 +1489,8 @@
   <script>
     // ── DATA ──────────────────────────────────────────────────────────────────
     const product = <%- JSON.stringify(product || {}) %>;
+    let currentImages = <%- JSON.stringify(typeof initialImages !== 'undefined' ? initialImages : []) %>;
+    let currentImgIndex = 0;
     // Normalize server-side data for client-side consistency
     const normalizeUnit = (s) => {
       if (!s) return "";
@@ -1559,11 +1537,113 @@
     });
 
     // ── GALLERY ───────────────────────────────────────────────────────────────
-    function changeImg(el, url) {
-      document.getElementById('mainImg').src = url;
-      document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-      el.classList.add('active');
+    function changeImg(index) {
+      if (!currentImages || currentImages.length === 0) return;
+      currentImgIndex = index;
+      document.getElementById('mainImg').src = currentImages[index];
+      const thumbs = document.querySelectorAll('#galleryThumbnails .gallery-thumb');
+      thumbs.forEach((t, i) => {
+        if (i === index) t.classList.add('active');
+        else t.classList.remove('active');
+      });
     }
+
+    function prevImage(e) {
+      if (e) e.stopPropagation();
+      if (!currentImages || currentImages.length === 0) return;
+      let newIndex = currentImgIndex - 1;
+      if (newIndex < 0) newIndex = currentImages.length - 1;
+      changeImg(newIndex);
+    }
+
+    function nextImage(e) {
+      if (e) e.stopPropagation();
+      if (!currentImages || currentImages.length === 0) return;
+      let newIndex = currentImgIndex + 1;
+      if (newIndex >= currentImages.length) newIndex = 0;
+      changeImg(newIndex);
+    }
+
+    // ── FULLSCREEN CAROUSEL ───────────────────────────────────────────────────
+    function openFsCarousel() {
+        if (!currentImages || currentImages.length === 0) return;
+        const modal = document.getElementById('fsCarouselModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            fsChangeImg(currentImgIndex);
+        }
+    }
+
+    function closeFsCarousel() {
+        const modal = document.getElementById('fsCarouselModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    function fsChangeImg(index) {
+        if (!currentImages || currentImages.length === 0) return;
+        currentImgIndex = index;
+        document.getElementById('fsMainImg').src = currentImages[index];
+        
+        // Sync main page image
+        document.getElementById('mainImg').src = currentImages[index];
+        const thumbs = document.querySelectorAll('#galleryThumbnails .gallery-thumb');
+        thumbs.forEach((t, i) => {
+            if (i === index) t.classList.add('active');
+            else t.classList.remove('active');
+        });
+
+        // Update Dots
+        const dotsContainer = document.getElementById('fsDotsContainer');
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            currentImages.forEach((img, i) => {
+                const dot = document.createElement('div');
+                dot.style.width = '8px';
+                dot.style.height = '8px';
+                dot.style.borderRadius = '50%';
+                dot.style.cursor = 'pointer';
+                dot.style.transition = 'background 0.3s, transform 0.3s';
+                if (i === index) {
+                    dot.style.background = 'var(--accent)';
+                    dot.style.transform = 'scale(1.3)';
+                } else {
+                    dot.style.background = 'rgba(255,255,255,0.3)';
+                }
+                dot.onclick = (e) => { e.stopPropagation(); fsChangeImg(i); };
+                dotsContainer.appendChild(dot);
+            });
+        }
+    }
+
+    function fsPrevImage(e) {
+        if (e) e.stopPropagation();
+        if (!currentImages || currentImages.length === 0) return;
+        let newIndex = currentImgIndex - 1;
+        if (newIndex < 0) newIndex = currentImages.length - 1;
+        fsChangeImg(newIndex);
+    }
+
+    function fsNextImage(e) {
+        if (e) e.stopPropagation();
+        if (!currentImages || currentImages.length === 0) return;
+        let newIndex = currentImgIndex + 1;
+        if (newIndex >= currentImages.length) newIndex = 0;
+        fsChangeImg(newIndex);
+    }
+
+    // Keyboard navigation for fullscreen carousel
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('fsCarouselModal');
+        if (modal && modal.style.display === 'flex') {
+            if (e.key === 'Escape') closeFsCarousel();
+            if (e.key === 'ArrowLeft') fsPrevImage();
+            if (e.key === 'ArrowRight') fsNextImage();
+        }
+    });
 
     // ── TABS ──────────────────────────────────────────────────────────────────
     function switchTab(btn, tabId) {
@@ -1836,6 +1916,8 @@
         // Update images dynamically
         let imagesToDisplay = match.images && match.images.length > 0 ? match.images : [];
         if (imagesToDisplay && imagesToDisplay.length > 0) {
+          currentImages = imagesToDisplay;
+          currentImgIndex = 0;
           const mainImg = document.getElementById('mainImg');
           if (mainImg) mainImg.src = imagesToDisplay[0];
 
@@ -1844,7 +1926,7 @@
             thumbsContainer.innerHTML = '';
             imagesToDisplay.forEach((img, index) => {
               thumbsContainer.innerHTML += `
-            <div class="gallery-thumb ${index === 0 ? 'active' : ''}" onclick="changeImg(this,'${img}')">
+            <div class="gallery-thumb ${index === 0 ? 'active' : ''}" onclick="changeImg(${index})">
               <img src="${img}" alt="${product.name}">
             </div>
           `;
@@ -2127,6 +2209,269 @@
       });
     }
 
-    // ── INIT ──────────────────────────────────────────────────────────────────
-    updateVariantDisplay();
+    // ── REVIEWS SYSTEM ────────────────────────────────────────────────────────
+    let currentRating = 0;
+
+    let reviewListenersAttached = false;
+    function initReviewSystem() {
+        if (reviewListenersAttached) return;
+        
+        document.querySelectorAll('.star-input').forEach(star => {
+            star.addEventListener('click', function() {
+                currentRating = this.dataset.value;
+                const rVal = document.getElementById('ratingValue');
+                if (rVal) rVal.value = currentRating;
+                updateStarInputUI(currentRating);
+            });
+            
+            star.addEventListener('mouseover', function() {
+                updateStarInputUI(this.dataset.value);
+            });
+            
+            star.addEventListener('mouseout', function() {
+                updateStarInputUI(currentRating);
+            });
+        });
+        reviewListenersAttached = true;
+    }
+
+    function updateStarInputUI(val) {
+        document.querySelectorAll('.star-input').forEach(s => {
+            s.style.color = s.dataset.value <= val ? 'var(--accent)' : 'var(--t3)';
+        });
+    }
+
+    window.openReviewModal = function() {
+        const modal = document.getElementById('reviewModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Pre-fill if current user has a review
+            const currentUserId = '<%= locals.user ? locals.user._id : "" %>';
+            const form = document.getElementById('reviewForm');
+            
+            // We can search the loaded reviews list in the DOM or use the window.allReviews if we had it
+            // For now, let's just make sure the UI is initialized
+            initReviewSystem();
+
+            // Optional: If we want to be fancy, we could have stored the data in a global variable
+            if (window.currentUserReview) {
+                currentRating = window.currentUserReview.rating;
+                document.getElementById('ratingValue').value = currentRating;
+                updateStarInputUI(currentRating);
+                form.querySelector('textarea').value = window.currentUserReview.comment;
+            }
+        }
+    }
+
+    window.closeReviewModal = function() {
+        const modal = document.getElementById('reviewModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    window.handleReviewSubmit = async function(e) {
+        if (e) e.preventDefault();
+        console.log('[REVIEW_JS] handleReviewSubmit triggered');
+        const form = document.getElementById('reviewForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        let hasError = false;
+
+        // Reset errors
+        document.getElementById('ratingError').classList.add('hidden');
+        document.getElementById('commentError').classList.add('hidden');
+        form.querySelector('textarea').style.borderColor = 'var(--border)';
+
+        if (!data.rating) {
+            document.getElementById('ratingError').classList.remove('hidden');
+            hasError = true;
+        }
+
+        if (!data.comment || data.comment.trim().length < 10) {
+            document.getElementById('commentError').classList.remove('hidden');
+            form.querySelector('textarea').style.borderColor = 'var(--danger)';
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        const btn = document.getElementById('submitReviewBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Publishing...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`/products/${data.productId}/review`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                dispatchGlobalToast('success', 'Review Published', result.message);
+                closeReviewModal();
+                loadReviews();
+                form.reset();
+                currentRating = 0;
+                updateStarInputUI(0);
+            } else {
+                dispatchGlobalToast('error', 'Submission Failed', result.message);
+            }
+        } catch (err) {
+            dispatchGlobalToast('error', 'Error', 'Something went wrong. Please try again.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    window.loadReviews = async function() {
+        const productId = '<%= product._id %>';
+        const reviewsList = document.getElementById('reviewsList');
+        if (!reviewsList) return;
+        
+        try {
+            // Add cache-buster to ensure we get fresh data
+            const response = await fetch(`/products/${productId}/reviews?t=${Date.now()}`);
+            const data = await response.json();
+
+            if (data.success) {
+                updateReviewStats(data.stats);
+                
+                if (data.reviews.length === 0) {
+                    reviewsList.innerHTML = '<div class="text-center py-10 text-zinc-600">No reviews yet. Be the first to review!</div>';
+                    return;
+                }
+
+                const currentUserId = '<%= locals.user ? locals.user._id : "" %>';
+                window.currentUserReview = data.reviews.find(r => r.userId && r.userId._id === currentUserId);
+
+                reviewsList.innerHTML = data.reviews.map(r => {
+                    const isOwnReview = r.userId && r.userId._id === currentUserId;
+                    const userName = r.userId ? `${r.userId.firstName} ${r.userId.lastName || ''}` : 'Anonymous User';
+                    const userInitial = r.userId && r.userId.firstName ? r.userId.firstName[0] : 'U';
+                    const userImage = r.userId && r.userId.profileImage ? r.userId.profileImage : null;
+
+                    return `
+                        <div class="review-card ${isOwnReview ? 'border-accent/30 bg-accent/5' : ''}" 
+                             style="background:var(--card); padding:24px; border-radius:16px; margin-bottom:16px; border:1px solid ${isOwnReview ? 'var(--accent)' : 'var(--border)'};">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <div style="width:40px;height:40px;border-radius:50%;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent); overflow:hidden; border:1px solid var(--border);">
+                                        ${userImage ? `<img src="${userImage}" class="w-full h-full object-cover">` : userInitial}
+                                    </div>
+                                    <div>
+                                        <div style="font-size:14px;font-weight:700; color:var(--t1);">${userName} ${isOwnReview ? '<span style="font-size:10px; color:var(--accent); margin-left:6px; background:rgba(255,106,0,0.1); padding:2px 6px; border-radius:4px;">YOU</span>' : ''}</div>
+                                        <div style="font-size:11px;color:var(--t3);">${r.isVerifiedPurchase ? '<span style="color:var(--success)">● Verified Purchase</span>' : 'Community Member'} · ${new Date(r.createdAt).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:2px; color:var(--accent); font-size:12px;">
+                                    ${'★'.repeat(r.rating)}${'★'.repeat(5 - r.rating).split('').map(() => `<span style="opacity:0.1">★</span>`).join('')}
+                                </div>
+                            </div>
+                            <p style="font-size:14px;color:var(--t2);line-height:1.8; font-weight:400;">${r.comment}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error("Load Reviews Error:", err);
+            reviewsList.innerHTML = '<div class="text-center py-10 text-status-danger">Failed to load reviews.</div>';
+        }
+    }
+
+    function updateReviewStats(stats) {
+        const avg = stats.average ? stats.average.toFixed(1) : "0.0";
+        const count = stats.count || 0;
+
+        if (document.getElementById('avgRatingValue')) document.getElementById('avgRatingValue').textContent = avg;
+        if (document.getElementById('totalReviewCount')) document.getElementById('totalReviewCount').textContent = `${count} reviews`;
+        if (document.getElementById('summaryRatingText')) document.getElementById('summaryRatingText').textContent = `${avg} (${count} reviews)`;
+        if (document.getElementById('reviewTabBtn')) document.getElementById('reviewTabBtn').textContent = `Reviews (${count})`;
+        
+        const fullStars = Math.floor(stats.average || 0);
+        const starsHtml = '★'.repeat(fullStars) + '<span style="opacity:0.1">★</span>'.repeat(5 - fullStars);
+        
+        if (document.getElementById('avgRatingStars')) document.getElementById('avgRatingStars').innerHTML = starsHtml;
+        if (document.getElementById('summaryStars')) document.getElementById('summaryStars').innerHTML = starsHtml;
+    }
+
+    // Load initial review stats
+    document.addEventListener('DOMContentLoaded', loadReviews);
+
+    // Override switchTab to load reviews
+    const baseSwitchTab = switchTab;
+    window.switchTab = function(btn, tabId) {
+        baseSwitchTab(btn, tabId);
+        if (tabId === 'reviews') {
+            loadReviews();
+        }
+    };
+  </script>
+
+  <!-- Review Modal HTML -->
+  <div id="reviewModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); backdrop-blur:sm; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#111; border:1px solid var(--border); border-radius:24px; width:100%; max-width:500px; padding:40px; position:relative; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+        <button onclick="closeReviewModal()" style="position:absolute; top:24px; right:24px; background:none; border:none; color:var(--t3); cursor:pointer; font-size:24px;">×</button>
+        
+        <div style="margin-bottom:32px;">
+            <h3 class="font-syne" style="font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--t1);">Write a Review</h3>
+            <p style="font-size:13px; color:var(--t3); margin-top:8px;">Share your thoughts with the community.</p>
+        </div>
+        
+        <form id="reviewForm" onsubmit="handleReviewSubmit(event); return false;" novalidate>
+            <input type="hidden" name="productId" value="<%= product._id %>">
+            
+            <div style="margin-bottom:28px;">
+                <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:var(--accent); margin-bottom:12px;">Rating</label>
+                <div id="starInput" style="display:flex; gap:10px; font-size:28px; color:var(--t3);">
+                    <span class="star-input" style="cursor:pointer; transition:color 0.2s;" data-value="1">★</span>
+                    <span class="star-input" style="cursor:pointer; transition:color 0.2s;" data-value="2">★</span>
+                    <span class="star-input" style="cursor:pointer; transition:color 0.2s;" data-value="3">★</span>
+                    <span class="star-input" style="cursor:pointer; transition:color 0.2s;" data-value="4">★</span>
+                    <span class="star-input" style="cursor:pointer; transition:color 0.2s;" data-value="5">★</span>
+                </div>
+                <input type="hidden" name="rating" id="ratingValue">
+                <div id="ratingError" class="text-status-danger text-[11px] mt-2 hidden">Please select a star rating.</div>
+            </div>
+
+            <div style="margin-bottom:32px;">
+                <label style="display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:var(--accent); margin-bottom:12px;">Comment</label>
+                <textarea name="comment" placeholder="What's your experience with this phone? (Min 10 characters)" 
+                          style="width:100%; height:140px; background:#000; border:1px solid var(--border); border-radius:16px; padding:20px; color:var(--t1); font-size:15px; outline:none; transition:all 0.3s;"
+                          oninput="this.style.borderColor='var(--border)'; document.getElementById('commentError').classList.add('hidden')"></textarea>
+                <div id="commentError" class="text-status-danger text-[11px] mt-2 hidden">Comment must be at least 10 characters long.</div>
+            </div>
+
+            <button type="button" id="submitReviewBtn" onclick="handleReviewSubmit()" class="btn-primary" style="width:100%; padding:18px; font-size:12px; font-weight:900;">Submit Review</button>
+        </form>
+    </div>
+  </div>
+
+  <!-- Full Screen Carousel Modal -->
+  <div id="fsCarouselModal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.95); backdrop-filter:blur(10px); flex-direction:column; justify-content:center; align-items:center;" onclick="closeFsCarousel()">
+    <button onclick="closeFsCarousel()" style="position:absolute; top:24px; right:24px; background:rgba(255,255,255,0.1); border:none; color:#fff; width:44px; height:44px; border-radius:50%; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center; transition:background 0.2s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+    
+    <div style="position:relative; width:90%; height:80%; max-width:1200px; display:flex; justify-content:center; align-items:center;" onclick="(e) => e.stopPropagation()">
+        <img id="fsMainImg" src="" style="max-width:100%; max-height:100%; object-fit:contain; transition:opacity 0.3s;" alt="Product Image Fullscreen" onclick="(e) => e.stopPropagation()">
+        
+        <button id="fsPrevBtn" onclick="fsPrevImage(event)" style="position:absolute; left:0; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.1); color:#fff; border:none; width:50px; height:50px; display:flex; align-items:center; justify-content:center; border-radius:50%; cursor:pointer; transition:background .2s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button id="fsNextBtn" onclick="fsNextImage(event)" style="position:absolute; right:0; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.1); color:#fff; border:none; width:50px; height:50px; display:flex; align-items:center; justify-content:center; border-radius:50%; cursor:pointer; transition:background .2s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+    </div>
+    
+    <!-- Dots Container -->
+    <div id="fsDotsContainer" style="display:flex; gap:8px; margin-top:20px; z-index: 10001;" onclick="(e) => e.stopPropagation()"></div>
+  </div>
+
+  
   </script>

@@ -63,12 +63,19 @@ const SpaNavigation = {
                 // Refresh Breadcrumbs if any
                 const newBread = doc.querySelector('.breadcrumbs-container');
                 const oldBread = document.querySelector('.breadcrumbs-container');
-                if (newBread && oldBread) oldBread.innerHTML = newBread.innerHTML;
+                if (newBread && oldBread) {
+                    oldBread.className = newBread.className;
+                    oldBread.innerHTML = newBread.innerHTML;
+                }
 
-                // Refresh Sidebar Nav to update active states
-                const newNav = doc.querySelector('aside nav');
-                const oldNav = document.querySelector('aside nav');
-                if (newNav && oldNav) oldNav.innerHTML = newNav.innerHTML;
+                // Refresh all Sidebar Navs (Desktop & Mobile)
+                const newNavs = doc.querySelectorAll('.spa-nav');
+                const oldNavs = document.querySelectorAll('.spa-nav');
+                if (newNavs.length > 0 && oldNavs.length > 0) {
+                    oldNavs.forEach((oldNav, idx) => {
+                        if (newNavs[idx]) oldNav.innerHTML = newNavs[idx].innerHTML;
+                    });
+                }
                 
                 // Re-initialize scripts in new content
                 this.executeScripts(currentContent);

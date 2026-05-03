@@ -1,4 +1,5 @@
 import * as userProductService from "../../../services/user/userProductService.js";
+import * as reviewService from "../../../services/user/reviewService.js";
 import Wishlist from "../../../models/wishlist/wishlist.js";
 import { normalize } from "../../../utils/productHelpers.js";
 
@@ -76,8 +77,22 @@ export const getProductDetailsPage = async (req, res) => {
             await userProductService.getProductDetails(req.params.id);
 
         // ✅ ADD THIS (IMPORTANT)
-        // Pick first active variant as default
-        const defaultVariant = product?.variants?.find(v => !v.isDeleted) || null;
+        // Pick specific variant from query if provided, else first active variant
+        const { color, storage, ram } = req.query;
+        let defaultVariant = null;
+        
+        if (color || storage || ram) {
+            defaultVariant = product?.variants?.find(v => 
+                !v.isDeleted && 
+                (!color || normalize(v.color) === normalize(color)) && 
+                (!storage || normalize(v.storage) === normalize(storage)) && 
+                (!ram || normalize(v.ram) === normalize(ram))
+            );
+        }
+
+        if (!defaultVariant) {
+            defaultVariant = product?.variants?.find(v => !v.isDeleted) || null;
+        }
 
         const defaultImage =
             defaultVariant?.images?.[0] || "/images/placeholder.jpg";
@@ -122,6 +137,12 @@ export const getProductDetailsPage = async (req, res) => {
             }
         }
 
+        // ── Review Eligibility ──
+        let canReview = false;
+        if (req.session.user) {
+            canReview = await reviewService.canUserReview(req.session.user, req.params.id);
+        }
+
         const { msg, icon } = req.query;
 
         res.render("user/productDetails", {
@@ -130,6 +151,7 @@ export const getProductDetailsPage = async (req, res) => {
             recentlyViewedProducts,
             isWishlisted,
             wishlistedIds,
+            canReview,
 
             // NEW DATA 
             defaultVariant,

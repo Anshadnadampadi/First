@@ -10,10 +10,13 @@
     { id: 'wallet', label: 'My Wallet', href: '/account/wallet' }
   ];
 %>
-<aside class="space-y-1">
+<aside class="flex flex-row overflow-x-auto lg:flex-col gap-2 lg:gap-1 lg:space-y-0 pb-4 lg:pb-0 scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
+    <style>
+        aside::-webkit-scrollbar { display: none; }
+    </style>
     <% tabs.forEach(tab => { %>
         <a href="<%= tab.href %>" 
-           class="block px-6 py-4 border transition-all text-label font-bold uppercase <%= activeTab === tab.id ? 'bg-white text-black border-white' : 'border-black-border text-text-muted hover:text-white hover:border-white' %>">
+           class="flex-shrink-0 px-6 py-4 border transition-all text-[10px] font-bold uppercase <%= activeTab === tab.id ? 'bg-white text-black border-white' : 'border-white/[0.05] text-white/50 hover:text-white hover:border-white/20' %>">
             <%= tab.label %>
         </a>
     <% }) %>

@@ -242,14 +242,13 @@ export const verifyPaymentService = async (paymentData) => {
             // Clear Cart
             await cartService.clearCart(order.user);
 
-            // Admin Alert
-            const user = await User.findById(order.user);
-            await createAdminNotification({
+            // Admin Alert (Non-blocking)
+            createAdminNotification({
                 type: 'order_placed',
                 title: 'New Online Order',
                 message: `Order #${order.orderId} (Online) confirmed. Total: ₹${order.totalAmount.toLocaleString()}`,
                 orderId: order._id
-            });
+            }).catch(err => console.error("Admin notification error:", err));
 
             return { success: true, message: 'Payment verified successfully.' };
         }

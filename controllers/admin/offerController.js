@@ -22,7 +22,11 @@ export const getOfferPage = async (req, res) => {
             totalOffers,
             products,
             categories,
-            query: req.query
+            query: req.query,
+            breadcrumbs: [
+                { label: 'Marketing', url: '#' },
+                { label: 'Offers', url: '/admin/marketing/offers' }
+            ]
         });
 
     } catch (err) {

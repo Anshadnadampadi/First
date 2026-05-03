@@ -1,5 +1,5 @@
 <!-- views/partials/nav-user.ejs -->
-<nav x-data="{}" class="h-20 glass border-b border-black-border sticky top-0 z-40 flex items-center justify-between px-6 lg:px-12">
+<nav x-data="{ mobileMenu: false }" class="h-20 glass border-b border-black-border sticky top-0 z-40 flex items-center justify-between px-6 lg:px-12">
 
     <!-- Logo -->
     <div class="flex items-center gap-8">
@@ -29,31 +29,33 @@
         </div>
 
         <!-- User Actions -->
-        <a href="/wishlist" class="text-white/60 hover:text-white transition-colors relative" title="Wishlist">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
-                </path>
-            </svg>
-            <span id="wishlist-badge"
-                class="absolute -top-2 -right-2 bg-accent text-black text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                <%= typeof wishlistCount !== 'undefined' ? wishlistCount : 0 %>
-            </span>
-        </a>
+        <div class="hidden sm:flex items-center gap-6">
+            <a href="/wishlist" class="text-white/60 hover:text-white transition-colors relative" title="Wishlist">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                    </path>
+                </svg>
+                <span id="wishlist-badge"
+                    class="absolute -top-2 -right-2 bg-accent text-black text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    <%= typeof wishlistCount !== 'undefined' ? wishlistCount : 0 %>
+                </span>
+            </a>
 
-        <a href="/cart" class="text-white/60 hover:text-white transition-colors relative" title="Cart">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-            </svg>
-            <span id="cart-badge"
-                class="absolute -top-2 -right-2 bg-accent text-black text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                <%= typeof cartCount !== 'undefined' ? cartCount : 0 %>
-            </span>
-        </a>
+            <a href="/cart" class="text-white/60 hover:text-white transition-colors relative" title="Cart">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+                <span id="cart-badge"
+                    class="absolute -top-2 -right-2 bg-accent text-black text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    <%= typeof cartCount !== 'undefined' ? cartCount : 0 %>
+                </span>
+            </a>
+        </div>
 
         <!-- Profile Avatar Link -->
-        <a href="/profile" class="relative group" title="Account Settings">
+        <a href="/profile" class="relative group hidden sm:block" title="Account Settings">
             <% if (locals.user && locals.user.profileImage) { %>
                 <div
                     class="w-8 h-8 rounded-sm overflow-hidden border border-white/10 group-hover:border-accent transition-colors">
@@ -73,15 +75,115 @@
         <a href="/auth/logout"
             data-no-spa
             @click.prevent="window.confirmAction({ title: 'Logout?', message: 'Are you sure you want to end your session?', confirmText: 'Logout', cancelText: 'Cancel', type: 'danger' }).then(confirmed => { if(confirmed) window.location.href='/auth/logout' })"
-            class="text-[10px] font-bold tracking-[0.2em] text-white/40 hover:text-accent transition-colors uppercase">Logout</a>
+            class="hidden lg:block text-[10px] font-bold tracking-[0.2em] text-white/40 hover:text-accent transition-colors uppercase">Logout</a>
 
-
-
-        <!-- Mobile Toggle -->
-        <button class="lg:hidden text-white">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+        <!-- Modern Mobile Toggle -->
+        <button @click="mobileMenu = true" 
+                class="lg:hidden w-10 h-10 flex items-center justify-center rounded-sm bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all active:scale-95">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8h16M4 16h16"></path>
             </svg>
         </button>
     </div>
-</nav>
+
+    <!-- Modern Glass Mobile Menu Drawer -->
+    <div x-show="mobileMenu" 
+         x-cloak
+         class="fixed inset-0 z-[100] lg:hidden">
+        
+        <!-- Ultra-Glass Backdrop -->
+        <div x-show="mobileMenu"
+             x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-400"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="mobileMenu = false"
+             class="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
+        
+        <!-- Glass Drawer -->
+        <div x-show="mobileMenu"
+             x-transition:enter="transition ease-out duration-500 cubic-bezier(0.32, 0.72, 0, 1)"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition ease-in duration-400 cubic-bezier(0.32, 0.72, 0, 1)"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+             class="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-black/60 backdrop-blur-2xl border-l border-white/10 p-8 flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
+            
+            <!-- Animated Background Gradient -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+
+            <div class="flex justify-between items-center mb-12">
+                <span class="text-white font-black tracking-[0.25em] text-xl">STARZO<span class="text-accent text-[10px] ml-1">PRO</span></span>
+                <button @click="mobileMenu = false" class="text-white/40 hover:text-white p-2 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Profile Summary (Glass Card) -->
+            <div class="flex items-center gap-4 mb-12 p-5 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm relative group overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <% if (locals.user && locals.user.profileImage) { %>
+                    <img src="<%= locals.user.profileImage %>" class="w-14 h-14 rounded-full object-cover border-2 border-accent/20">
+                <% } else { %>
+                    <div class="w-14 h-14 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent uppercase font-black text-xl">
+                        <%= (locals.user && locals.user.email) ? locals.user.email[0] : (locals.user && locals.user.firstName ? locals.user.firstName[0] : 'U') %>
+                    </div>
+                <% } %>
+                <div class="relative z-10">
+                    <p class="text-xs font-black text-white uppercase tracking-[0.15em] mb-1"><%= (locals.user && (locals.user.firstName || locals.user.name)) ? (locals.user.firstName || locals.user.name) : 'User' %></p>
+                    <a href="/profile" @click="mobileMenu = false" class="text-[9px] text-accent font-bold uppercase tracking-[0.2em] flex items-center gap-1 group">
+                        Identity Settings
+                        <i class="fas fa-chevron-right text-[7px] group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-8 mb-12">
+                <div class="space-y-6">
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">Navigation</p>
+                    <a href="/products" @click="mobileMenu = false" class="text-2xl font-black tracking-tighter text-white uppercase italic hover:text-accent transition-colors flex justify-between items-center group">
+                        All Phones
+                        <i class="fas fa-arrow-right text-xs opacity-0 group-hover:opacity-100 transition-all -translate-x-4 group-hover:translate-x-0"></i>
+                    </a>
+                    <a href="/deals" @click="mobileMenu = false" class="text-2xl font-black tracking-tighter text-white uppercase italic hover:text-accent transition-colors flex justify-between items-center group">
+                        Deals
+                        <i class="fas fa-arrow-right text-xs opacity-0 group-hover:opacity-100 transition-all -translate-x-4 group-hover:translate-x-0"></i>
+                    </a>
+                    <a href="/support" @click="mobileMenu = false" class="text-2xl font-black tracking-tighter text-white uppercase italic hover:text-accent transition-colors flex justify-between items-center group">
+                        Support
+                        <i class="fas fa-arrow-right text-xs opacity-0 group-hover:opacity-100 transition-all -translate-x-4 group-hover:translate-x-0"></i>
+                    </a>
+                </div>
+
+                <div class="h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent my-2"></div>
+                
+                <div class="space-y-6">
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">Inventory</p>
+                    <a href="/cart" @click="mobileMenu = false" class="text-2xl font-black tracking-tighter text-white uppercase italic flex justify-between items-center group hover:text-accent transition-colors">
+                        Cart
+                        <span class="text-[10px] bg-accent text-black px-2.5 py-1 rounded-sm font-black tracking-tighter"><%= typeof cartCount !== 'undefined' ? cartCount : 0 %></span>
+                    </a>
+                    <a href="/wishlist" @click="mobileMenu = false" class="text-2xl font-black tracking-tighter text-white uppercase italic flex justify-between items-center group hover:text-accent transition-colors">
+                        Wishlist
+                        <span class="text-[10px] bg-accent text-black px-2.5 py-1 rounded-sm font-black tracking-tighter"><%= typeof wishlistCount !== 'undefined' ? wishlistCount : 0 %></span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-8 border-t border-white/5 relative">
+                <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                <a href="/auth/logout"
+                   @click.prevent="window.confirmAction({ title: 'Logout?', message: 'Are you sure you want to end your session?', confirmText: 'Logout', cancelText: 'Cancel', type: 'danger' }).then(confirmed => { if(confirmed) window.location.href='/auth/logout' })"
+                   class="flex items-center gap-3 text-status-danger font-black text-[10px] uppercase tracking-[0.3em] group">
+                   <div class="w-8 h-8 rounded-full bg-status-danger/10 flex items-center justify-center group-hover:bg-status-danger group-hover:text-white transition-all">
+                       <i class="fas fa-sign-out-alt text-xs"></i>
+                   </div>
+                   Sign Out Protocol
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>

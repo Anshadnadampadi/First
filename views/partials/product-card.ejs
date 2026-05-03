@@ -35,11 +35,16 @@
   
   const wishlistedIdsList = typeof wishlistedIds !== 'undefined' ? wishlistedIds : [];
   const isWishlisted = wishlistedIdsList.includes(wishlistKey);
+
+  let productUrl = `/products/${pId}`;
+  if (isWishlistCard && (vColor || vStorage || vRam)) {
+      productUrl += `?color=${encodeURIComponent(vColor)}&storage=${encodeURIComponent(vStorage)}&ram=${encodeURIComponent(vRam)}`;
+  }
 %>
 
 <div class="bg-black-card group relative overflow-hidden transition-all duration-300 border border-transparent hover:border-white/5 h-full flex flex-col">
     <!-- Image block -->
-    <div class="aspect-square bg-black overflow-hidden relative cursor-pointer" onclick="window.location.href='/products/<%= pId %>'">
+    <div class="aspect-square bg-black overflow-hidden relative cursor-pointer" onclick="window.location.href='<%= productUrl %>'">
         <img src="<%= pImg %>" alt="<%= pName %>"
             class="w-full h-full object-contain p-8 lg:p-12 block transition-transform duration-500 group-hover:scale-110" loading="lazy">
         
@@ -132,7 +137,7 @@
             <%= pBrand %>
         </p>
         <h3 class="text-white font-bold text-sm leading-snug mb-3 line-clamp-2 h-10 group-hover:text-accent transition-colors">
-            <a href="/products/<%= pId %>">
+            <a href="<%= productUrl %>">
                 <%= pName %>
             </a>
         </h3>

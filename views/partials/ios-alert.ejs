@@ -107,13 +107,16 @@
 
     /* Type Specific Colors */
     .icon-danger { border-color: #ef4444; color: #ef4444; }
-    .btn-danger { background-color: #ef4444; }
+    .btn-danger { background-color: #ef4444; color: #ffffff; }
     
     .icon-warning { border-color: #ff6a00; color: #ff6a00; }
-    .btn-warning { background-color: #ff6a00; }
+    .btn-warning { background-color: #ff6a00; color: #000000; }
     
     .icon-success { border-color: #22c55e; color: #22c55e; }
-    .btn-success { background-color: #22c55e; }
+    .btn-success { background-color: #22c55e; color: #ffffff; }
+    
+    .icon-info { border-color: #3b82f6; color: #3b82f6; }
+    .btn-info { background-color: #3b82f6; color: #ffffff; }
 </style>
 
 <div x-data="starzoAlertComponent()" 
@@ -130,7 +133,8 @@
              :class="{
                 'icon-danger': type === 'danger' || type === 'error',
                 'icon-warning': type === 'warning',
-                'icon-success': type === 'success'
+                'icon-success': type === 'success',
+                'icon-info': type === 'info'
              }">
             <template x-if="type === 'danger' || type === 'error'">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -140,6 +144,9 @@
             </template>
             <template x-if="type === 'success'">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            </template>
+            <template x-if="type === 'info'">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             </template>
         </div>
 
@@ -162,7 +169,8 @@
                     :class="{
                         'btn-danger': type === 'danger' || type === 'error',
                         'btn-warning': type === 'warning',
-                        'btn-success': type === 'success'
+                        'btn-success': type === 'success',
+                        'btn-info': type === 'info'
                     }"
                     x-text="confirmText"></button>
             <button type="button" @click.prevent.stop="cancel()" class="starzo-btn starzo-btn-secondary" x-text="cancelText"></button>

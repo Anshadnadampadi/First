@@ -1,53 +1,73 @@
-<!-- views/partials/footer.ejs -->
-<footer class="bg-black text-white pt-16 pb-12 mt-20 border-t border-zinc-800">
+<footer class="bg-black text-white pt-16 pb-12 mt-20 border-t border-zinc-900" x-data="{ activeSection: null }">
     <div class="max-w-[1200px] mx-auto px-6">
-        <!-- 4-Column Table-like Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        <!-- 4-Column Responsive Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-8 md:gap-y-16 mb-16">
+            
             <!-- Column 1: Shop -->
-            <div class="space-y-6">
-                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Shop</h4>
-                <ul class="space-y-3">
-                    <li><a href="/phones" class="text-sm text-zinc-400 hover:text-white transition-colors">All Phones</a></li>
-                    <li><a href="/catalog?category=flagship" class="text-sm text-zinc-400 hover:text-white transition-colors">Flagships</a></li>
-                    <li><a href="/catalog?category=gaming" class="text-sm text-zinc-400 hover:text-white transition-colors">Gaming</a></li>
-                    <li><a href="/deals" class="text-sm text-zinc-400 hover:text-white transition-colors">Special Offers</a></li>
-                    <li><a href="/catalog" class="text-sm text-zinc-400 hover:text-white transition-colors">Accessories</a></li>
+            <div class="border-b border-zinc-900 md:border-0 pb-6 md:pb-0">
+                <button @click="activeSection = (activeSection === 'shop' ? null : 'shop')" 
+                        class="flex justify-between items-center w-full md:cursor-default focus:outline-none group">
+                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-zinc-100 group-hover:text-accent transition-colors">Shop</h4>
+                    <span class="md:hidden text-zinc-600 transition-transform duration-300" :class="activeSection === 'shop' ? 'rotate-180' : ''">
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </span>
+                </button>
+                <ul class="mt-6 space-y-4 md:block" :class="activeSection === 'shop' ? 'block' : 'hidden'">
+                    <li><a href="/phones" class="text-sm text-zinc-500 hover:text-white transition-colors">All Phones</a></li>
+                    <li><a href="/catalog?category=flagship" class="text-sm text-zinc-500 hover:text-white transition-colors">Flagships</a></li>
+                    <li><a href="/catalog?category=gaming" class="text-sm text-zinc-500 hover:text-white transition-colors">Gaming</a></li>
+                    <li><a href="/deals" class="text-sm text-zinc-500 hover:text-white transition-colors">Special Offers</a></li>
                 </ul>
             </div>
 
             <!-- Column 2: Account -->
-            <div class="space-y-6">
-                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Account</h4>
-                <ul class="space-y-3">
-                    <li><a href="/account" class="text-sm text-zinc-400 hover:text-white transition-colors">Manage Account</a></li>
-                    <li><a href="/account/orders" class="text-sm text-zinc-400 hover:text-white transition-colors">My Orders</a></li>
-                    <li><a href="/wallet" class="text-sm text-zinc-400 hover:text-white transition-colors">Wallet</a></li>
-                    <li><a href="/cart" class="text-sm text-zinc-400 hover:text-white transition-colors">Shopping Bag</a></li>
-                    <li><a href="/account/addresses" class="text-sm text-zinc-400 hover:text-white transition-colors">Addresses</a></li>
+            <div class="border-b border-zinc-900 md:border-0 pb-6 md:pb-0">
+                <button @click="activeSection = (activeSection === 'account' ? null : 'account')" 
+                        class="flex justify-between items-center w-full md:cursor-default focus:outline-none group">
+                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-zinc-100 group-hover:text-accent transition-colors">Account</h4>
+                    <span class="md:hidden text-zinc-600 transition-transform duration-300" :class="activeSection === 'account' ? 'rotate-180' : ''">
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </span>
+                </button>
+                <ul class="mt-6 space-y-4 md:block" :class="activeSection === 'account' ? 'block' : 'hidden'">
+                    <li><a href="/profile" class="text-sm text-zinc-500 hover:text-white transition-colors">Manage Account</a></li>
+                    <li><a href="/account/orders" class="text-sm text-zinc-500 hover:text-white transition-colors">My Orders</a></li>
+                    <li><a href="/wallet" class="text-sm text-zinc-500 hover:text-white transition-colors">Wallet</a></li>
+                    <li><a href="/cart" class="text-sm text-zinc-500 hover:text-white transition-colors">Shopping Bag</a></li>
                 </ul>
             </div>
 
             <!-- Column 3: Support -->
-            <div class="space-y-6">
-                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Support</h4>
-                <ul class="space-y-3">
-                    <li><a href="/support" class="text-sm text-zinc-400 hover:text-white transition-colors">Contact Us</a></li>
-                    <li><a href="/support" class="text-sm text-zinc-400 hover:text-white transition-colors">User Guide</a></li>
-                    <li><a href="/support" class="text-sm text-zinc-400 hover:text-white transition-colors">Help</a></li>
-                    <li><a href="/shipping-policy" class="text-sm text-zinc-400 hover:text-white transition-colors">Shipping Info</a></li>
-                    <li><a href="/return-policy" class="text-sm text-zinc-400 hover:text-white transition-colors">Returns</a></li>
+            <div class="border-b border-zinc-900 md:border-0 pb-6 md:pb-0">
+                <button @click="activeSection = (activeSection === 'support' ? null : 'support')" 
+                        class="flex justify-between items-center w-full md:cursor-default focus:outline-none group">
+                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-zinc-100 group-hover:text-accent transition-colors">Support</h4>
+                    <span class="md:hidden text-zinc-600 transition-transform duration-300" :class="activeSection === 'support' ? 'rotate-180' : ''">
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </span>
+                </button>
+                <ul class="mt-6 space-y-4 md:block" :class="activeSection === 'support' ? 'block' : 'hidden'">
+                    <li><a href="/support" class="text-sm text-zinc-500 hover:text-white transition-colors">Contact Us</a></li>
+                    <li><a href="/support" class="text-sm text-zinc-500 hover:text-white transition-colors">Help Center</a></li>
+                    <li><a href="/shipping-policy" class="text-sm text-zinc-500 hover:text-white transition-colors">Shipping Info</a></li>
+                    <li><a href="/return-policy" class="text-sm text-zinc-500 hover:text-white transition-colors">Returns</a></li>
                 </ul>
             </div>
 
             <!-- Column 4: Company -->
-            <div class="space-y-6">
-                <h4 class="text-sm font-bold uppercase tracking-wider text-zinc-100">Company</h4>
-                <ul class="space-y-3">
-                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">About Starzo</a></li>
-                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">Media Kit</a></li>
-                    <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Careers</a></li>
-                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">Newsletters</a></li>
-                    <li><a href="#" class="text-sm text-zinc-400 hover:text-white transition-colors">Partnerships</a></li>
+            <div class="pb-6 md:pb-0">
+                <button @click="activeSection = (activeSection === 'company' ? null : 'company')" 
+                        class="flex justify-between items-center w-full md:cursor-default focus:outline-none group">
+                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-zinc-100 group-hover:text-accent transition-colors">Company</h4>
+                    <span class="md:hidden text-zinc-600 transition-transform duration-300" :class="activeSection === 'company' ? 'rotate-180' : ''">
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </span>
+                </button>
+                <ul class="mt-6 space-y-4 md:block" :class="activeSection === 'company' ? 'block' : 'hidden'">
+                    <li><a href="#" class="text-sm text-zinc-500 hover:text-white transition-colors">About Starzo</a></li>
+                    <li><a href="#" class="text-sm text-zinc-500 hover:text-white transition-colors">Careers</a></li>
+                    <li><a href="#" class="text-sm text-zinc-500 hover:text-white transition-colors">Newsletters</a></li>
+                    <li><a href="#" class="text-sm text-zinc-500 hover:text-white transition-colors">Partnerships</a></li>
                 </ul>
             </div>
         </div>
