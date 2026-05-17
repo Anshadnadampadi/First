@@ -46,6 +46,12 @@ router.delete("/products/variant/delete-asset/:id/:index/:imgIndex", deleteVaria
 
 router.get("/phones", (req, res) => res.redirect("/products"));
 router.get("/catalog", (req, res) => res.redirect("/products"));
+router.get("/deals", (req, res) => {
+    res.render("user/deals", {
+        title: "Special Offers",
+        breadcrumbs: [{ label: "Deals", url: "/deals" }]
+    });
+});
 router.get("/products", loadProductListing);
 router.get("/products/:id", getProductDetailsPage)
 router.post("/products/:id/review", ensureLoggedIn, submitReview);

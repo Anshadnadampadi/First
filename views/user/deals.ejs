@@ -1,0 +1,157 @@
+<!-- views/user/deals.ejs -->
+<%- contentFor('body') %>
+
+<div class="min-h-screen bg-black py-24 flex items-center justify-center relative overflow-hidden">
+    <!-- Ambient Background Glows -->
+    <div class="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[150px] pointer-events-none"></div>
+
+    <div class="max-w-4xl w-full mx-auto px-6 lg:px-8 relative z-10 text-center">
+        <!-- Badge -->
+        <span class="inline-block bg-accent/10 text-accent border border-accent/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6 animate-pulse">
+            Upcoming Drop
+        </span>
+
+        <!-- Title -->
+        <h1 class="text-white text-5xl md:text-7xl font-black tracking-tighter uppercase mb-6 font-display">
+            UNLOCKED <span class="text-accent">SOON.</span>
+        </h1>
+        
+        <p class="text-text-secondary text-sm md:text-base max-w-xl mx-auto leading-relaxed mb-12">
+            The ultimate technology sale is about to drop. We are preparing exclusive, limited-run discounts on the latest flagship devices.
+        </p>
+
+        <!-- Countdown Timer -->
+        <div class="grid grid-cols-4 gap-4 max-w-xl mx-auto mb-16" x-data="countdown()">
+            <div class="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 p-4 md:p-6 rounded-2xl">
+                <span class="block text-3xl md:text-5xl font-mono font-bold text-white tracking-tight" x-text="days">00</span>
+                <span class="block text-[8px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-2">Days</span>
+            </div>
+            <div class="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 p-4 md:p-6 rounded-2xl">
+                <span class="block text-3xl md:text-5xl font-mono font-bold text-white tracking-tight" x-text="hours">00</span>
+                <span class="block text-[8px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-2">Hours</span>
+            </div>
+            <div class="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 p-4 md:p-6 rounded-2xl">
+                <span class="block text-3xl md:text-5xl font-mono font-bold text-white tracking-tight" x-text="minutes">00</span>
+                <span class="block text-[8px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-2">Mins</span>
+            </div>
+            <div class="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/80 p-4 md:p-6 rounded-2xl">
+                <span class="block text-3xl md:text-5xl font-mono font-bold text-accent tracking-tight animate-pulse" x-text="seconds">00</span>
+                <span class="block text-[8px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-2">Secs</span>
+            </div>
+        </div>
+
+        <!-- Interactive Teaser / Reveal Hype -->
+        <div class="mb-16">
+            <h3 class="text-white text-xs font-black uppercase tracking-[0.2em] mb-8 text-center opacity-60">Teaser Deals</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <!-- Teaser Item 1 -->
+                <div class="group relative bg-zinc-900/30 backdrop-blur-sm border border-white/5 rounded-2xl p-6 overflow-hidden flex items-center gap-6 text-left hover:border-accent/30 transition-all duration-500">
+                    <div class="w-16 h-16 rounded-xl bg-black flex items-center justify-center relative overflow-hidden border border-white/5">
+                        <div class="absolute inset-0 bg-accent/20 blur-md rounded-full scale-75 group-hover:scale-100 transition-transform duration-500"></div>
+                        <i class="fas fa-mobile-alt text-2xl text-white/10 group-hover:text-accent/60 relative z-10 transition-colors"></i>
+                    </div>
+                    <div>
+                        <span class="text-accent text-[9px] font-bold tracking-widest uppercase">Mystery Offer</span>
+                        <h4 class="text-white font-bold text-sm uppercase tracking-tight mt-1">iPhone Flagships</h4>
+                        <p class="text-zinc-500 text-xs mt-0.5">Guaranteed lowest pricing</p>
+                    </div>
+                </div>
+
+                <!-- Teaser Item 2 -->
+                <div class="group relative bg-zinc-900/30 backdrop-blur-sm border border-white/5 rounded-2xl p-6 overflow-hidden flex items-center gap-6 text-left hover:border-accent/30 transition-all duration-500">
+                    <div class="w-16 h-16 rounded-xl bg-black flex items-center justify-center relative overflow-hidden border border-white/5">
+                        <div class="absolute inset-0 bg-accent/20 blur-md rounded-full scale-75 group-hover:scale-100 transition-transform duration-500"></div>
+                        <i class="fas fa-tablet-alt text-2xl text-white/10 group-hover:text-accent/60 relative z-10 transition-colors"></i>
+                    </div>
+                    <div>
+                        <span class="text-accent text-[9px] font-bold tracking-widest uppercase">Secret Drop</span>
+                        <h4 class="text-white font-bold text-sm uppercase tracking-tight mt-1">Google Pixels</h4>
+                        <p class="text-zinc-500 text-xs mt-0.5">Flat discount + free shipping</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Early VIP Signup -->
+        <div class="max-w-md mx-auto bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 p-8 rounded-3xl" x-data="signupForm()">
+            <h4 class="text-white font-bold text-sm uppercase tracking-widest mb-2">Get VIP Early Access</h4>
+            <p class="text-zinc-500 text-xs mb-6">Register your interest to get custom notifications and early-access pass before general public.</p>
+            
+            <form @submit.prevent="submitEmail()" class="flex flex-col sm:flex-row gap-3">
+                <input type="email" 
+                       x-model="email" 
+                       required 
+                       placeholder="Enter your email" 
+                       class="bg-black/50 text-white placeholder-zinc-600 border border-zinc-800 focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-4 py-3 text-xs w-full focus:outline-none transition-all">
+                <button type="submit" 
+                        class="bg-accent text-black font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl hover:bg-white transition-colors cursor-pointer w-full sm:w-auto flex-shrink-0">
+                    Notify Me
+                </button>
+            </form>
+        </div>
+
+        <a href="/products" class="inline-block mt-12 text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
+            ← Browse Current Shop
+        </a>
+    </div>
+</div>
+
+<script>
+    function countdown() {
+        return {
+            days: '00',
+            hours: '00',
+            minutes: '00',
+            seconds: '00',
+            init() {
+                // Set target date: 15 days from now
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + 15);
+                
+                const update = () => {
+                    const now = new Date().getTime();
+                    const distance = targetDate.getTime() - now;
+                    
+                    if (distance < 0) {
+                        this.days = '00';
+                        this.hours = '00';
+                        this.minutes = '00';
+                        this.seconds = '00';
+                        return;
+                    }
+                    
+                    const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((distance % (1000 * 60)) / 1000);
+                    
+                    this.days = String(d).padStart(2, '0');
+                    this.hours = String(h).padStart(2, '0');
+                    this.minutes = String(m).padStart(2, '0');
+                    this.seconds = String(s).padStart(2, '0');
+                };
+                
+                update();
+                setInterval(update, 1000);
+            }
+        }
+    }
+
+    function signupForm() {
+        return {
+            email: '',
+            submitEmail() {
+                if (!this.email) return;
+                
+                window.dispatchEvent(new CustomEvent('show-toast', {
+                    detail: { 
+                        message: 'VIP registration successful! We will notify you when deals unlock.', 
+                        type: 'success' 
+                    }
+                }));
+                this.email = '';
+            }
+        }
+    }
+</script>

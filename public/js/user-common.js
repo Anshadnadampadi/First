@@ -22,6 +22,32 @@ async function toggleWishlist(productId, options = {}) {
         button = null 
     } = options;
 
+    // --- OPTIMISTIC UI UPDATE ---
+    let originalIsActive = false;
+    let heartSvg = null;
+    if (button) {
+        originalIsActive = button.classList.contains('active');
+        heartSvg = button.querySelector('svg');
+        const nextActive = !originalIsActive;
+        
+        button.classList.toggle('active', nextActive);
+        if (nextActive) {
+            button.style.color = 'var(--danger)';
+            if (heartSvg) heartSvg.setAttribute('fill', 'currentColor');
+        } else {
+            button.style.color = '';
+            if (heartSvg) heartSvg.setAttribute('fill', 'none');
+        }
+    }
+
+    const badge = document.getElementById('wishlist-badge');
+    let originalBadgeCount = badge ? parseInt(badge.textContent || '0') : 0;
+    if (badge && button) {
+        const nextCount = Math.max(0, originalBadgeCount + (!originalIsActive ? 1 : -1));
+        badge.textContent = nextCount;
+        badge.classList.toggle('hidden', nextCount === 0);
+    }
+
     try {
         const response = await fetch('/wishlist/toggle', {
             method: 'POST',
@@ -34,11 +60,33 @@ async function toggleWishlist(productId, options = {}) {
         if (data.success) {
             const isAdded = data.added;
             
-            // If a button was passed, update its UI
+            // Sync with final confirmed server state
             if (button) {
-                const heartSvg = button.querySelector('svg');
+                const finalSvg = button.querySelector('svg');
                 button.classList.toggle('active', isAdded);
                 if (isAdded) {
+                    button.style.color = 'var(--danger)';
+                    if (finalSvg) finalSvg.setAttribute('fill', 'currentColor');
+                } else {
+                    button.style.color = '';
+                    if (finalSvg) finalSvg.setAttribute('fill', 'none');
+                }
+            }
+
+            // Global Toast Notification
+            dispatchGlobalToast(isAdded ? 'success' : 'info', isAdded ? 'Added to wishlist' : 'Removed from wishlist', data.message);
+
+            if (badge && data.wishlistCount !== undefined) {
+                badge.textContent = data.wishlistCount;
+                badge.classList.toggle('hidden', data.wishlistCount === 0);
+            }
+            
+            return { success: true, added: isAdded };
+        } else {
+            // ROLLBACK
+            if (button) {
+                button.classList.toggle('active', originalIsActive);
+                if (originalIsActive) {
                     button.style.color = 'var(--danger)';
                     if (heartSvg) heartSvg.setAttribute('fill', 'currentColor');
                 } else {
@@ -46,19 +94,11 @@ async function toggleWishlist(productId, options = {}) {
                     if (heartSvg) heartSvg.setAttribute('fill', 'none');
                 }
             }
-
-            // Global Toast Notification
-            dispatchGlobalToast(isAdded ? 'success' : 'info', isAdded ? 'Added to wishlist' : 'Removed from wishlist', data.message);
-
-            // Update Navbar Badges
-            // Update Navbar Badges
-            const badge = document.getElementById('wishlist-badge');
-            if (badge && data.wishlistCount !== undefined) {
-                badge.textContent = data.wishlistCount;
+            if (badge) {
+                badge.textContent = originalBadgeCount;
+                badge.classList.toggle('hidden', originalBadgeCount === 0);
             }
-            
-            return { success: true, added: isAdded };
-        } else {
+
             if (data.message && data.message.toLowerCase().includes('login')) {
                 window.location.href = '/auth/login';
             }
@@ -66,6 +106,21 @@ async function toggleWishlist(productId, options = {}) {
         }
     } catch (err) {
         console.error("Toggle Wishlist Error:", err);
+        // ROLLBACK
+        if (button) {
+            button.classList.toggle('active', originalIsActive);
+            if (originalIsActive) {
+                button.style.color = 'var(--danger)';
+                if (heartSvg) heartSvg.setAttribute('fill', 'currentColor');
+            } else {
+                button.style.color = '';
+                if (heartSvg) heartSvg.setAttribute('fill', 'none');
+            }
+        }
+        if (badge) {
+            badge.textContent = originalBadgeCount;
+            badge.classList.toggle('hidden', originalBadgeCount === 0);
+        }
         return { success: false, message: "Network error" };
     }
 }

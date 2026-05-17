@@ -75,13 +75,13 @@
                 <div class="space-y-4">
                     <label class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 block">Active Assets Configuration</label>
                     <div class="flex flex-row overflow-x-auto gap-3 pb-2 custom-scrollbar">
-                        <% variant.images.forEach((img, imgIndex) => { %>
+                        <template x-for="(img, imgIndex) in existingImages" :key="imgIndex">
                             <div class="w-16 h-16 bg-black border border-white/10 p-1 flex-shrink-0 relative group">
-                                <img src="<%= img %>" class="w-full h-full object-contain">
-                                <button type="button" @click="deleteExistingAsset(<%= imgIndex %>)"
+                                <img :src="img" class="w-full h-full object-contain">
+                                <button type="button" @click="deleteExistingAsset(imgIndex)"
                                     class="absolute -top-1 -right-1 w-4 h-4 bg-status-danger text-white text-[8px] flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                             </div>
-                        <% }) %>
+                        </template>
                     </div>
                 </div>
 
@@ -176,6 +176,7 @@ v>
                     cropper: null,
                     previews: [],
                     fileQueue: [],
+                    existingImages: [...(existingData.images || [])],
                     existingImageCount: (existingData.images || []).length,
                     errors: { color: '', ram: '', storage: '', price: '', stock: '', images: '' },
                     form: {
@@ -252,7 +253,11 @@ v>
                                 const data = await res.json();
                                 if (data.success) {
                                     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Asset purged.', type: 'success' } }));
-                                    setTimeout(() => window.location.reload(), 1000);
+                                    
+                                    // Reactively remove the asset locally instead of a full reload
+                                    this.existingImages.splice(imgIndex, 1);
+                                    this.existingImageCount = this.existingImages.length;
+                                    
                                 } else { throw new Error(data.message); }
                             } catch (error) {
                                 window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error deleting asset', type: 'error' } }));
