@@ -44,6 +44,8 @@ router.delete("/products/variant/delete/:id/:index", deleteVariant);
 router.patch("/products/variant/restore/:id/:index", restoreVariant);
 router.delete("/products/variant/delete-asset/:id/:index/:imgIndex", deleteVariantAsset);
 
+router.get("/phones", (req, res) => res.redirect("/products"));
+router.get("/catalog", (req, res) => res.redirect("/products"));
 router.get("/products", loadProductListing);
 router.get("/products/:id", getProductDetailsPage)
 router.post("/products/:id/review", ensureLoggedIn, submitReview);
