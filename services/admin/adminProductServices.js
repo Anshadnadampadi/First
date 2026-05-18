@@ -319,4 +319,3 @@ export const updateProduct = async (productId, updateData) => {
     return result;
 };
 
-

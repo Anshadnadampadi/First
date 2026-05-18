@@ -248,3 +248,4 @@ export const updateProduct = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
     }
 };
+

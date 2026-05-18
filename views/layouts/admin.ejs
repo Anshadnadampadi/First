@@ -163,7 +163,9 @@
 
             <div class="p-6 border-t border-white/5">
                 <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors group">
-                    <svg class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <svg class="w-4 h-4 text-white/40 group-hover:text-status-danger transition-colors duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                    </svg>
                     Logout
                 </a>
             </div>
@@ -185,7 +187,9 @@
                 <a href="/admin/logout" 
                    @click.prevent="if(await window.confirmAction({ title: 'Logout Admin?', message: 'Are you sure?', confirmText: 'Logout', type: 'danger' })) window.location.href='/admin/logout'"
                    class="flex items-center gap-3 px-4 py-2 text-sm text-white/40 hover:text-white transition-colors uppercase font-black tracking-widest text-[10px] group">
-                    <svg class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <svg class="w-4 h-4 text-white/40 group-hover:text-status-danger transition-colors duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                    </svg>
                     Logout
                 </a>
             </div>
