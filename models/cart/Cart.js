@@ -24,7 +24,10 @@ const cartItemSchema = new mongoose.Schema({
     },
     originalPrice: {
         type: Number,
-        required: true
+        required: true,
+        default: function() {
+            return this.price;
+        }
     }
 });
 const cartSchema = new mongoose.Schema({

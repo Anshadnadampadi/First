@@ -536,12 +536,18 @@
 
             get totalAmount() {
                 const sub = this.subtotal || 0;
-                const tx = Math.floor(sub * 0.18);
+                const disc = this.discount || 0;
+                const taxable = Math.max(0, sub - disc);
+                const tx = Math.floor(taxable * 0.18);
                 const ship = sub > 500 ? 0 : 50;
-                return Math.max(0, sub + tx + ship - (this.discount || 0));
+                return Math.max(0, sub + tx + ship - disc);
             },
             
-            get tax() { return Math.floor(this.subtotal * 0.18); },
+            get tax() { 
+                const sub = this.subtotal || 0;
+                const disc = this.discount || 0;
+                return Math.floor(Math.max(0, sub - disc) * 0.18); 
+            },
             get shippingFee() { return this.subtotal > 500 ? 0 : 50; },
             
             async applyCoupon() {
