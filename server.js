@@ -173,7 +173,10 @@ app.use((req, res, next) => {
 
 console.log(process.env.MONGO_URI)
 app.use(morgan('dev'))
-// Global nocache removed for performance. Keep it only for sensitive routes.
+// No-cache for dynamic, session-dependent user pages.
+// Public pages (home, shop) are intentionally excluded to allow browser caching.
+app.use(['/account', '/cart', '/checkout', '/profile', '/editProfile', '/wishlist', '/support'], nocache());
+
 app.use("/", userRoutes);
 app.use("/api/ai",aiRoutes)
 app.use("/", productRoutes);

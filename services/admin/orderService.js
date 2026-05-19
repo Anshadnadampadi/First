@@ -180,7 +180,7 @@ export const updateItemStatusService = async (orderId, itemId, status) => {
         await recalculateOrderTotals(order);
 
         // Refund if paid
-        if (refundAmount > 0 && order.paymentStatus === 'Paid') {
+        if (refundAmount > 0 && ['Paid', 'Refunded'].includes(order.paymentStatus)) {
             const Wallet = mongoose.model('Wallet');
             let wallet = await Wallet.findOne({ user: order.user });
             if (!wallet) wallet = new Wallet({ user: order.user, balance: 0, transactions: [] });
@@ -321,11 +321,6 @@ export const updateOrderStatusService = async (orderId, status) => {
         order.paymentStatus = 'Paid';
     }
 
-    // Smart status synchronization for returns/cancellations
-    if (['Cancelled', 'Return Requested', 'Return Approved', 'Return Picked', 'Returned'].includes(status)) {
-        syncOrderStatus(order);
-    }
-
     if (newlyTerminalItems.length > 0) {
         let totalRefund = 0;
         newlyTerminalItems.forEach(item => {
@@ -335,10 +330,7 @@ export const updateOrderStatusService = async (orderId, status) => {
 
         await recalculateOrderTotals(order);
 
-        const isOnlinePaid = order.paymentStatus === 'Paid';
-
         for (const item of newlyTerminalItems) {
-
             const product = await Product.findById(item.product);
             if (product) {
                 product.stock += item.qty;
@@ -359,7 +351,8 @@ export const updateOrderStatusService = async (orderId, status) => {
             }
         }
 
-        if (totalRefund > 0 && order.paymentStatus === 'Paid') {
+        const isRefundable = ['Paid', 'Refunded'].includes(order.paymentStatus) || order.paymentMethod === 'WALLET';
+        if (totalRefund > 0 && isRefundable) {
             const Wallet = mongoose.model('Wallet');
             let wallet = await Wallet.findOne({ user: order.user });
             if (!wallet) wallet = new Wallet({ user: order.user, balance: 0, transactions: [] });
@@ -382,6 +375,12 @@ export const updateOrderStatusService = async (orderId, status) => {
     if (newlyTerminalItems.length === 0) {
         await recalculateOrderTotals(order);
     }
+
+    // Smart status synchronization for returns/cancellations
+    if (['Cancelled', 'Return Requested', 'Return Approved', 'Return Picked', 'Returned'].includes(status)) {
+        syncOrderStatus(order);
+    }
+
     await order.save();
     return { success: true, message: 'Order status updated successfully' };
 };
@@ -402,7 +401,8 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
 
         await recalculateOrderTotals(order);
 
-        if (refundAmount > 0 && order.paymentStatus === 'Paid') {
+        const isRefundable = ['Paid', 'Refunded'].includes(order.paymentStatus) || order.paymentMethod === 'WALLET';
+        if (refundAmount > 0 && isRefundable) {
             const Wallet = mongoose.model('Wallet');
             let wallet = await Wallet.findOne({ user: order.user });
             
@@ -415,6 +415,10 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
                 description: `Refund for Returned Item in Order #${order.orderId}`
             });
             await wallet.save();
+
+            // Update payment status after refund
+            const allTerminal = order.items.every(i => ['Cancelled', 'Returned'].includes(i.status));
+            order.paymentStatus = allTerminal ? 'Refunded' : order.paymentStatus;
         }
 
         const product = await Product.findById(item.product);

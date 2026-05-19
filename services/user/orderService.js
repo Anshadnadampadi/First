@@ -145,7 +145,7 @@ export const cancelOrderItemService = async (userId, orderId, itemId) => {
 
     await recalculateOrderTotals(order);
 
-    if (refundAmount > 0 && order.paymentStatus === 'Paid') {
+    if (refundAmount > 0 && ['Paid', 'Refunded'].includes(order.paymentStatus)) {
         let wallet = await Wallet.findOne({ user: userId });
         if (!wallet) wallet = new Wallet({ user: userId, balance: 0, transactions: [] });
         
