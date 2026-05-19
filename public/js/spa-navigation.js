@@ -80,12 +80,16 @@ const SpaNavigation = {
                 const newChat = doc.getElementById('ai-chatbot');
                 const oldChat = document.getElementById('ai-chatbot');
                 if (newChat && !oldChat) {
-                    document.body.appendChild(newChat.cloneNode(true));
+                    document.body.appendChild(document.adoptNode(newChat));
                 } else if (!newChat && oldChat) {
                     oldChat.remove();
                 } else if (newChat && oldChat) {
-                    // Optional: keep it as is, or replace its content if needed.
-                    // Leaving it alone preserves chat state during navigation!
+                    // Sync the hidden state to preserve chat state and avoid AlpineJS re-binding issue
+                    if (newChat.classList.contains('hidden')) {
+                        oldChat.classList.add('hidden');
+                    } else {
+                        oldChat.classList.remove('hidden');
+                    }
                 }
 
                 

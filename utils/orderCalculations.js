@@ -7,13 +7,10 @@ import Coupon from '../models/coupon/coupon.js';
  * @param {Object} order - The mongoose order document
  */
 export const recalculateOrderTotals = async (order) => {
-    // Only count items that are NOT Cancelled or Returned (nor in the process of being returned)
-    // Wait, terminal status is Cancelled or Returned. 
-    // What about Return Requested? A requested return hasn't been refunded yet! 
-    // If it's just requested, it shouldn't affect the totals until it's actually Approved or Returned.
-    // However, the previous logic excluded 'Return Requested', 'Return Approved', 'Return Picked'.
-    // Let's stick to the existing filter to be safe, assuming the system considers them "gone" from totals.
-    const activeItems = order.items.filter(item => !['Cancelled', 'Returned', 'Return Requested', 'Return Approved', 'Return Picked'].includes(item.status));
+    // Only count items that are NOT Cancelled or Returned.
+    // Requested, Approved, or Picked returns are still active until they are officially completed ('Returned').
+    // Excluding them early results in a zero-refund calculation when they transition to 'Returned'.
+    const activeItems = order.items.filter(item => !['Cancelled', 'Returned'].includes(item.status));
     
     const subtotal = activeItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
     order.subtotal = subtotal;

@@ -319,11 +319,10 @@
 
 
 
-    <% if (!locals.hideAiChat) { %>
     <!-- AI Chatbot Widget -->
     <div id="ai-chatbot"
          x-data="aiChatbot()"
-         class="fixed bottom-24 lg:bottom-6 right-6 z-[9999]"
+         class="fixed bottom-24 lg:bottom-6 right-6 z-[9999] <%= locals.hideAiChat ? 'hidden' : '' %>"
          x-cloak>
          
          <!-- Chat Bubble Button -->
@@ -351,9 +350,9 @@
               <div class="p-4 border-b border-white/5 bg-black/50 backdrop-blur-md flex items-center justify-between">
                   <div class="flex items-center gap-3">
                       <div class="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-                          <svg class="w-4 h-4 text-black" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12.0001 1.66699L13.5684 8.4319L20.3334 10.0003L13.5684 11.5687L12.0001 18.3337L10.4317 11.5687L3.66675 10.0003L10.4317 8.4319L12.0001 1.66699ZM20.3334 15.0003L19.5492 18.3844L16.1651 19.1687L19.5492 19.9529L20.3334 23.337L21.1175 19.9529L24.5017 19.1687L21.1175 18.3844L20.3334 15.0003Z"/>
-                          </svg>
+                           <svg class="w-4 h-4 text-black" viewBox="0 0 24 24" fill="currentColor">
+                               <path d="M12.0001 1.66699L13.5684 8.4319L20.3334 10.0003L13.5684 11.5687L12.0001 18.3337L10.4317 11.5687L3.66675 10.0003L10.4317 8.4319L12.0001 1.66699ZM20.3334 15.0003L19.5492 18.3844L16.1651 19.1687L19.5492 19.9529L20.3334 23.337L21.1175 19.9529L24.5017 19.1687L21.1175 18.3844L20.3334 15.0003Z"/>
+                           </svg>
                       </div>
                       <div>
                           <h3 class="text-white font-bold text-sm tracking-widest uppercase">Starzo AI</h3>
@@ -465,7 +464,6 @@
             }
         }
     </script>
-    <% } %>
 
     <!-- Global Scripts -->
     <script>

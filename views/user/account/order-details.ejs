@@ -28,7 +28,7 @@
                         Download Credit Note
                     </a>
                 <% } %>
-                <% if (['Pending', 'Confirmed', 'Processing'].includes(order.orderStatus)) { %>
+                <% if (['Pending', 'Confirmed', 'Processing'].includes(order.orderStatus) && !order.items.some(i => ['Shipped', 'Delivered', 'Returned', 'Return Requested', 'Return Approved', 'Return Picked', 'Return Rejected'].includes(i.status))) { %>
                     <button onclick="confirmCancel('<%= order._id %>')" class="text-status-danger text-[9px] md:text-[10px] font-bold tracking-widest uppercase border border-status-danger/30 px-6 md:px-8 py-3 md:py-4 hover:bg-status-danger hover:text-white transition-all">Cancel</button>
                 <% } %>
                 <% if (order.orderStatus === 'Delivered') { %>
@@ -107,7 +107,7 @@
                                         <p class="text-white/30 text-[9px] tracking-widest uppercase mb-4"><%= (typeof item.variant === 'object' && item.variant !== null) ? [item.variant.storage, item.variant.color, item.variant.ram].filter(Boolean).join(' ') : (item.variant || 'Standard') %></p>
                                         
                                         <div class="flex flex-wrap gap-4">
-                                            <% if (['Pending', 'Confirmed', 'Processing'].includes(order.orderStatus) && item.status !== 'Cancelled') { %>
+                                            <% if (['Pending', 'Confirmed', 'Processing'].includes(order.orderStatus) && ['Pending', 'Confirmed', 'Processing', 'Ordered'].includes(item.status || 'Ordered')) { %>
                                                 <button onclick="confirmCancelItem('<%= order._id %>', '<%= item._id %>', '<%= productTitle %>')" 
                                                     class="text-[9px] font-bold text-accent uppercase tracking-[0.2em] hover:underline transition-all flex items-center gap-1">
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -371,11 +371,13 @@
                 const data = await response.json();
                 if (data.success) {
                     dispatchGlobalToast('success', 'Request Submitted', data.message);
-                    
-                    const res = await fetch(window.location.href);
-                    const html = await res.text();
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    document.getElementById('order-container').innerHTML = doc.getElementById('order-container').innerHTML;
+                    setTimeout(() => {
+                        if (window.SpaNavigation && typeof window.SpaNavigation.loadPage === 'function') {
+                            window.SpaNavigation.loadPage(window.location.href, false);
+                        } else {
+                            window.location.reload();
+                        }
+                    }, 1000);
                 } else {
                     throw new Error(data.message);
                 }
@@ -412,11 +414,13 @@
                 const data = await response.json();
                 if (data.success) {
                     dispatchGlobalToast('success', 'Order Cancelled', 'Your order has been successfully terminated.');
-                    
-                    const res = await fetch(window.location.href);
-                    const html = await res.text();
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    document.getElementById('order-container').innerHTML = doc.getElementById('order-container').innerHTML;
+                    setTimeout(() => {
+                        if (window.SpaNavigation && typeof window.SpaNavigation.loadPage === 'function') {
+                            window.SpaNavigation.loadPage(window.location.href, false);
+                        } else {
+                            window.location.reload();
+                        }
+                    }, 1000);
                 } else {
                     throw new Error(data.message);
                 }
@@ -453,11 +457,13 @@
                 const data = await response.json();
                 if (data.success) {
                     dispatchGlobalToast('success', 'Item Cancelled', data.message);
-                    
-                    const res = await fetch(window.location.href);
-                    const html = await res.text();
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    document.getElementById('order-container').innerHTML = doc.getElementById('order-container').innerHTML;
+                    setTimeout(() => {
+                        if (window.SpaNavigation && typeof window.SpaNavigation.loadPage === 'function') {
+                            window.SpaNavigation.loadPage(window.location.href, false);
+                        } else {
+                            window.location.reload();
+                        }
+                    }, 1000);
                 } else {
                     throw new Error(data.message);
                 }
@@ -494,11 +500,13 @@
                 const data = await response.json();
                 if (data.success) {
                     dispatchGlobalToast('success', 'Request Submitted', data.message);
-                    
-                    const res = await fetch(window.location.href);
-                    const html = await res.text();
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    document.getElementById('order-container').innerHTML = doc.getElementById('order-container').innerHTML;
+                    setTimeout(() => {
+                        if (window.SpaNavigation && typeof window.SpaNavigation.loadPage === 'function') {
+                            window.SpaNavigation.loadPage(window.location.href, false);
+                        } else {
+                            window.location.reload();
+                        }
+                    }, 1000);
                 } else {
                     throw new Error(data.message);
                 }
@@ -507,4 +515,14 @@
             }
         }
     }
+
+    // Attach all interactive functions to the window object to guarantee global accessibility in SPAs
+    window.showOverlay = showOverlay;
+    window.hideOverlay = hideOverlay;
+    window.retryPayment = retryPayment;
+    window.verifyPayment = verifyPayment;
+    window.confirmReturn = confirmReturn;
+    window.confirmCancel = confirmCancel;
+    window.confirmCancelItem = confirmCancelItem;
+    window.confirmReturnItem = confirmReturnItem;
 </script>

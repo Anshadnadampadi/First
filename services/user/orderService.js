@@ -60,6 +60,11 @@ export const cancelOrderService = async (userId, orderId, reason) => {
         return { success: false, message: `Order cannot be cancelled. Current status: ${order.orderStatus}`, status: 400 };
     }
 
+    const hasShippedOrDelivered = order.items.some(item => ['Shipped', 'Delivered', 'Returned', 'Return Requested', 'Return Approved', 'Return Picked', 'Return Rejected'].includes(item.status));
+    if (hasShippedOrDelivered) {
+        return { success: false, message: 'Order cannot be cancelled because one or more items have already been shipped or processed.', status: 400 };
+    }
+
     order.orderStatus = 'Cancelled';
     order.cancellationReason = reason || 'Cancelled by user';
     
@@ -129,6 +134,10 @@ export const cancelOrderItemService = async (userId, orderId, itemId) => {
 
     const item = order.items[itemIndex];
     if (item.status === 'Cancelled') return { success: false, message: 'Item already cancelled', status: 400 };
+
+    if (['Shipped', 'Delivered', 'Returned', 'Return Requested', 'Return Approved', 'Return Picked', 'Return Rejected'].includes(item.status)) {
+        return { success: false, message: `Cannot cancel item. Item status is: ${item.status}`, status: 400 };
+    }
 
     const oldTotalAmount = order.totalAmount;
     item.status = 'Cancelled';
