@@ -1,4 +1,6 @@
 import Offer from "../../models/offer/offer.js";
+import Product from "../../models/product/product.js";
+import Category from "../../models/category/category.js";
 
 export const createOfferService = async (data) => {
     let {
@@ -248,4 +250,12 @@ export const deleteOfferService = async (id) => {
 
     await Offer.findByIdAndDelete(id);
     return true;
+};
+
+export const getActiveOfferProductsService = async () => {
+    return await Product.find({ isListed: true }).select('name');
+};
+
+export const getActiveOfferCategoriesService = async () => {
+    return await Category.find({ isUnlisted: false }).select('name');
 };

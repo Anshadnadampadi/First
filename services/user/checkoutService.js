@@ -514,3 +514,18 @@ async function finalizeStockSale(productId, variant, qty) {
     }
     await product.save();
 }
+
+export const getOrderConfirmationDataService = async (orderId, userId = null) => {
+    const query = { orderId };
+    if (userId) query.user = userId;
+    return await Order.findOne(query);
+};
+
+export const markOrderAsPaymentFailedService = async (orderId, userId) => {
+    const order = await Order.findOne({ orderId, user: userId });
+    if (order && order.paymentStatus === 'Pending') {
+        order.paymentStatus = 'Failed';
+        await order.save();
+    }
+    return order;
+};

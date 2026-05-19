@@ -1,8 +1,5 @@
-// controllers/wishlistController.js
-import Cart from "../../models/cart/Cart.js"
 import * as wishlistService from "../../services/user/wishlistService.js";
-import User from "../../models/user/User.js";
-
+import * as userService from "../../services/user/userService.js";
 
 // TOGGLE WISHLIST
 export const toggleWishlist = async (req, res) => {
@@ -33,7 +30,6 @@ export const toggleWishlist = async (req, res) => {
 
 //  ADD TO WISHLIST
 export const addToWishlist = async (req, res) => {
-
     try {
         const { productId, color, storage, ram } = req.body;
 
@@ -66,7 +62,6 @@ export const addToWishlist = async (req, res) => {
 };
 
 //  REMOVE FROM WISHLIST
-
 export const removeFromWishlist = async (req, res) => {
     try {
         const { productId, color, storage, ram } = req.body;
@@ -113,14 +108,16 @@ export const getWishlist = async (req, res) => {
         });
     }
 };
+
 //    RENDER WISHLIST PAGE (EJS)
 export const renderWishlistPage = async (req, res) => {
     try {
         const wishlist = await wishlistService.getWishlist(req.session.user);
+        const user = await userService.getUserProfileDetailService(req.session.user);
 
         res.render("user/account/wishlist", {
             wishlist,
-            user: await User.findById(req.session.user).lean(),
+            user,
             breadcrumbs: [
                 { label: 'Profile', url: '/profile' },
                 { label: 'Wishlist', url: '/wishlist' }
@@ -136,7 +133,7 @@ export const renderWishlistPage = async (req, res) => {
 
 //  MOVE TO CART
 export const moveToCart = async (req, res) => {
-    console.log(req.body)
+    console.log(req.body);
     try {
         const { productId, color, storage, ram } = req.body;
 
@@ -147,16 +144,16 @@ export const moveToCart = async (req, res) => {
         );
 
         // Fetch updated counts for both tools to keep UI in sync
-        const [updatedWishlist, cart] = await Promise.all([
+        const [updatedWishlist, cartCount] = await Promise.all([
             wishlistService.getWishlist(req.session.user),
-            Cart.findOne({ userId: req.session.user }).select("items").lean()
+            wishlistService.getCartItemsCount(req.session.user)
         ]);
 
         return res.json({
             success: true,
             message: "Moved to cart 🛒",
             wishlistCount: updatedWishlist.length,
-            cartCount: cart?.items?.length || 0
+            cartCount
         });
 
     } catch (err) {
@@ -188,4 +185,3 @@ export const moveAllToCart = async (req, res) => {
         });
     }
 };
-

@@ -269,3 +269,12 @@ export const moveAllToCart = async (userId) => {
         cartCount: finalCart?.items?.length || 0
     };
 };
+
+export const getCartItemsCount = async (userId) => {
+    const cart = await Cart.findOne({ userId }).select("items").lean();
+    return cart?.items?.length || 0;
+};
+
+export const getRawWishlist = async (userId) => {
+    return await Wishlist.findOne({ userId }).lean();
+};

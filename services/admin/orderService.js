@@ -465,3 +465,24 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
     return { success: true, message: `Item return status updated to ${status}.` };
 };
 
+export const getOrderDetailsByIdService = async (orderId) => {
+    const order = await Order.findById(orderId)
+        .populate('user', 'firstName lastName name email')
+        .populate('items.product');
+
+    if (!order) return null;
+
+    // Self-healing: Sync status if out of sync
+    const originalStatus = order.orderStatus;
+    syncOrderStatus(order);
+    if (order.orderStatus !== originalStatus) {
+        await order.save();
+    }
+
+    return order.toObject();
+};
+
+export const getOrderNotificationData = async (orderId) => {
+    return await Order.findById(orderId).populate('items.product').select('user orderId items');
+};
+

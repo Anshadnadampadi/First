@@ -1,11 +1,15 @@
 import * as cartService from "../../services/user/cartService.js";
-import User from "../../models/user/User.js";
-import Wallet from "../../models/user/Wallet.js";
-import Order from "../../models/order/order.js";
-import { placeOrderService, verifyPaymentService, retryPaymentService, revertFailedOrderService } from "../../services/user/checkoutService.js";
+import { 
+    placeOrderService, 
+    verifyPaymentService, 
+    retryPaymentService, 
+    revertFailedOrderService,
+    getOrderConfirmationDataService,
+    markOrderAsPaymentFailedService
+} from "../../services/user/checkoutService.js";
+import * as userService from "../../services/user/userService.js";
 import { applyCouponService, getAvailableCouponsService, removeCouponService } from "../../services/user/couponService.js";
 import { sendAdminNotification } from "../../utils/notificationHelper.js";
-
 
 export const getCheckout = async (req, res) => {
     try {
@@ -21,15 +25,20 @@ export const getCheckout = async (req, res) => {
             return res.redirect("/cart?msg=Some items in your cart are no longer available.&icon=error");
         }
 
-        const user = await User.findById(req.session.user).populate("addresses").lean();
-        const wallet = await Wallet.findOne({ user: req.session.user }).lean();
+        const dashboardData = await userService.getUserDashboardService(req.session.user);
+        const addressesUser = await userService.getUserWithAddressesService(req.session.user);
         const availableCoupons = await getAvailableCouponsService(req.session.user);
+
+        if (!dashboardData || !addressesUser) {
+            return res.status(404).render("errors/error", { message: "Failed to load profile for checkout" });
+        }
 
         res.render("user/checkout", {
             title: "Checkout",
-            cart, user,
-            addresses: user.addresses || [],
-            walletBalance: wallet ? wallet.balance : 0,
+            cart,
+            user: addressesUser,
+            addresses: addressesUser.addresses || [],
+            walletBalance: dashboardData.wallet ? dashboardData.wallet.balance : 0,
             availableCoupons,
             razorpayKeyId: process.env.RAZORPAY_KEY_ID,
             breadcrumbs: [
@@ -45,8 +54,6 @@ export const getCheckout = async (req, res) => {
         res.status(500).render("errors/error", { message: "Failed to load checkout page" });
     }
 };
-
-
 
 export const placeOrder = async (req, res) => {
     try {
@@ -85,8 +92,8 @@ export const verifyPayment = async (req, res) => {
         const result = await verifyPaymentService(req.body);
 
         if (result.success) {
-            // Emit socket notification for confirmed online payment
-            const order = await Order.findOne({ orderId: req.body.orderId });
+            // Emit socket notification for confirmed online payment via helper
+            const order = await getOrderConfirmationDataService(req.body.orderId);
             if (order) {
                 await sendAdminNotification(req.app, {
                     type: 'order_placed',
@@ -104,11 +111,10 @@ export const verifyPayment = async (req, res) => {
     }
 };
 
-
 export const getOrderSuccess = async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const order = await Order.findOne({ orderId, user: req.session.user });
+        const order = await getOrderConfirmationDataService(orderId, req.session.user);
 
         if (!order) return res.redirect('/');
 
@@ -147,12 +153,7 @@ export const removeCoupon = async (req, res) => {
 export const getPaymentFailure = async (req, res) => {
     try {
         const orderId = req.query.orderId || 'UNKNOWN';
-        const order = await Order.findOne({ orderId, user: req.session.user });
-
-        if (order && order.paymentStatus === 'Pending') {
-            order.paymentStatus = 'Failed';
-            await order.save();
-        }
+        const order = await markOrderAsPaymentFailedService(orderId, req.session.user);
 
         res.render('user/paymentFailure', {
             title: 'Payment Failed',
@@ -166,6 +167,7 @@ export const getPaymentFailure = async (req, res) => {
         res.redirect('/');
     }
 };
+
 export const retryPayment = async (req, res) => {
     try {
         const { orderId } = req.body;

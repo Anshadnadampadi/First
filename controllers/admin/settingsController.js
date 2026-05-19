@@ -1,10 +1,9 @@
-import User from '../../models/user/User.js';
-import bcrypt from 'bcryptjs';
+import { getAdminProfile, updateAdminProfile, changeAdminPassword } from '../../services/admin/settingsService.js';
 
 export const getSettings = async (req, res) => {
     try {
         const adminId = req.session.admin._id;
-        const admin = await User.findById(adminId).select('-password').lean();
+        const admin = await getAdminProfile(adminId);
 
         if (!admin) {
             return res.redirect('/admin/login');
@@ -32,22 +31,14 @@ export const updateProfile = async (req, res) => {
             return res.status(400).json({ success: false, message: 'First name and email are required.' });
         }
 
-        const emailExists = await User.findOne({ email, _id: { $ne: adminId } });
-        if (emailExists) {
-            return res.status(400).json({ success: false, message: 'Email is already in use by another account.' });
+        try {
+            await updateAdminProfile(adminId, { firstName, lastName, email, phone });
+            // Update session email
+            req.session.admin.email = email.trim().toLowerCase();
+            res.json({ success: true, message: 'Profile updated successfully.' });
+        } catch (err) {
+            return res.status(400).json({ success: false, message: err.message });
         }
-
-        await User.findByIdAndUpdate(adminId, {
-            firstName: firstName.trim(),
-            lastName: (lastName || '').trim(),
-            email: email.trim().toLowerCase(),
-            phone: (phone || '').trim()
-        });
-
-        // Update session email
-        req.session.admin.email = email.trim().toLowerCase();
-
-        res.json({ success: true, message: 'Profile updated successfully.' });
     } catch (error) {
         console.error('Error updating admin profile:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again.' });
@@ -67,25 +58,12 @@ export const changePassword = async (req, res) => {
             return res.status(400).json({ success: false, message: 'New passwords do not match.' });
         }
 
-        if (newPassword.length < 8) {
-            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+        try {
+            await changeAdminPassword(adminId, currentPassword, newPassword);
+            res.json({ success: true, message: 'Password changed successfully.' });
+        } catch (err) {
+            return res.status(400).json({ success: false, message: err.message });
         }
-
-        const admin = await User.findById(adminId);
-        if (!admin) {
-            return res.status(404).json({ success: false, message: 'Admin account not found.' });
-        }
-
-        const isMatch = await bcrypt.compare(currentPassword, admin.password);
-        if (!isMatch) {
-            return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
-        }
-
-        const hashed = await bcrypt.hash(newPassword, 10);
-        admin.password = hashed;
-        await admin.save();
-
-        res.json({ success: true, message: 'Password changed successfully.' });
     } catch (error) {
         console.error('Error changing admin password:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again.' });

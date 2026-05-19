@@ -1,27 +1,33 @@
-import User from "../../models/user/User.js";
-import Address from "../../models/user/Address.js";
-import Order from "../../models/order/order.js";
 import bcrypt from "bcryptjs";
-import Wallet from "../../models/user/Wallet.js";
 import { registerValidate, addressValidate, profileUpdateValidate } from "../../validation/user/userValidation.js";
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,30}$/;
-import { registerUser, loginUser, updateUserProfile, changeUserPassword, addUserAddress, updateUserAddress, deleteUserAddress, setDefaultAddress, validateAndNormalizeAddress, generateReferralCode } from "../../services/user/authServices.js";
-import { sendOtpService, verifyOtpService, forgotPasswordService, resendOtpService, requestEmailChangeOtpService, verifyEmailChangeOtpService } from "../../services/user/authServices.js";
-import product from "../../models/product/product.js";
 
+import { 
+    registerUser, 
+    loginUser, 
+    updateUserProfile, 
+    changeUserPassword, 
+    addUserAddress, 
+    updateUserAddress, 
+    deleteUserAddress, 
+    setDefaultAddress, 
+    validateAndNormalizeAddress,
+    sendOtpService, 
+    verifyOtpService, 
+    forgotPasswordService, 
+    resendOtpService, 
+    requestEmailChangeOtpService, 
+    verifyEmailChangeOtpService 
+} from "../../services/user/authServices.js";
 
-import Settings from "../../models/admin/Settings.js";
+import * as userService from "../../services/user/userService.js";
 
 export const getHome = async (req, res) => {
     try {
         const { msg, icon } = req.query;
 
-        // Fetch hero video settings
-        const videoSettings = await Settings.find({ key: { $regex: /^hero_video_/ } }).lean();
-        const videoMap = videoSettings.reduce((acc, curr) => {
-            acc[curr.key] = curr.value;
-            return acc;
-        }, {});
+        // Fetch hero video settings via service
+        const videoMap = await userService.getHomeSettingsService();
 
         res.render("user/home", { 
             msg: msg || null, 
@@ -33,7 +39,6 @@ export const getHome = async (req, res) => {
         res.status(500).send("Server Error");
     }
 };
-
 
 export const getSignup = (req, res) => {
     const { msg, icon } = req.query;
@@ -47,10 +52,8 @@ export const getSignup = (req, res) => {
     });
 };
 
-
 export const postSignup = async (req, res) => {
     try {
-        
         const { error } = registerValidate.validate(req.body);
         if (error) {
             return res.json({
@@ -82,12 +85,12 @@ export const postSignup = async (req, res) => {
         });
     }
 };
+
 export const getForgotPassword = (req, res) => {
     const { msg, icon } = req.query;
     res.render("user/auth/forgotPassword", { msg: msg || null, icon: icon || null, hideAiChat: true });
 };
 
-// handle submission of the forgot-password form
 export const postForgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -113,9 +116,7 @@ export const postForgotPassword = async (req, res) => {
 };
 
 export const getlogin = (req, res) => {
-
     const { msg, icon, error } = req.query;
-
     let message = null;
 
     if (error === "blocked") {
@@ -131,12 +132,10 @@ export const getlogin = (req, res) => {
         message,
         hideAiChat: true
     });
-
 };
 
 export const postLogin = async (req, res) => {
     try {
-
         let { email, password } = req.body;
 
         if (!email || !password) {
@@ -144,7 +143,7 @@ export const postLogin = async (req, res) => {
         }
 
         email = String(email || '').trim().toLowerCase();
-        const user = await User.findOne({ email });
+        const user = await userService.getUserByEmailService(email);
 
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -170,10 +169,9 @@ export const postLogin = async (req, res) => {
     }
 };
 
-
 export const emailVerify = async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email });
+        const user = await userService.getUserByEmailService(req.body.email);
 
         if (!user) {
             return res.json({
@@ -211,7 +209,7 @@ export const resendOtp = async (req, res) => {
     if (!email) {
         return isAjax ? res.json({ success: false, message: 'Email required' }) : res.redirect('/');
     }
-    // choose service based on context; reset flow uses forgotPasswordService while signup uses resendOtpService
+
     let result;
     if (context === 'reset') {
         result = await forgotPasswordService(email);
@@ -231,7 +229,8 @@ export const resendOtp = async (req, res) => {
 
 export const getOtp = (req, res) => {
     res.render("user/auth/otpVerification", { hideAiChat: true });
-}
+};
+
 export const resetPassword = (req, res) => {
     res.render("user/auth/resetPassword", {
         email: req.query.email,
@@ -240,11 +239,11 @@ export const resetPassword = (req, res) => {
         hideAiChat: true
     });
 };
+
 export const resetSuccess = (req, res) => {
     res.render("user/auth/resetSuccess", { hideAiChat: true });
 };
 
-// update password submission
 export const postResetPassword = async (req, res) => {
     try {
         const { email, password, confirmPassword } = req.body;
@@ -273,7 +272,7 @@ export const postResetPassword = async (req, res) => {
             });
         }
 
-        const user = await User.findOne({ email });
+        const user = await userService.getUserByEmailService(email);
         if (!user) {
             return res.json({
                 success: false,
@@ -282,10 +281,7 @@ export const postResetPassword = async (req, res) => {
         }
 
         const hashed = await bcrypt.hash(password, 10);
-        user.password = hashed;
-        user.otp = null;
-        user.otpExpiry = null;
-        await user.save();
+        await userService.resetUserPasswordService(email, hashed);
 
         delete req.session.resetEmail; // Clear the authorization
 
@@ -302,9 +298,6 @@ export const postResetPassword = async (req, res) => {
     }
 };
 
-
-
-/* POST Signup → Send OTP */
 export const otpSignup = async (req, res) => {
     try {
         const result = await sendOtpService(req.body);
@@ -329,11 +322,8 @@ export const otpSignup = async (req, res) => {
     }
 };
 
-/* POST Verify OTP */
 export const postVerifyOtp = async (req, res) => {
-
     const { email, otp, context } = req.body;
-
     const result = await verifyOtpService({ email, otp, context });
 
     if (!result.success) {
@@ -360,12 +350,11 @@ export const postVerifyOtp = async (req, res) => {
         success: true,
         redirect: redirectUrl
     });
-
 };
 
 export const loadVerifyOtp = (req, res) => {
-    const email = req.query.email
-    const context = req.query.context || "signup"
+    const email = req.query.email;
+    const context = req.query.context || "signup";
     res.render("user/auth/otpVerification", {
         email,
         error: null,
@@ -379,29 +368,10 @@ export const getProfile = async (req, res) => {
         if (!req.session.user) {
             return res.redirect('/auth/login');
         }
-        const user = await User.findById(req.session.user).lean();
+        const user = await userService.getUserProfileDetailService(req.session.user);
         if (!user) {
             return res.status(404).send('User not found');
         }
-
-        // Ensure user has a referral code (lazy sync if needed)
-        if (!user.referralCode) {
-            const updatedUser = await User.findById(req.session.user);
-            updatedUser.referralCode = await generateReferralCode();
-            await updatedUser.save();
-            user.referralCode = updatedUser.referralCode;
-        }
-
-        const [ordersCount, totalSpendResult] = await Promise.all([
-            Order.countDocuments({ user: user._id }),
-            Order.aggregate([
-                { $match: { user: user._id, orderStatus: { $ne: 'Cancelled' } } },
-                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-            ])
-        ]);
-
-        user.totalOrders = ordersCount;
-        user.totalSpend = totalSpendResult.length > 0 ? totalSpendResult[0].total : 0;
 
         const { msg, icon } = req.query;
         res.render("user/account/profile", {
@@ -425,30 +395,18 @@ export const getAccountDashboard = async (req, res) => {
         if (!req.session.user) {
             return res.redirect('/auth/login');
         }
-        const user = await User.findById(req.session.user).lean();
-        if (!user) {
+        const dashboardData = await userService.getUserDashboardService(req.session.user);
+        if (!dashboardData) {
             return res.status(404).send('User not found');
         }
 
-        // Aggregate statistics
-        const [ordersCount, totalSpendResult, recentOrders, wallet] = await Promise.all([
-            Order.countDocuments({ user: user._id }),
-            Order.aggregate([
-                { $match: { user: user._id, orderStatus: { $ne: 'Cancelled' } } },
-                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-            ]),
-            Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(3).lean(),
-            Wallet.findOne({ user: user._id }).lean()
-        ]);
-
-        user.totalOrders = ordersCount;
-        user.totalSpend = totalSpendResult.length > 0 ? totalSpendResult[0].total : 0;
-
+        const { user, recentOrders, wallet } = dashboardData;
         const { msg, icon } = req.query;
+
         res.render("user/account/dashboard", {
             user,
             recentOrders,
-            wallet: wallet || { balance: 0, transactions: [] },
+            wallet,
             currentPath: '/account',
             breadcrumbs: [
                 { label: 'Account', url: '/account' },
@@ -463,7 +421,6 @@ export const getAccountDashboard = async (req, res) => {
     }
 };
 
-// handle submission from profile edit modal
 export const postUpdateProfile = async (req, res) => {
     try {
         if (!req.session.user) {
@@ -482,7 +439,6 @@ export const postUpdateProfile = async (req, res) => {
         if (!result.success) {
             return res.status(400).json(result);
         }
-        // return updated user data so front-end can refresh UI if needed
         return res.json({ success: true, user: result.user });
     } catch (err) {
         console.error('Update profile controller error', err);
@@ -490,7 +446,6 @@ export const postUpdateProfile = async (req, res) => {
     }
 };
 
-// change password from profile page
 export const postChangePassword = async (req, res) => {
     try {
         if (!req.session.user) {
@@ -518,21 +473,15 @@ export const postChangePassword = async (req, res) => {
     }
 };
 
-// extra standalone user page
-
-
-
 export const getAddress = async (req, res) => {
     try {
-
         if (!req.session.user) return res.redirect('/auth/login');
-        const user = await User.findById(req.session.user).populate('addresses').lean();
+        const user = await userService.getUserWithAddressesService(req.session.user);
         if (!user) return res.status(404).send('User not found');
 
-        // Pass addresses explicitly for convenience in the view
         const addresses = user.addresses || [];
-
         const { msg, icon } = req.query;
+
         res.render("user/account/addresses", {
             user,
             addresses,
@@ -578,7 +527,6 @@ export const validateAddress = async (req, res) => {
     }
 };
 
-// create new address
 export const postAddress = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -606,7 +554,6 @@ export const postAddress = async (req, res) => {
     }
 };
 
-// update existing address
 export const putAddress = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -633,7 +580,6 @@ export const putAddress = async (req, res) => {
     }
 };
 
-// delete address
 export const deleteAddress = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -647,7 +593,6 @@ export const deleteAddress = async (req, res) => {
     }
 };
 
-// set default address
 export const patchDefaultAddress = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -660,10 +605,11 @@ export const patchDefaultAddress = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
 export const geteditProfile = async (req, res) => {
     try {
         if (!req.session.user) return res.redirect('/auth/login');
-        const user = await User.findById(req.session.user).lean();
+        const user = await userService.getUserProfileDetailService(req.session.user);
         if (!user) return res.status(404).send('User not found');
         const msg = req.query.error || req.query.success || '';
         const icon = req.query.error ? 'error' : (req.query.success ? 'success' : '');
@@ -693,9 +639,7 @@ export const postEditProfile = async (req, res) => {
 
         if (req.file) {
             const imageUrl = req.file.path;
-            result.user.profileImage = imageUrl;
-            result.user.avatar = imageUrl; // keep legacy field in sync
-            await result.user.save();
+            await userService.updateUserProfileImageService(req.session.user, imageUrl);
         }
 
         return res.redirect('/profile');
@@ -714,19 +658,16 @@ export const updateProfileImage = async (req, res) => {
             return res.status(400).json({ success: false, message: "No image uploaded" });
         }
 
-        const userId = req.session.user
-        const imagePath = req.file.path
+        const userId = req.session.user;
+        const imagePath = req.file.path;
 
-        await User.findByIdAndUpdate(userId, {
-            profileImage: imagePath,
-            avatar: imagePath
-        })
-        return res.json({ success: true, imageUrl: imagePath })
+        await userService.updateUserProfileImageService(userId, imagePath);
+        return res.json({ success: true, imageUrl: imagePath });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({ success: false, message: "Server error" });
     }
-}
+};
 
 export const removeProfileImage = async (req, res) => {
     try {
@@ -734,10 +675,7 @@ export const removeProfileImage = async (req, res) => {
             return res.status(401).json({ success: false, message: "Not authenticated" });
         }
 
-        await User.findByIdAndUpdate(req.session.user, {
-            profileImage: "",
-            avatar: ""
-        });
+        await userService.removeUserProfileImageService(req.session.user);
 
         return res.json({ success: true, imageUrl: "" });
     } catch (error) {
@@ -753,8 +691,8 @@ export const logout = (req, res) => {
         res.redirect('/');
     });
 };
-export const updateProfile = async (req, res) => {
 
+export const updateProfile = async (req, res) => {
     try {
         const userId = req.session.user;
 
@@ -775,13 +713,12 @@ export const updateProfile = async (req, res) => {
             return res.redirect("/profile?msg=No changes made&icon=info");
         }
 
-
-        await User.findByIdAndUpdate(userId, updateData);
+        await userService.updateProfileDataService(userId, updateData);
 
         return res.redirect("/profile?msg=Profile updated successfully&icon=success");
     } catch (error) {
-        console.log("profile Update error", error)
-        res.redirect("/profile?msg=Something Went Wrong&icon=error")
+        console.log("profile Update error", error);
+        res.redirect("/profile?msg=Something Went Wrong&icon=error");
     }
 };
 
@@ -853,5 +790,3 @@ export const verifyAndActivateEmailChange = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
-
-

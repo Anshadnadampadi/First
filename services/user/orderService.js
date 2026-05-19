@@ -241,3 +241,13 @@ export const returnOrderItemService = async (userId, orderId, itemId, reason) =>
 
     return { success: true, message: 'Return request for the item submitted successfully.' };
 };
+
+export const getOrderByIdAndUserService = async (orderId, userId) => {
+    return await Order.findOne({ _id: orderId, user: userId }).populate('items.product');
+};
+
+export const getOrderByIdAndUserPopulatedService = async (orderId, userId) => {
+    return await Order.findOne({ _id: orderId, user: userId })
+        .populate('items.product')
+        .lean();
+};

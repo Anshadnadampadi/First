@@ -1,15 +1,8 @@
-import Notification from '../../models/notification/Notification.js';
-import SupportTicket from '../../models/support/SupportTicket.js';
-import Order from '../../models/order/order.js';
+import * as notificationService from '../../services/admin/notificationService.js';
 
 export const getNotifications = async (req, res) => {
     try {
-        const notifications = await Notification.find()
-            .sort({ createdAt: -1 })
-            .limit(10);
-        
-        const unreadCount = await Notification.countDocuments({ isRead: false });
-        
+        const { notifications, unreadCount } = await notificationService.getAdminNotifications();
         res.json({ success: true, notifications, unreadCount });
     } catch (error) {
         console.error('Error fetching notifications:', error);
@@ -20,7 +13,7 @@ export const getNotifications = async (req, res) => {
 export const markAsRead = async (req, res) => {
     try {
         const { id } = req.params;
-        await Notification.findByIdAndUpdate(id, { isRead: true });
+        await notificationService.markNotificationAsRead(id);
         res.json({ success: true });
     } catch (error) {
         console.error('Error marking notification as read:', error);
@@ -30,7 +23,7 @@ export const markAsRead = async (req, res) => {
 
 export const markAllAsRead = async (req, res) => {
     try {
-        await Notification.updateMany({ isRead: false }, { isRead: true });
+        await notificationService.markAllNotificationsAsRead();
         res.json({ success: true });
     } catch (error) {
         console.error('Error marking all notifications as read:', error);
@@ -40,7 +33,7 @@ export const markAllAsRead = async (req, res) => {
 
 export const clearAllNotifications = async (req, res) => {
     try {
-        await Notification.deleteMany({});
+        await notificationService.clearAllNotificationsService();
         res.json({ success: true });
     } catch (error) {
         console.error('Error clearing notifications:', error);
@@ -50,19 +43,10 @@ export const clearAllNotifications = async (req, res) => {
 
 export const getSidebarCounts = async (req, res) => {
     try {
-        const [orderCount, returnCount, supportCount] = await Promise.all([
-            Order.countDocuments({ orderStatus: { $in: ['Pending', 'Confirmed'] } }),
-            Order.countDocuments({ orderStatus: 'Return Requested' }),
-            SupportTicket.countDocuments({ status: 'Open' })
-        ]);
-        
+        const counts = await notificationService.getSidebarCountsData();
         res.json({ 
             success: true, 
-            counts: {
-                orders: orderCount,
-                returns: returnCount,
-                support: supportCount
-            }
+            counts
         });
     } catch (error) {
         console.error('Error fetching sidebar counts:', error);

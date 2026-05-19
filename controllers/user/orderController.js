@@ -1,11 +1,12 @@
-import Order from '../../models/order/order.js';
 import PDFDocument from 'pdfkit';
 import { 
     getUserOrdersService, 
     cancelOrderService, 
     cancelOrderItemService, 
     requestReturnService, 
-    returnOrderItemService 
+    returnOrderItemService,
+    getOrderByIdAndUserService,
+    getOrderByIdAndUserPopulatedService
 } from '../../services/user/orderService.js';
 
 export const getUserOrders = async (req, res) => {
@@ -53,9 +54,7 @@ export const getUserOrderDetails = async (req, res) => {
         const orderId = req.params.id;
         const userId = req.session.user;
 
-        const order = await Order.findOne({ _id: orderId, user: userId })
-            .populate('items.product')
-            .lean();
+        const order = await getOrderByIdAndUserPopulatedService(orderId, userId);
 
         if (!order) {
             return res.status(404).render('errors/error', { message: 'Order not found' });
@@ -160,7 +159,7 @@ export const downloadInvoice = async (req, res) => {
         const orderId = req.params.id;
         const userId = req.session.user;
 
-        const order = await Order.findOne({ _id: orderId, user: userId }).populate('items.product');
+        const order = await getOrderByIdAndUserService(orderId, userId);
 
         if (!order) return res.status(404).send('Order not found');
 
@@ -273,27 +272,27 @@ export const downloadInvoice = async (req, res) => {
         currentY += 20;
         const summaryX = 350;
         const valueX = 450;
-        const rowHeight = 18;
+        const rowHeightValue = 18;
 
         doc.fontSize(9).font('Helvetica').fillColor(secondaryTextColor);
         
         doc.text('Original Subtotal:', summaryX, currentY);
         doc.fillColor(textColor).text(`₹${originalSubtotal.toLocaleString()}`, valueX, currentY, { width: 90, align: 'right' });
-        currentY += rowHeight;
+        currentY += rowHeightValue;
 
         if (originalDiscount > 0) {
             doc.fillColor(secondaryTextColor).text('Discount Applied:', summaryX, currentY);
             doc.fillColor('#22c55e').text(`-₹${originalDiscount.toLocaleString()}`, valueX, currentY, { width: 90, align: 'right' });
-            currentY += rowHeight;
+            currentY += rowHeightValue;
         }
 
         doc.fillColor(secondaryTextColor).text('Tax (GST 18%):', summaryX, currentY);
         doc.fillColor(textColor).text(`₹${originalTax.toLocaleString()}`, valueX, currentY, { width: 90, align: 'right' });
-        currentY += rowHeight;
+        currentY += rowHeightValue;
 
         doc.fillColor(secondaryTextColor).text('Shipping Fee:', summaryX, currentY);
         doc.fillColor(textColor).text(originalShipping > 0 ? `₹${originalShipping.toLocaleString()}` : 'FREE', valueX, currentY, { width: 90, align: 'right' });
-        currentY += rowHeight + 5;
+        currentY += rowHeightValue + 5;
 
         doc.rect(summaryX - 10, currentY - 5, 210, 30).fill(lightGray);
         doc.fillColor(darkColor).fontSize(12).font('Helvetica-Bold').text('TOTAL PAID:', summaryX, currentY + 8);
@@ -318,7 +317,7 @@ export const downloadCreditNote = async (req, res) => {
         const orderId = req.params.id;
         const userId = req.session.user;
 
-        const order = await Order.findOne({ _id: orderId, user: userId }).populate('items.product');
+        const order = await getOrderByIdAndUserService(orderId, userId);
 
         if (!order) return res.status(404).send('Order not found');
 
@@ -380,7 +379,6 @@ export const downloadCreditNote = async (req, res) => {
         doc.font('Helvetica').fontSize(9).fillColor(textColor);
 
         let totalRefunded = 0;
-        // Helper calculation similar to orderService.js
         const orderSubtotalAtPurchase = order.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
         const totalDiscountAtPurchase = order.discount || 0;
 

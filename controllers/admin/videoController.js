@@ -1,13 +1,9 @@
-import Settings from '../../models/admin/Settings.js';
+import * as settingsService from '../../services/admin/settingsService.js';
 import cloudinary from '../../config/cloudinary.js';
 
 export const getVideoManagement = async (req, res) => {
     try {
-        const settings = await Settings.find({ key: { $regex: /^hero_video_/ } });
-        const videoMap = settings.reduce((acc, curr) => {
-            acc[curr.key] = curr.value;
-            return acc;
-        }, {});
+        const videoMap = await settingsService.getHeroVideos();
 
         res.render('admin/marketing/videoManagement', {
             title: 'Video Management',
@@ -34,13 +30,7 @@ export const uploadHeroVideo = async (req, res) => {
         }
 
         const videoUrl = req.file.path; // Cloudinary URL
-        const key = `hero_video_${slot}`;
-
-        await Settings.findOneAndUpdate(
-            { key },
-            { value: videoUrl, description: `Hero video for ${slot} slot` },
-            { upsert: true, new: true }
-        );
+        await settingsService.saveHeroVideo(slot, videoUrl);
 
         res.json({ 
             success: true, 
@@ -56,14 +46,7 @@ export const uploadHeroVideo = async (req, res) => {
 export const deleteHeroVideo = async (req, res) => {
     try {
         const { slot } = req.params;
-        const key = `hero_video_${slot}`;
-        
-        const setting = await Settings.findOne({ key });
-        if (setting) {
-            // Optional: Delete from Cloudinary as well
-            // We'd need to extract the public_id from the URL
-            await Settings.deleteOne({ key });
-        }
+        await settingsService.deleteHeroVideo(slot);
 
         res.json({ success: true, message: 'Video mapping removed successfully' });
     } catch (error) {

@@ -1,11 +1,12 @@
-import Order from '../../models/order/order.js';
 import { 
     getOrdersService, 
     updateOrderStatusService, 
     updateItemReturnStatusService,
     updateItemStatusService,
-    syncOrderStatus
+    getOrderDetailsByIdService,
+    getOrderNotificationData
 } from '../../services/admin/orderService.js';
+import { sendUserNotification } from "../../utils/notificationHelper.js";
 
 export const getOrders = async (req, res) => {
     try {
@@ -48,29 +49,18 @@ export const getOrders = async (req, res) => {
 export const getOrderDetails = async (req, res) => {
     try {
         const orderId = req.params.id;
-        const order = await Order.findById(orderId)
-            .populate('user', 'firstName lastName name email')
-            .populate('items.product');
+        const orderData = await getOrderDetailsByIdService(orderId);
 
-        if (!order) {
+        if (!orderData) {
             return res.status(404).render('errors/error', { message: 'Order not found' });
         }
-
-        // Self-healing: Sync status if out of sync
-        const originalStatus = order.orderStatus;
-        syncOrderStatus(order);
-        if (order.orderStatus !== originalStatus) {
-            await order.save();
-        }
-
-        const orderData = order.toObject(); // Use toObject for the view
 
         res.render('admin/order-details', {
             title: `Order #${orderData.orderId}`,
             order: orderData,
             breadcrumbs: [
                 { label: 'Orders', url: '/admin/orders' },
-                { label: `Order #${order.orderId}`, url: `/admin/orders/${order._id}` }
+                { label: `Order #${orderData.orderId}`, url: `/admin/orders/${orderData._id}` }
             ]
         });
     } catch (error) {
@@ -78,8 +68,6 @@ export const getOrderDetails = async (req, res) => {
         res.status(500).render('errors/error', { message: 'Internal Server Error' });
     }
 };
-
-import { sendUserNotification } from "../../utils/notificationHelper.js";
 
 export const updateOrderStatus = async (req, res) => {
     try {
@@ -91,7 +79,7 @@ export const updateOrderStatus = async (req, res) => {
         }
 
         // Notify User in real-time
-        const order = await Order.findById(orderId).select('user orderId');
+        const order = await getOrderNotificationData(orderId);
         if (order) {
             await sendUserNotification(order.user, {
                 type: 'order_status',
@@ -136,7 +124,7 @@ export const updateItemStatus = async (req, res) => {
         }
 
         // Notify User
-        const order = await Order.findById(orderId).populate('items.product').select('user orderId items');
+        const order = await getOrderNotificationData(orderId);
         if (order) {
             const item = order.items.find(i => i._id.toString() === itemId);
             const productName = item && item.product ? item.product.name : 'an item';

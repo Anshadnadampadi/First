@@ -1,10 +1,10 @@
 import * as userProductService from "../../../services/user/userProductService.js";
 import * as reviewService from "../../../services/user/reviewService.js";
-import Wishlist from "../../../models/wishlist/wishlist.js";
+import * as wishlistService from "../../../services/user/wishlistService.js";
 import { normalize } from "../../../utils/productHelpers.js";
 
 export const loadProductListing = async (req, res) => {
-    console.log("ok")
+    console.log("ok");
     try {
         const { search, category, brand, sort, price, page } = req.query;
 
@@ -17,11 +17,11 @@ export const loadProductListing = async (req, res) => {
             page: parseInt(page) || 1
         });
 
-        // ── Wishlist State ──
+        // ── Wishlist State via Service ──
         let wishlistedIds = [];
         if (req.session.user) {
-            const wishlist = await Wishlist.findOne({ userId: req.session.user }).select("items").lean();
-            if (wishlist) {
+            const wishlist = await wishlistService.getRawWishlist(req.session.user);
+            if (wishlist && wishlist.items) {
                 // Return keys in format: productId_color_storage_ram (normalized using productHelpers)
                 wishlistedIds = wishlist.items.map(item => {
                     const v = item.variant || {};
@@ -76,7 +76,6 @@ export const getProductDetailsPage = async (req, res) => {
         const { product, recommendedProducts } =
             await userProductService.getProductDetails(req.params.id);
 
-        // ✅ ADD THIS (IMPORTANT)
         // Pick specific variant from query if provided, else first active variant
         const { color, storage, ram } = req.query;
         let defaultVariant = null;
@@ -116,11 +115,11 @@ export const getProductDetailsPage = async (req, res) => {
             ...req.session.recentlyViewed.filter(id => id !== currentId)
         ].slice(0, 10);
 
-        // ── Wishlist state ──
+        // ── Wishlist state via Service ──
         let isWishlisted = false;
         let wishlistedIds = [];
         if (req.session.user) {
-            const wishlist = await Wishlist.findOne({ userId: req.session.user }).lean();
+            const wishlist = await wishlistService.getRawWishlist(req.session.user);
             if (wishlist && wishlist.items) {
                 wishlistedIds = wishlist.items.map(item => {
                     const v = item.variant || {};

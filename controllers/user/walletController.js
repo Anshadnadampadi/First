@@ -1,35 +1,13 @@
-import Wallet from "../../models/user/Wallet.js";
-import User from "../../models/user/User.js";
+import * as walletService from "../../services/user/walletService.js";
 import razorpay from "../../config/razorpay.js";
-import crypto from "crypto";
 
 export const getWallet = async (req, res) => {
     try {
         const userId = req.session.user;
         const page = parseInt(req.query.page) || 1;
         const limit = 5; // Transactions per page
-        const skip = (page - 1) * limit;
 
-        const user = await User.findById(userId).lean();
-
-        // Find wallet or create a default one if it doesn't exist
-        let wallet = await Wallet.findOne({ user: userId }).lean();
-
-        let totalTransactions = 0;
-        let totalPages = 0;
-
-        if (!wallet) {
-            wallet = { balance: 0, transactions: [] };
-        } else {
-            // Sort transactions by date descending
-            wallet.transactions.sort((a, b) => b.timestamp - a.timestamp);
-            
-            totalTransactions = wallet.transactions.length;
-            totalPages = Math.ceil(totalTransactions / limit);
-            
-            // Slice for pagination
-            wallet.transactions = wallet.transactions.slice(skip, skip + limit);
-        }
+        const { user, wallet, totalTransactions, totalPages } = await walletService.getWalletService(userId, page, limit);
 
         res.render("user/wallet", {
             title: "My Wallet",
@@ -85,45 +63,24 @@ export const verifyTopupPayment = async (req, res) => {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
         const userId = req.session.user;
 
-        const sign = razorpay_order_id + "|" + razorpay_payment_id;
-        const expectedSign = crypto
-            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-            .update(sign.toString())
-            .digest("hex");
+        const result = await walletService.verifyTopupPaymentService(userId, {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            amount
+        });
 
-        if (razorpay_signature === expectedSign) {
-            let wallet = await Wallet.findOne({ user: userId });
-            if (!wallet) {
-                wallet = new Wallet({ user: userId, balance: 0, transactions: [] });
-            }
-
-            // Check if this payment has already been processed (idempotency)
-            const alreadyProcessed = wallet.transactions.some(tx => tx.txnId === razorpay_payment_id);
-            if (alreadyProcessed) {
-                return res.status(200).json({ success: true, message: "Payment already processed" });
-            }
-
-            const topupAmount = parseFloat(amount);
-            wallet.balance += topupAmount;
-            wallet.transactions.push({
-                amount: topupAmount,
-                type: 'credit',
-                description: "Wallet Top-up via Razorpay",
-                txnId: razorpay_payment_id, // Use actual payment ID for tracking and idempotency
-                status: 'Success',
-                timestamp: new Date()
-            });
-
-            await wallet.save();
-            return res.status(200).json({ success: true, message: "Wallet topped up successfully" });
+        if (result.success) {
+            return res.status(200).json(result);
         } else {
-            return res.status(400).json({ success: false, message: "Payment verification failed" });
+            return res.status(400).json(result);
         }
     } catch (error) {
         console.error("Verify Top-up Error:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
+
 export const getTopupFailure = (req, res) => {
     const { amount } = req.query;
     res.render("user/topup-failure", {
