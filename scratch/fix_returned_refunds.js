@@ -37,7 +37,7 @@ const run = async () => {
             if (item.status !== "Returned") continue;
 
             // Check if there is an existing transaction matching this refund
-            const refundDescPattern = new RegExp(`Refund for (Returned Item|.*item.*) in Order #${order.orderId}`, "i");
+            const refundDescPattern = new RegExp(`Refund for Returned Item in Order #${order.orderId}`, "i");
             const hasRefundTransaction = wallet.transactions.some(tx => refundDescPattern.test(tx.description));
 
             if (hasRefundTransaction) {
@@ -45,14 +45,12 @@ const run = async () => {
                 continue;
             }
 
-            // Missing refund! Compute correct refund amount
-            const itemSubtotal = item.price * item.qty;
-            const itemTax = Math.floor(itemSubtotal * 0.18);
-            const itemDiscount = Math.floor((itemSubtotal / orderSubtotalAtPurchase) * totalDiscountAtPurchase);
-            const itemRefund = (itemSubtotal + itemTax) - itemDiscount;
+            // Missing refund! Compute correct refund amount using stable finalPaidAmount formula
+            const itemTax = Math.floor(item.finalPaidAmount * 0.18);
+            const itemRefund = item.finalPaidAmount + itemTax;
 
             console.log(`  -> MISSING REFUND DETECTED for item ${item._id}!`);
-            console.log(`     Subtotal: ₹${itemSubtotal}, Tax (18%): ₹${itemTax}, Proportional Discount: -₹${itemDiscount}`);
+            console.log(`     Final Paid Amount: ₹${item.finalPaidAmount}, Tax (18%): ₹${itemTax}`);
             console.log(`     Net Refund Amount: ₹${itemRefund}`);
 
             // Credit the wallet

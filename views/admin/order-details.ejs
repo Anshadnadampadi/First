@@ -56,8 +56,8 @@
                             // Only show status that are ahead in hierarchy
                             // And specifically exclude 'Cancelled' if already 'Delivered'
                             const isCancelled = s === 'Cancelled';
-                            const isDelivered = order.orderStatus === 'Delivered';
-                            const shouldShow = (idx >= currentIndex) && !(isDelivered && isCancelled);
+                            const isShippedOrDelivered = ['Shipped', 'Delivered'].includes(order.orderStatus);
+                            const shouldShow = (idx >= currentIndex) && !(isShippedOrDelivered && isCancelled);
                         %>
                         <% if (shouldShow) { %>
                             <option value="<%= s %>" <%= order.orderStatus === s ? 'selected' : '' %>>
@@ -155,7 +155,7 @@
                                             <div class="flex gap-2">
                                                 <select id="itemStatus-<%= item._id %>" class="bg-black border border-white/10 px-3 py-1.5 text-[8px] font-bold tracking-widest uppercase text-white focus:outline-none focus:border-accent transition-all rounded-sm">
                                                     <% ['Ordered', 'Shipped', 'Delivered', 'Cancelled'].forEach(s => { 
-                                                        if (s === 'Cancelled' && item.status === 'Delivered') return;
+                                                        if (s === 'Cancelled' && ['Shipped', 'Delivered'].includes(item.status)) return;
                                                         
                                                         const statusHierarchy = ['Ordered', 'Shipped', 'Delivered'];
                                                         const currentIndex = statusHierarchy.indexOf(item.status || 'Ordered');

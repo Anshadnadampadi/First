@@ -169,22 +169,15 @@ export const updateItemStatusService = async (orderId, itemId, status) => {
 
     // Special case for Cancelled
     if (status === 'Cancelled') {
-        if (oldStatus === 'Delivered') {
-            return { success: false, message: 'Delivered items cannot be cancelled. Use return process.', status: 400 };
+        if (['Shipped', 'Delivered'].includes(oldStatus)) {
+            return { success: false, message: `${oldStatus} items cannot be cancelled.`, status: 400 };
         }
         
         item.status = 'Cancelled';
+        const itemTax = Math.floor(item.finalPaidAmount * 0.18);
+        const refundAmount = item.finalPaidAmount + itemTax;
         
         await recalculateOrderTotals(order);
-        const newTotalAmount = order.totalAmount;
-        let refundAmount = oldTotalAmount - newTotalAmount;
-
-        if (refundAmount < 0) {
-            refundAmount = 0;
-            if (order.paymentMethod !== 'CASH ON DELIVERY') {
-                order.totalAmount = oldTotalAmount;
-            }
-        }
 
         // Refund if paid
         if (refundAmount > 0 && order.paymentStatus === 'Paid') {
@@ -264,8 +257,8 @@ export const updateOrderStatusService = async (orderId, status) => {
         };
     }
 
-    if (oldStatus === 'Delivered' && status === 'Cancelled') {
-        return { success: false, message: 'Delivered orders cannot be cancelled. Please use the return process instead.', status: 400 };
+    if (['Shipped', 'Delivered'].includes(oldStatus) && status === 'Cancelled') {
+        return { success: false, message: `${oldStatus} orders cannot be cancelled.`, status: 400 };
     }
 
     if (oldStatus === 'Delivered' && newIndex !== -1 && status !== 'Delivered') {
@@ -334,16 +327,13 @@ export const updateOrderStatusService = async (orderId, status) => {
     }
 
     if (newlyTerminalItems.length > 0) {
-        await recalculateOrderTotals(order);
-        const newTotalAmount = order.totalAmount;
-        let totalRefund = oldTotalAmount - newTotalAmount;
+        let totalRefund = 0;
+        newlyTerminalItems.forEach(item => {
+            const itemTax = Math.floor(item.finalPaidAmount * 0.18);
+            totalRefund += (item.finalPaidAmount + itemTax);
+        });
 
-        if (totalRefund < 0) {
-            totalRefund = 0;
-            if (order.paymentMethod !== 'CASH ON DELIVERY') {
-                order.totalAmount = oldTotalAmount;
-            }
-        }
+        await recalculateOrderTotals(order);
 
         const isOnlinePaid = order.paymentStatus === 'Paid';
 
@@ -403,21 +393,14 @@ export const updateItemReturnStatusService = async (orderId, itemId, status) => 
     const item = order.items.find(i => i._id.toString() === itemId);
     if (!item) return { success: false, message: 'Item not found', status: 404 };
 
-    const oldTotalAmount = order.totalAmount;
     const oldItemStatus = item.status;
     item.status = status;
 
     if (status === 'Returned' && oldItemStatus !== 'Returned') {
-        await recalculateOrderTotals(order);
-        const newTotalAmount = order.totalAmount;
-        let refundAmount = oldTotalAmount - newTotalAmount;
+        const itemTax = Math.floor(item.finalPaidAmount * 0.18);
+        const refundAmount = item.finalPaidAmount + itemTax;
 
-        if (refundAmount < 0) {
-            refundAmount = 0;
-            if (order.paymentMethod !== 'CASH ON DELIVERY') {
-                order.totalAmount = oldTotalAmount;
-            }
-        }
+        await recalculateOrderTotals(order);
 
         if (refundAmount > 0 && order.paymentStatus === 'Paid') {
             const Wallet = mongoose.model('Wallet');

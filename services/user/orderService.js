@@ -139,20 +139,11 @@ export const cancelOrderItemService = async (userId, orderId, itemId) => {
         return { success: false, message: `Cannot cancel item. Item status is: ${item.status}`, status: 400 };
     }
 
-    const oldTotalAmount = order.totalAmount;
     item.status = 'Cancelled';
+    const itemTax = Math.floor(item.finalPaidAmount * 0.18);
+    const refundAmount = item.finalPaidAmount + itemTax;
 
     await recalculateOrderTotals(order);
-    const newTotalAmount = order.totalAmount;
-
-    let refundAmount = oldTotalAmount - newTotalAmount;
-
-    if (refundAmount < 0) {
-        refundAmount = 0;
-        if (order.paymentMethod !== 'CASH ON DELIVERY') {
-            order.totalAmount = oldTotalAmount;
-        }
-    }
 
     if (refundAmount > 0 && order.paymentStatus === 'Paid') {
         let wallet = await Wallet.findOne({ user: userId });
